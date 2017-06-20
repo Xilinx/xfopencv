@@ -1,5 +1,5 @@
 # xfOpenCV
-Main library with all the following functions optimized for Xilinx FPGAs. 
+Library with all the following functions optimized for Xilinx FPGAs. 
  - Accumulate
  - Accumulate Squared
  - Accumulate Weighted
