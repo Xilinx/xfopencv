@@ -1,0 +1,80 @@
+/***************************************************************************
+ Copyright (c) 2016, Xilinx, Inc.
+ All rights reserved.
+
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice,
+ this list of conditions and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+ this list of conditions and the following disclaimer in the documentation
+ and/or other materials provided with the distribution.
+
+ 3. Neither the name of the copyright holder nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
+
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+ ***************************************************************************/
+#ifndef __XF_PYR_DENSE_OPTICAL_FLOW_WRAPPER__
+#define __XF_PYR_DENSE_OPTICAL_FLOW_WRAPPER__
+
+#include "hls_stream.h"
+#include "ap_int.h"
+#include "common/xf_common.h"
+
+#ifdef __SDSVHLS_SYNTHESIS__
+	#include "imgproc/xf_pyr_dense_optical_flow.hpp"
+	#include "imgproc/xf_optical_flow_pyr_down_kernel.hpp"
+#endif
+
+	#pragma SDS data mem_attribute("_current_img.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_next_image.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+	#pragma SDS data mem_attribute("_streamFlowin.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+	#pragma SDS data mem_attribute("_streamFlowout.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+	#pragma SDS data access_pattern("_current_img.data":SEQUENTIAL, "_next_image.data":SEQUENTIAL)
+	#pragma SDS data access_pattern("_streamFlowin.data":SEQUENTIAL)
+	#pragma SDS data access_pattern("_streamFlowout.data":SEQUENTIAL)
+	#pragma SDS data copy("_current_img.data"[0:"_current_img.size"])
+	#pragma SDS data copy("_next_image.data"[0:"_next_image.size"])
+	#pragma SDS data copy("_streamFlowin.data"[0:"_streamFlowin.size"])
+	#pragma SDS data copy("_streamFlowout.data"[0:"_streamFlowout.size"])
+	#pragma SDS data data_mover("_current_img.data":AXIDMA_SIMPLE)
+	#pragma SDS data data_mover("_next_image.data":AXIDMA_SIMPLE)
+	#pragma SDS data data_mover("_streamFlowin.data":AXIDMA_SIMPLE)
+	#pragma SDS data data_mover("_streamFlowout.data":AXIDMA_SIMPLE)
+template<int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, int TYPE, int ROWS, int COLS, int NPC>
+void xFDensePyrOpticalFlow(xF::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _current_img, xF::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _next_image, xF::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowin, xF::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in)
+{
+	#pragma HLS INLINE OFF
+	#ifdef __SDSVHLS_SYNTHESIS__
+		#include "imgproc/xf_pyr_dense_optical_flow_wrapper_body.inc"
+	#endif
+}
+
+#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
+#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+#pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
+template<int TYPE, int ROWS, int COLS, int NPC> 
+void xFPyrDown (xF::Mat<TYPE, ROWS, COLS, NPC> & _src, xF::Mat<TYPE, ROWS, COLS, NPC> & _dst)
+{
+#pragma HLS INLINE OFF
+
+	#ifdef __SDSVHLS_SYNTHESIS__
+		#include "imgproc/xf_optical_flow_pyr_down_body.inc"
+	#endif
+}	
+#endif
