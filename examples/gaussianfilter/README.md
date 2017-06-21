@@ -1,2 +1,0 @@
-# xFopencv - <Function name>
-<Description>
