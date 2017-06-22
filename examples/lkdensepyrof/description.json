@@ -15,7 +15,7 @@
             "name" : "xFPyrDown",
             "location" : "include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp",
             "clkid" : "2"
-        }
+        },
 	{
             "name" : "xFDensePyrOpticalFlow",
             "location" : "include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp",
