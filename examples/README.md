@@ -1,16 +1,16 @@
 # xfOpenCV/examples
 Each of the folders inside examples folder aims to evaluate at least one of the xfOpenCV kernels.
 
-Each example folder consists of the following files -
+Each example folder consists of an include folder, which contains the xfOpenCV header files, and the following files -
 
-| Folder Name | Description |
+| File Name | Description |
 | :------------- | :------------- |
 | xf_headers.h | Contains the headers required for host code (the code that runs on ARM) |
 | xf_<example_name>_config.h, xf_config_params.h | Contains the hardware kernel configuration information and includes the kernel headers |
 | xf_<example_name>_tb.cpp | Contains the main() function and evaluation code for each of the xfOpenCV kernels |
 | description.json | Contains the project configuration information for the SDx GUI |
 | Makefile | Makefile to build the example in commandline |
-| include | Contains all the headers which define the hardware kernels and their dependencies |
+
 
 The following table lists which xfOpenCV kernel(s) each example aims to evaluate -
 
