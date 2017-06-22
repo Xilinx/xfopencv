@@ -1,4 +1,4 @@
-xfOpenCV Library 
+Xilinx xfOpenCV Library 
 ======================
 The xfOpenCV library is a set of 50+ kernels, optimized for Zynq and Zynq Ultrascale+ FPGAs, from the OpenCV computer vision library. The kernels in the xfOpenCV library are optimized and supported in the Xilinx SDx Tool Suite. 
 
