@@ -15,7 +15,7 @@
             "name" : "xFcanny",
             "location" : "include/imgproc/xf_canny.hpp",
             "clkid" : "2"
-        }
+        },
 	{
             "name" : "xFEdgeTracing",
             "location" : "include/imgproc/xf_edge_tracing.hpp",
