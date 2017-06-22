@@ -11,22 +11,25 @@ The library is organized into the following folders -
 | include | The relevant headers necessary to use the xfOpenCV kernels |
 
 The organization of contents in each folder is described in the readmes of the respective folders.
-For more information on the xfOpenCV libraries and their use models, please refer to UG1233 Xilinx OpenCV User Guide.
+For more information on the xfOpenCV libraries and their use models, please refer to the [Xilinx OpenCV User Guide][].
 
 ## HOW TO DOWNLOAD THE REPOSITORY
 To get a local copy of the SDAccel example repository, clone this repository to the local system with the following command:
 ```
 git clone https://github.com/Xilinx/xfopencv xfopencv
 ```
-where 'xfopencv' is the name of the directory where the repository will be stored on the local system.This command needs to be executed only once to retrieve the latest version of the xfOpenCV library. The only required software is a local installation of git.
+Where 'xfopencv' is the name of the directory where the repository will be stored on the local system.This command needs to be executed only once to retrieve the latest version of the xfOpenCV library. The only required software is a local installation of git.
 
 ## SOFTWARE AND SYSTEM REQUIREMENTS
-Board | Device Name | Software Version
-------|-------------|-----------------
+Board | Software Version |
+------|----------------- |
+ZCU102 | SDx 2017.1 |
+ZC706 | SDx 2017.1 |
+ZC702 | SDx 2017.1 |
 
 ## OTHER INFORMATION
 Full User Guide for xfOpenCV and usng OpenCV on Xilinx devices Check here: 
-[Xilinx OpenCV User Guide] []
+[Xilinx OpenCV User Guide][]
 For more information about SDSoC check here:
 [SDSoC User Guides][]
 
@@ -39,7 +42,7 @@ The source for this project is licensed under the [3-Clause BSD License][]
 To contribute to this project, follow the guidelines in the [Repository Contribution README][]
 
 ## 9. ACKNOWLEDGEMENTS
-This example is written by developers at
+This library is written by developers at
 - [Xilinx](http://www.xilinx.com)
 
 ## 6. REVISION HISTORY
@@ -54,4 +57,4 @@ June2017 | 1.0            | Initial Xilinx release
 [SDSoC User Guides]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1027-sdsoc-user-guide.pdf
 [3-Clause BSD License]: LICENSE.txt
 [Repository Contribution README]: CONTRIBUTING.md
-[Xilinx OpenCV User Guide]: 
+[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1027-sdsoc-user-guide.pdf
