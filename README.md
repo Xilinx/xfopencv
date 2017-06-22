@@ -30,6 +30,7 @@ ZC702 | SDx 2017.1 |
 ## OTHER INFORMATION
 Full User Guide for xfOpenCV and usng OpenCV on Xilinx devices Check here: 
 [Xilinx OpenCV User Guide][]
+
 For more information about SDSoC check here:
 [SDSoC User Guides][]
 
