@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 
 	if(argc != 3)
 	{
-		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
+		fprintf(stderr,"Usage incorrect. Correct usage: ./exe <left image> <right image>\n");
 		return -1;
 	}
 

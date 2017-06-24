@@ -90,6 +90,7 @@ int main(int argc,char **argv)
 	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
 
 	imgInput.copyTo(img_gray.data);
+	printf("Strarting hardware kernel\n");
 #ifdef __SDSCC__
 	TIME_STAMP_INIT
 #endif
@@ -97,6 +98,7 @@ int main(int argc,char **argv)
 #ifdef __SDSCC__
 	TIME_STAMP
 #endif
+	printf("Finished hardware kernel process\n");
 
 #endif
 
