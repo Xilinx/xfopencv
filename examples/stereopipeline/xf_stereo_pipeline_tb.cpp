@@ -44,7 +44,17 @@ int main(int argc, char** argv)
 
 	cv::Mat left_img, right_img;
 	left_img = cv::imread(argv[1],0);
+	if(!left_img.data)
+	{
+		printf("Failed to load left image ... %s\n!", argv[1]);
+		return -1;
+	}
 	right_img = cv::imread(argv[2],0);
+	if(!right_img.data)
+	{
+		printf("Failed to load right image ... %s\n!", argv[2]);
+		return -1;
+	}
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
 	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
