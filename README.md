@@ -60,4 +60,4 @@ June2017  | 1.0            | Initial Xilinx release <br> -Windows OS support is 
 [SDSoC User Guides]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1027-sdsoc-user-guide.pdf
 [3-Clause BSD License]: LICENSE.txt
 [Repository Contribution README]: CONTRIBUTING.md
-[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1027-sdsoc-user-guide.pdf
+[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1233-xilinx-opencv-user-guide.pdf
