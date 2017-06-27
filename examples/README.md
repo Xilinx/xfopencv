@@ -1,7 +1,7 @@
 # xfOpenCV/examples
 Each of the folders inside examples folder aims to evaluate at least one of the xfOpenCV kernels.
 
-Each example folder consists of an include folder, which contains the xfOpenCV header files, and the following files -
+Each example folder consists of an include folder and a data folder, which contain the xfOpenCV header files and the test images respectively. Additionally, each example contains the following files -
 
 | File Name | Description |
 | :------------- | :------------- |
