@@ -53,7 +53,7 @@ Date      | Readme Version | Release Notes
 --------  |----------------|-------------------------
 June2017  | 1.0            | Initial Xilinx release <br> -Windows OS support is in Beta.
  #### Known Issues:
-1. Currently, examples only build in Linux OS. Windows OS support is coming soon. For Windows examples, refer to the xfOpenCV examples in the reVision platform, available at here: 
+1. Currently, examples only build in Linux OS. Windows OS support is coming soon. For Windows examples, refer to the xfOpenCV examples in the reVision platform, available at here: [reVISION Platform]
 2. Hardware kernels using 128-bit streaming interfaces will experience twice the expected latency. This will be resolved in a coming update. 
 
 [reVISION Getting Started Guide]: http://www.wiki.xilinx.com/reVISION+Getting+Started+Guide
