@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_channel_extract_config.h"
 
 
@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 	TIME_STAMP_INIT
     #endif
 	printf("\nKernel has started\n");
-		xFextractChannel<XF_8UC4, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, channel);		
+		channel_extract_accel(imgInput, imgOutput, channel);		
 	printf("\nKernel has Finished\n");
     #if __SDSCC__
 	TIME_STAMP

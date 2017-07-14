@@ -27,6 +27,7 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
+#include "xf_headers.h"
 #include "xf_dense_npyr_optical_flow_config.h"
 
 int main(int argc, char *argv[]){
@@ -63,7 +64,7 @@ int main(int argc, char *argv[]){
 		#if __SDSCC__
 			TIME_STAMP_INIT
 		#endif
-			xFDenseNonPyrLKOpticalFlow<KMED, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(buf0, buf1, flowx, flowy);
+			dense_non_pyr_of_accel(buf0, buf1, flowx, flowy);
 		#if __SDSCC__
 			TIME_STAMP
 		#endif

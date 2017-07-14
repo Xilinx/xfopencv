@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
 
-
+#include "xf_headers.h"
 #include "xf_min_max_loc_config.h"
 
 
@@ -80,98 +80,19 @@ int main(int argc, char** argv)
 
 
 
-#if NO
-	#if T_8U
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_conv.rows,in_conv.cols);
-	imgInput.copyTo((unsigned char *)in_conv.data);
+	xF::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_conv.rows,in_conv.cols);
+	imgInput.copyTo((INTYPE *)in_conv.data);
 	
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFminMaxLoc<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
+	min_max_loc_accel(imgInput, min_value, max_value, _min_locx, _min_locy, _max_locx, _max_locy);
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 
-	#elif T_16U
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_conv.rows,in_conv.cols);
-	imgInput.copyTo((unsigned short *)in_conv.data);
 
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFminMaxLoc<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
 
-	#elif T_16S
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_conv.rows,in_conv.cols);
-	imgInput.copyTo((short *)in_conv.data);
-
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFminMaxLoc<XF_16SC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-#elif T_32S
-	xF::Mat<XF_32SC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_conv.rows,in_conv.cols);
-	imgInput.copyTo((unsigned int *)in_conv.data);
-
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFminMaxLoc<XF_32SC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-	#endif
-
-#endif
-
-#if RO
-		#if T_8U
-		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_conv.rows,in_conv.cols);
-		imgInput.copyTo((unsigned char *)in_conv.data);
-
-		#if __SDSCC__
-		TIME_STAMP_INIT
-		#endif
-		xFminMaxLoc<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-		#if __SDSCC__
-		TIME_STAMP
-		#endif
-
-		#elif T_16U
-		xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_conv.rows,in_conv.cols);
-		imgInput.copyTo((unsigned short *)in_conv.data);
-
-		#if __SDSCC__
-		TIME_STAMP_INIT
-		#endif
-		xFminMaxLoc<XF_16UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-		#if __SDSCC__
-		TIME_STAMP
-		#endif
-
-		#elif T_16S
-		xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_conv.rows,in_conv.cols);
-		imgInput.copyTo((short int *)in_conv.data);
-
-		#if __SDSCC__
-		TIME_STAMP_INIT
-		#endif
-		xFminMaxLoc<XF_16SC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
-		#if __SDSCC__
-		TIME_STAMP
-		#endif
-
-		#endif
-
-#endif
 
 	/////// OpenCV output ////////
 	std::cout<<"OCV-Minvalue = "<<cv_minval<<std::endl;

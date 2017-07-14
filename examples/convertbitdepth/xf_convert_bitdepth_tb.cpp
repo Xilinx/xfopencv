@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_convert_bitdepth_config.h"
 
 int main(int argc, char** argv)
@@ -90,7 +90,7 @@ int main(int argc, char** argv)
 #if __SDSCC__
 TIME_STAMP_INIT
 #endif
-	xFconvertTo<_SRC_T, _DST_T, HEIGHT, WIDTH, _NPC>(imgInput, imgOutput, _convert_type, shift);
+	convert_bitdepth_accel(imgInput, imgOutput, _convert_type, shift);
 #if __SDSCC__
 TIME_STAMP
 #endif

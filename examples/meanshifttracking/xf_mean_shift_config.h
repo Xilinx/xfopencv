@@ -28,13 +28,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
 #ifndef _XF_MEAN_SHIFT_CONFIG_H
 #define _XF_MEAN_SHIFT_CONFIG_H
 
-
 #include "hls_stream.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_mean_shift.hpp"
@@ -54,6 +51,10 @@ const int HEIGHT_MST[XF_MAX_OBJECTS] = {206};
 const int WIDTH_MST[XF_MAX_OBJECTS] = {64};
 
 #define IN_TYPE unsigned int
+
+void mean_shift_accel(xF::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, uint16_t* tlx, uint16_t* tly,
+		uint16_t* obj_height, uint16_t* obj_width, uint16_t* dx, uint16_t* dy, uint16_t* track,
+		uint8_t frame_status, uint8_t no_objects, uint8_t max_obj, uint8_t no_of_iterations);
 
 #endif 
 

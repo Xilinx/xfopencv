@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_scharr_config.h"
 
 
@@ -84,17 +84,20 @@ int main(int argc, char** argv)
 
 
 
-#if NO
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputy(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
-		#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutputx,imgOutputy);
+	#if __SDSCC__
+	TIME_STAMP_INIT
+	#endif
+
+	//xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,NPC1>(imgInput, imgOutputx,imgOutputy);
+	scharr_accel(imgInput, imgOutputx,imgOutputy);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
@@ -103,29 +106,6 @@ TIME_STAMP_INIT
 	hls_grad_x.data = (unsigned char*)imgOutputx.copyFrom();
 	hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
 
-#endif
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutputy(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-
-		#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutputx,imgOutputy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	hls_grad_x.data = (unsigned char*) imgOutputx.copyFrom();
-	hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
-
-
-
-#endif
 
 	imwrite("out_hlsx.jpg", hls_grad_x);
 	imwrite("out_hlsy.jpg", hls_grad_y);

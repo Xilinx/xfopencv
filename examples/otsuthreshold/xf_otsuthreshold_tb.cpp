@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_otsuthreshold_config.h"
 
 
@@ -128,38 +128,19 @@ int main(int argc,char **argv){
 	uint16_t img_height = in_gray.rows;
 	uint16_t img_width  = in_gray.cols;
 
-#if NO
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-
-    #if __SDSCC__
-	TIME_STAMP_INIT
-    #endif
-	printf("\nKernel has started\n");
-		xFOtsuThreshold<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, Otsuval);
-	printf("\nKernel has Finished\n");
-    #if __SDSCC__
-	TIME_STAMP
-    #endif
-
-#endif
-
-#if RO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> imgInput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
     #if __SDSCC__
 	TIME_STAMP_INIT
     #endif
-		xFOtsuThreshold<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, Otsuval);
+		otsuthreshold_accel(imgInput, Otsuval);
     #if __SDSCC__
 	TIME_STAMP
     #endif
 
-#endif
 
 
 	if(abs(Otsuval_ref-Otsuval) > maxdiff)

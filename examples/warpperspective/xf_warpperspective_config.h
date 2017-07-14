@@ -28,28 +28,37 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-#ifndef _AU_WARPPERSPECTIVE_CONFIG_H_
-#define _AU_WARPPERSPECTIVE_CONFIG_H_
+#ifndef _XF_WARPPERSPECTIVE_CONFIG_H_
+#define _XF_WARPPERSPECTIVE_CONFIG_H_
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
+
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_warpperspective.hpp"
 #include "xf_config_params.h"
 
-#define _AU_SYNTHESIS_		1
+#define _XF_SYNTHESIS_		1
 
 
 //#define RO 1
 //#define NO 0
 
+#if RO
+#define NPIX				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPIX				XF_NPPC1
+#endif
 
-
-#define NPC1 3
+#if BILINEAR
+#define TRANSTYPE XF_INTERPOLATION_BILINEAR
+#elif NN
+#define TRANSTYPE XF_INTERPOLATION_NN
+#endif
 
 #define IN_TYPE unsigned long long int
 
-
+void perspective_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst,float *transform_matrix);
 #endif

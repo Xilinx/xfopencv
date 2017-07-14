@@ -27,6 +27,7 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
+#include "xf_headers.h"
 #include "xf_pyr_up_config.h"
 int main(int argc, char *argv[]){
 
@@ -56,7 +57,7 @@ int main(int argc, char *argv[]){
 		TIME_STAMP_INIT
 	#endif
 	
-	xFPyrUp <XF_8UC1, HEIGHT, WIDTH,  XF_NPPC1> (imgInput, imgOutput);
+	pyr_up_accel(imgInput, imgOutput);
 	
 	#if __SDSCC__
 		TIME_STAMP

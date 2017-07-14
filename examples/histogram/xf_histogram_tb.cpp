@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_histogram_config.h"
 
 
@@ -70,33 +70,19 @@ int main(int argc, char** argv)
 	cv::calcHist( &in_gray, 1, 0, cv::Mat(), hist_ocv, 1, &histSize, &histRange, 1, 0 );
 
 
-#if NO
-
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
 
-	xFcalcHist<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> (imgInput, histogram);
+	histogram_accel (imgInput, histogram);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
-#endif
-#if RO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
 
-	imgInput.copyTo(in_gray.data);
-
-#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFcalcHist < XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> (imgInput, histogram);
-#if __SDSCC__
-TIME_STAMP
-#endif
-#endif
 
 	FILE *fp, *fp1;
 	fp = fopen("out_hls.txt", "w");

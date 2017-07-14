@@ -27,12 +27,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _AU_THRESHOLD_CONFIG_H_
-#define _AU_THRESHOLD_CONFIG_H_
+#ifndef _XF_THRESHOLD_CONFIG_H_
+#define _XF_THRESHOLD_CONFIG_H_
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
+
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
@@ -47,4 +47,19 @@ typedef ap_uint<64>      ap_uint64_t;
 #define HEIGHT 1080
 #define WIDTH  1920
 
-#endif  // end of _AU_ARITHM_CONFIG_H_
+#if RO
+#define NPIX				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPIX				XF_NPPC1
+#endif
+
+#if BINARY
+#define THRESHOLD_TYPE XF_THRESHOLD_TYPE_BINARY
+#elif RANGE
+#define THRESHOLD_TYPE XF_THRESHOLD_TYPE_RANGE
+#endif
+
+void threshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,int thresh_value,int thresh_upper,int thresh_lower);
+
+#endif  // end of _XF_THRESHOLD_CONFIG_H_

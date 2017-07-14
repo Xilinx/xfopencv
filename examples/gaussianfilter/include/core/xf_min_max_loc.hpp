@@ -1,30 +1,32 @@
-/***********************************************************************************
- * Vendor: Auviz Systems
- * Filename: au_min_max_loc.hpp
- * Purpose: File contains the minmaxloc kernel, which finds the min value and the max
- * 	    value in the image and its corresponding locations.
- * Device: All
- * Revision History: initial release
- *
- * *********************************************************************************
- * COPYRIGHT
- *
- * Auviz Systems Confidential code. Do not reproduce, make derivative works, distribute,
- * or copy.  All rights reserved.
- *
- * DISCLAIMER
- *
- * All information contained herein is and remains the property of Auviz Systems and
- * its suppliers, if any. The intellectual and technical concepts contained herein are
- * proprietary to Auviz Systems and its suppliers and may be covered by U.S. and
- * Foreign Patents, patents in process, and are protected by trade secret or copyright
- * law. Dissemination of this information or reproduction of this material is strictly
- * forbidden unless prior written permission is obtained from Auviz Systems.
- *
- * THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS PART OF THIS FILE AT
- * ALL TIMES.
- *
- * ***********************************************************************************/
+/***************************************************************************
+Copyright (c) 2016, Xilinx, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, 
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, 
+this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, 
+this list of conditions and the following disclaimer in the documentation 
+and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors 
+may be used to endorse or promote products derived from this software 
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+***************************************************************************/
 
 #ifndef _XF_MIN_MAX_LOC_HPP_
 #define _XF_MIN_MAX_LOC_HPP_
@@ -35,7 +37,7 @@
 
 
 /**
- * auMinMaxLocKernel : This kernal finds the minimum and maximum values in
+ * xfMinMaxLoc_core : This kernal finds the minimum and maximum values in
  * an image and a location for each.
  * Inputs : _src of type XF_8UP, XF_16UP, XF_16SP, XF_32UP or XF_32SP.
  * Output :
@@ -46,7 +48,7 @@
  #include "hls_stream.h"
  #include "common/xf_common.h"
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int COL_TRIP>
-void xFMinMaxLocKernel(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
+void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 		int &_minval1,  int &_maxval1,unsigned short int &_minlocx,unsigned short int &_minlocy,
 		unsigned short int &_maxlocx,unsigned short int &_maxlocy,uint16_t height,uint16_t width)
 {
@@ -228,11 +230,11 @@ void xFMinMaxLocKernel(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 }
 
 /**
- * auMinMaxLoc: this function acts as a wrapper and calls the kernel function
- *  auMinMaxLocKernel.
+ * xfMinMaxLocKernel: this function acts as a wrapper and calls the kernel function
+ *  xfMinMaxLoc_core.
  */
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFMinMaxLoc(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
+void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 		int &_minval, int &_maxval,unsigned short int &_minlocx,unsigned short int &_minlocy,
 		unsigned short int &_maxlocx,unsigned short int &_maxlocy,uint16_t height, uint16_t width)
 {
@@ -275,7 +277,7 @@ void xFMinMaxLoc(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 //
 //	else
 
-	xFMinMaxLocKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
+	xFMinMaxLoc_core<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
 
 }
 #pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
@@ -301,7 +303,7 @@ void xFminMaxLoc(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *max_value, int3
 	uint16_t _min_locx,_min_locy,_max_locx,_max_locy;
 	int32_t _min_val,_max_val;
 
-	xFMinMaxLoc<ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(_src_stream,_min_val,_max_val,_min_locx,_min_locy,_max_locx,_max_locy,_src.rows,_src.cols);
+	xFMinMaxLocKernel<ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(_src_stream,_min_val,_max_val,_min_locx,_min_locy,_max_locx,_max_locy,_src.rows,_src.cols);
 
 	  *min_value =_min_val;
 	  *max_value=_max_val;

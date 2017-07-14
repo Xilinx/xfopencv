@@ -32,12 +32,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_LUT_CONFIG_H_
 
 
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_lut.hpp"
 
-
+#if NO
+#define NPC1 XF_NPPC1
+#endif
+#if RO
+#define NPC1 XF_NPPC8
+#endif
 
 
 
@@ -45,5 +49,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*  set the height and weight  */
 #define HEIGHT 1080
 #define WIDTH  1920
-
-#endif // end of _AU_LUT_CONFIG_H_
+void lut_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput,unsigned char *lut_ptr);
+#endif // end of _XF_LUT_CONFIG_H_

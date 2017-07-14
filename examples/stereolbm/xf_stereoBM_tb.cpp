@@ -27,7 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_stereoBM_config.h"
 
 using namespace std;
@@ -38,24 +38,14 @@ int main(int argc, char** argv)
 
 	if(argc != 3)
 	{
-		fprintf(stderr,"Usage incorrect. Correct usage: ./exe <left image> <right image>\n");
+		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
 		return -1;
 	}
 
 	cv::Mat left_img, right_img;
 
 	left_img = cv::imread(argv[1],0);
-	if(!left_img.data)
-	{
-		printf("Failed to load left image ... %s\n!", argv[1]);
-		return -1;
-	}
 	right_img = cv::imread(argv[2],0);
-	if(!right_img.data)
-	{
-		printf("Failed to load right image ... %s\n!", argv[2]);
-		return -1;
-	}
 
 	cv::Mat disp;
 
@@ -99,7 +89,7 @@ int main(int argc, char** argv)
 #if __SDSCC__
 		TIME_STAMP_INIT
 #endif
-	xFStereoBM<XF_HEIGHT,XF_WIDTH,XF_8UC1,XF_16UC1,XF_NPPC1,SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS>(leftMat, rightMat, dispMat, bm_state);
+	stereolbm_accel(leftMat, rightMat, dispMat, bm_state);
 #if __SDSCC__
 		TIME_STAMP
 #endif

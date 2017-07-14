@@ -30,12 +30,9 @@
 #ifndef __XF_PYR_DENSE_OPTICAL_FLOW_CONFIG__
 #define __XF_PYR_DENSE_OPTICAL_FLOW_CONFIG__
 
-#include "xf_headers.h"
 #include "ap_int.h"
 #include "hls_stream.h"
 #include "assert.h"
-#include <sstream>
-#include <fstream>
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_pyr_dense_optical_flow_wrapper.hpp"
@@ -43,4 +40,6 @@
 #define IN_TYPE unsigned char
 #define OUT_TYPE unsigned char
 
+void pyr_dense_optical_flow_pyr_down_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS], xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS]);
+void pyr_dense_optical_flow_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in);
 #endif

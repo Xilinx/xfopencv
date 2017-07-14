@@ -31,8 +31,6 @@
 #define __XF_DENSE_NONPYR_OPTICAL_FLOW_CONFIG__
 
 #include <iostream>
-#include "stdio.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_types.h"
 #include "xf_config_params.h"
@@ -43,7 +41,7 @@
 #else
 	#define NPPC XF_NPPC1
 #endif
-
+void dense_non_pyr_of_accel(xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy);
 
 #endif
 

@@ -27,39 +27,12 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_hog_descriptor_config.h"
 #include "ObjDet_reference.hpp"
 
 //for masking the output value
 #define operatorAND 0x0000FFFF
-
-// various parameters used for testing purpose
-#define XF_NOVCPB   (XF_BLOCK_HEIGHT/XF_CELL_HEIGHT)  // number of vertical cells per block
-#define XF_NOHCPB   (XF_BLOCK_WIDTH/XF_CELL_WIDTH)    // number of horizontal cells per block
-#define XF_NOBPB    (XF_NO_OF_BINS*XF_NOHCPB*XF_NOVCPB)     // number of bins per block
-#define XF_NOVBPW   ((XF_WIN_HEIGHT/XF_CELL_HEIGHT)-1)    // number of vertical blocks per window
-#define XF_NOHBPW   ((XF_WIN_WIDTH/XF_CELL_WIDTH)-1)      // number of horizontal blocks per window
-#define XF_NODPW    (XF_NOBPB*XF_NOVBPW*XF_NOHBPW)          // number of descriptors per window
-#define XF_NOVW     (((XF_HEIGHT-XF_WIN_HEIGHT)/XF_WIN_STRIDE)+1)  // number of vertical windows in the image
-#define XF_NOHW     (((XF_WIDTH-XF_WIN_WIDTH)/XF_WIN_STRIDE)+1)    // number of horizontal windows in the image
-#define XF_NOVB     ((XF_HEIGHT/XF_CELL_HEIGHT)-1)   // number of vertical blocks in the image
-#define XF_NOHB	    ((XF_WIDTH/XF_CELL_WIDTH)-1)     // number of horizontal blocks in the image
-#if REPETITIVE_BLOCKS
-#define XF_DESC_SIZE 	((XF_NOVW*XF_NOHW*XF_NODPW)>>1)
-#define XF_OUTPUT_MODE  XF_HOG_RB
-#elif NON_REPETITIVE_BLOCKS
-#define XF_DESC_SIZE  	((XF_NOVB*XF_NOHB*XF_NOBPB)>>1)
-#define XF_OUTPUT_MODE  XF_HOG_NRB
-#endif
-#if GRAY_T
-#define XF_INPUT_TYPE XF_8UC1
-#define XF_INPUT_COLOR XF_GRAY
-#elif RGB_T
-#define XF_INPUT_TYPE XF_8UC4
-#define XF_INPUT_COLOR XF_RGB
-#endif
-
 
 // main function
 int main(int argc, char **argv)
@@ -139,8 +112,7 @@ int main(int argc, char **argv)
 #ifdef __SDSCC__
 	TIME_STAMP_INIT
 #endif
-	xFHOGDescriptor <XF_WIN_HEIGHT,XF_WIN_WIDTH,XF_WIN_STRIDE,XF_BLOCK_HEIGHT,XF_BLOCK_WIDTH,XF_CELL_HEIGHT,XF_CELL_WIDTH,
-	XF_NO_OF_BINS,XF_HEIGHT,XF_WIDTH,XF_INPUT_TYPE,XF_32UC1,XF_DESC_SIZE,XF_NPPC1,XF_INPUT_COLOR,XF_OUTPUT_MODE>(inMat,outMat);
+	hog_descriptor_accel(inMat,outMat);
 #ifdef __SDSCC__
 	TIME_STAMP
 #endif

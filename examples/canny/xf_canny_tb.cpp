@@ -27,6 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
+
+#include "xf_headers.h"
 #include "xf_canny_config.h"
 
 typedef unsigned char NMSTYPE;
@@ -199,74 +201,36 @@ int main(int argc, char **argv)
 	low_threshold = 30;
 	high_threshold = 64;
 
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
-	xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC4> nms_output(img_gray.rows,img_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> imgInput(img_gray.rows,img_gray.cols); //XF_NPPC1,XF_NPPC4
+	xF::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> nms_output(img_gray.rows,img_gray.cols);
 	xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
 	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
+
 
 	imgInput.copyTo(img_gray.data);
 
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-#if L1NORM
-#pragma SDS async(1)
-	xFcanny<FILTER_WIDTH,XF_L1NORM,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,XF_NPPC1,XF_NPPC4>(imgInput,nms_output,low_threshold,high_threshold);
-#pragma SDS wait(1)
-#elif L2NORM
-#pragma SDS async(1)
-	xFcanny<FILTER_WIDTH,XF_L2NORM,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,XF_NPPC1,XF_NPPC4>(imgInput,nms_output,low_threshold,high_threshold);
-#pragma SDS wait(1)
-#endif
 
+	#pragma SDS async(1)
+
+	//xFcanny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE>(imgInput,nms_output,low_threshold,high_threshold);
+	canny_accel(imgInput,nms_output,low_threshold,high_threshold);
+
+	#pragma SDS wait(1)
 
 	nms_output1.data = (ap_uint<64>*)nms_output.data;
 
-	xFEdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(nms_output1,edge_output);
+	//xFEdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(nms_output1,edge_output);
+	edgetracing_accel(nms_output1,edge_output);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 
 	out_img.data = edge_output.copyFrom();
-
-
-#endif
-
-
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
-
-	xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC8> nms_output(img_gray.rows,img_gray.cols);
-	xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
-
-	imgInput.copyTo(img_gray.data);
-
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-#if L1NORM
-#pragma SDS async(1)
-	xFcanny<FILTER_WIDTH,XF_L1NORM,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,XF_NPPC8,XF_NPPC8>(imgInput,nms_output,low_threshold,high_threshold);
-#pragma SDS wait(1)
-#elif L2NORM
-#pragma SDS async(1)
-	xFcanny<FILTER_WIDTH,XF_L2NORM,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,XF_NPPC8,XF_NPPC8>(imgInput,nms_output,low_threshold,high_threshold);
-#pragma SDS wait(1)
-#endif
-
-	nms_output1.data = (ap_uint<64>*)nms_output.data;
-
-	xFEdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(nms_output1,edge_output);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	out_img.data = edge_output.copyFrom();
-
-#endif
 
 
 	/*				Apply Gaussian mask and call opencv canny function					*/

@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_fast_config.h"
 
 
@@ -66,44 +66,27 @@ int main (int argc, char** argv)
 #endif
 
 
-#if NO
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 
 
 	imgInput.copyTo(in_gray.data);
 
 
 	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFFAST<NMS,MAXCORNERS,XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(imgInput,(ap_uint<32>*)list,threshold,&nCorners);
+	TIME_STAMP_INIT
+	#endif
+
+	//xFFAST<NMS,MAXCORNERS,XF_8UC1,HEIGHT,WIDTH,NPC1>(imgInput,(ap_uint<32>*)list,threshold,&nCorners);
+	fast_accel(imgInput,(ap_uint<32>*)list,threshold,&nCorners);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 
 
-#endif
-
-
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-
-
-	imgInput.copyTo(in_gray.data);
-
-	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFFAST<NMS,MAXCORNERS,XF_8UC1,HEIGHT,WIDTH,XF_NPPC8>(imgInput,(ap_uint<32>*)list,threshold,&nCorners);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-
-#endif
 
 
 	cv::FAST(in_gray,keypoints,threshold,NMS);		//OPenCV reference function

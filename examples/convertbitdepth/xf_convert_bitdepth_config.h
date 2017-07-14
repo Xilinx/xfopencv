@@ -33,7 +33,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ap_int.h"
 #include "hls_stream.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_convert_bitdepth.hpp"
@@ -139,6 +138,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CONVERT_TYPE 	XF_CONVERT_32S_TO_16S
 #define IN_TYPE 		int
 #endif
+
+void convert_bitdepth_accel(xF::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> &imgInput, xF::Mat<_DST_T, HEIGHT, WIDTH, _NPC> &imgOutput, ap_int<4> _convert_type, int shift);
 
 #endif // _XF_CONVERT_BITDEPTH_CONFIG_H_
 

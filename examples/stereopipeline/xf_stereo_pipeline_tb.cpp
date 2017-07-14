@@ -27,8 +27,9 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_stereo_pipeline_config.h"
+#include "cameraParameters.h"
 
 using namespace std;
 
@@ -108,8 +109,7 @@ int main(int argc, char** argv)
 #ifdef __SDSCC__
 	TIME_STAMP_INIT
 #endif
-	xFStereoPipeline <XF_REMAP_BUFSIZE,XF_HEIGHT,XF_WIDTH,XF_8UC1,XF_16UC1,XF_NPPC1, XF_CAMERA_MATRIX_SIZE, XF_DIST_COEFF_SIZE, SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS>
-	(leftMat,rightMat,dispMat,bm_state,cameraMA_l_fix,cameraMA_r_fix,distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix,9,5);
+	stereopipeline_accel(leftMat,rightMat,dispMat,bm_state,cameraMA_l_fix,cameraMA_r_fix,distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix,9,5);
 #ifdef __SDSCC__
 	TIME_STAMP
 #endif

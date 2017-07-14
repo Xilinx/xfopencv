@@ -28,9 +28,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
+#include "xf_headers.h"
 #include "xf_harris_config.h"
 #include "xf_ocv_ref.hpp"
-
 
 int main(int argc,char **argv)
 {
@@ -90,15 +90,13 @@ int main(int argc,char **argv)
 	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
 
 	imgInput.copyTo(img_gray.data);
-	printf("Strarting hardware kernel\n");
 #ifdef __SDSCC__
 	TIME_STAMP_INIT
 #endif
-	xFCornerHarris<MAXCORNERS,FILTER_WIDTH,BLOCK_WIDTH,NMS_RADIUS,XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
+	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
 #ifdef __SDSCC__
 	TIME_STAMP
 #endif
-	printf("Finished hardware kernel process\n");
 
 #endif
 
@@ -110,7 +108,7 @@ int main(int argc,char **argv)
 #ifdef __SDSCC__
 	TIME_STAMP_INIT
 #endif
-	xFCornerHarris<MAXCORNERS,FILTER_WIDTH,BLOCK_WIDTH,NMS_RADIUS,XF_8UC1,HEIGHT,WIDTH,XF_NPPC8>(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
+	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
 #ifdef __SDSCC__
 	TIME_STAMP
 #endif

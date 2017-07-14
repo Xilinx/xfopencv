@@ -1105,10 +1105,6 @@ template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
 void xFGaussianFilter(hls::stream< XF_SNAME(WORDWIDTH)> &_src, hls::stream< XF_SNAME(WORDWIDTH) > &_dst, int _filter_width, int _border_type, uint16_t imgheight, uint16_t imgwidth, float sigma)
 {
 
-	assert(((_filter_width == XF_FILTER_3X3) || (_filter_width == XF_FILTER_5X5) || (_filter_width == XF_FILTER_7X7)) && ("Filter width should be 3 or 5 or 7."));
-	assert(_border_type == XF_BORDER_CONSTANT && "Only XF_BORDER_CONSTANT is supported");
-
-	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 

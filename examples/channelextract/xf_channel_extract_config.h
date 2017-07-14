@@ -30,7 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_CHANNEL_EXTRACT_CONFIG_H_
 #define _XF_CHANNEL_EXTRACT_CONFIG_H_
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_channel_extract.hpp"
@@ -49,5 +50,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	IN_TYPE  ap_uint<64>//ap_uint256_t
 #endif
 
+void channel_extract_accel(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput, unsigned short channel);
 
 #endif //_XF_CHANNEL_EXTRACT_CONFIG_H_

@@ -31,7 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_BOX_FILTER_CONFIG_H_
 #define _XF_BOX_FILTER_CONFIG_H_
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_box_filter.hpp"
@@ -42,5 +43,27 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HEIGHT 1080
 #define WIDTH  1920
 
+#if RO
+#define NPIX				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPIX				XF_NPPC1
+#endif
+
+#if T_8U
+#define IN_T XF_8UC1
+#define IN_TYPE unsigned char
+#endif
+#if T_16U 
+#define IN_T XF_16UC1
+#define IN_TYPE unsigned short int
+#endif
+#if T_16S
+#define IN_T XF_16SC1
+#define IN_TYPE short int
+#endif
+
+
+void boxfilter_accel(xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_dst);
 
 #endif  // end of _XF_BOX_FILTER_CONFIG_H_

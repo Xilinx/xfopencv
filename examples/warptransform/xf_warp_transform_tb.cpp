@@ -28,6 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
+#include "xf_headers.h"
 #include "xf_warp_transform_config.h"
 
 //changing transformation matrix dimensions with transform Affine 2x3, Perspecitve 3x3
@@ -125,7 +126,7 @@ cv::RNG rng;
 	#if __SDSCC__
 		TIME_STAMP_INIT
 	#endif
-	xFWarpTransform<NUM_STORE_ROWS, START_PROC, TRANSFORM_TYPE, INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_src, _dst, R);
+	warp_transform_accel(_src, _dst, R);
 	#if __SDSCC__
 		TIME_STAMP
 	#endif

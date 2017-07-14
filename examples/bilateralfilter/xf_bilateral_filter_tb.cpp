@@ -27,6 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
+#include "xf_headers.h"
 #include "xf_bilateral_filter_config.h"
 
 int main(int argc, char **argv)
@@ -78,7 +79,7 @@ int main(int argc, char **argv)
 		TIME_STAMP_INIT
 	#endif
 	
-	xFBilateralFilter<FILTER_WIDTH, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH, NPC1>(_src,_dst, sigma_space, sigma_color);
+	bilateral_filter_accel(_src,_dst, sigma_space, sigma_color);
 	
 	#if __SDSCC__
 		TIME_STAMP

@@ -27,6 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
+#include "xf_headers.h"
 #include "xf_median_blur_config.h"
 
 int main(int argc, char** argv)
@@ -66,7 +67,7 @@ int main(int argc, char** argv)
 		TIME_STAMP_INIT
 	#endif
 	
-	xFMedianBlur <WINDOW_SIZE, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH,  NPxPC> (imgInput, imgOutput);
+	median_blur_accel(imgInput, imgOutput);
 	
 	#if __SDSCC__
 		TIME_STAMP

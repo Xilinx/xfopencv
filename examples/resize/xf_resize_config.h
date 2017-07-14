@@ -27,12 +27,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _AU_RESIZE_CONFIG_
-#define _AU_RESIZE_CONFIG_
+#ifndef _XF_RESIZE_CONFIG_
+#define _XF_RESIZE_CONFIG_
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_resize.hpp"
@@ -43,5 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #define NPC1 XF_NPPC1
 #endif
+
+void resize_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst);
 
 #endif

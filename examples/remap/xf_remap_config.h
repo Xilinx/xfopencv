@@ -31,7 +31,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_REMAP_CONFIG_H_
 #define _XF_REMAP_CONFIG_H_
 
-#include "xf_headers.h"
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
@@ -43,5 +42,8 @@ typedef unsigned short int uint16_t;
 /* Define width and height of the image	*/
 #define XF_WIDTH 	1920
 #define XF_HEIGHT 	1080
+
+void remap_accel(xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &remappedMat, 
+	xF::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxMat, xF::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyMat, int interpolation);
 
 #endif

@@ -30,11 +30,12 @@
 #ifndef _XF_PYR_UP_CONFIG_
 #define _XF_PYR_UP_CONFIG_
 
-#include "xf_headers.h"
 #include "hls_stream.h"
 #include "ap_int.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "imgproc/xf_pyr_up.hpp"
+
+void pyr_up_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_dst);
 
 #endif

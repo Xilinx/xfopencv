@@ -27,7 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_integral_image_config.h"
 
 // Declaration of top function
@@ -86,7 +86,11 @@ int main(int argc, char** argv)
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFIntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput);
+
+	//xFIntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput);
+
+	integral_accel(imgInput, imgOutput);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif

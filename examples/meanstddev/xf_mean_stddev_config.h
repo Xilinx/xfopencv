@@ -32,15 +32,22 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_MEAN_STDDEV_CONFIG_H_
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "core/xf_mean_stddev.hpp"
 
+#if NO
+	#define _NPPC XF_NPPC1
+#endif
+
+#if RO
+	#define _NPPC XF_NPPC8
+#endif
 
 /* config width and height */
 #define WIDTH 	1920
 #define HEIGHT	1080
 
+void mean_stddev_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev);
 
 #endif // _XF_MEAN_STDDEV_CONFIG_H_

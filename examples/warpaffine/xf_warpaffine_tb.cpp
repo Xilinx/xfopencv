@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_warpaffine_config.h"
 
 
@@ -96,25 +96,6 @@ int main(int argc,char **argv)
 	find_transform_matrix_tb(x_rot, y_rot, x_expan, y_expan, x_move, y_move, x_offset, y_offset, transform_matrix);
 
 	warpaffine_cref(img_gray, ocv_out_img,transform_matrix,interpolation);
-#if NO
-		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
-		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
-
-		imgInput.copyTo(img_gray.data);
-#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-
-		xFwarpAffine<INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, transform_matrix);
-
-#if __SDSCC__
-TIME_STAMP
-#endif
-		hls_out_img.data = imgOutput.copyFrom();
-#endif
-
-#if RO
-
 
 		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
 		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
@@ -123,13 +104,14 @@ TIME_STAMP
 #if __SDSCC__
 TIME_STAMP_INIT
 #endif
-		xFwarpAffine<INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, imgOutput, transform_matrix);
+
+		warpaffine_accel(imgInput, imgOutput, transform_matrix);
+
 #if __SDSCC__
 TIME_STAMP
 #endif
 		hls_out_img.data = imgOutput.copyFrom();
 
-#endif
 
 
 

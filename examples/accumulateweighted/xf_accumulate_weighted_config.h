@@ -32,7 +32,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_stream.h"
 #include <ap_int.h>
 #include "xf_config_params.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "imgproc/xf_accumulate_weighted.hpp"
 
@@ -41,5 +40,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HEIGHT 1080
 #define WIDTH  1920
 
+#if NO
+#define NPC1 XF_NPPC1
+#endif
+#if RO
+#define NPC1 XF_NPPC8
+#endif
+
+void accumulate_weighted_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput, float alpha);
 
 #endif//_XF_ACCUMULATE_CONFIG_H_

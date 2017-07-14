@@ -27,7 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_mean_shift_config.h"
 
 int main(int argc, char* argv[])
@@ -157,8 +157,7 @@ int main(int argc, char* argv[])
 #if __SDSCC__
 		TIME_STAMP_INIT
 #endif
-		xFMeanShift<XF_HEIGHT,XF_WIDTH,XF_MAX_OBJ_HEIGHT,XF_MAX_OBJ_WIDTH,XF_MAX_OBJECTS,XF_MAX_ITERS,XF_8UC4,XF_NPPC1>
-		(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,max_obj,no_of_iterations);
+		mean_shift_accel(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,max_obj,no_of_iterations);
 #if __SDSCC__
 		TIME_STAMP
 #endif

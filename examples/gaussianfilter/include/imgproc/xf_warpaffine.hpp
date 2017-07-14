@@ -44,11 +44,12 @@ void xFTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) A, XF_PTNAM
 	XF_PTNAME(WORDWIDTH_T) Ax_out,By_out,Cx_out,Dy_out;
 	int16_t offsetX=0,offsetY=0;
 
-	Ax_out = (XF_PTNAME(WORDWIDTH_T))(x_out*A + (int64_t)x_const);
-	By_out = (XF_PTNAME(WORDWIDTH_T))(y_out*B);
-	Cx_out = (XF_PTNAME(WORDWIDTH_T))(x_out*C + (int64_t)y_const);
-	Dy_out = (XF_PTNAME(WORDWIDTH_T))(y_out*D);
+	Ax_out = (XF_PTNAME(WORDWIDTH_T))((long long int)x_out*(long long int)A + (long long int)x_const);
+	By_out = (XF_PTNAME(WORDWIDTH_T))((long long int)y_out*(long long int)B);
+	Cx_out = (XF_PTNAME(WORDWIDTH_T))((long long int)x_out*(long long int)C + (long long int)y_const);
+	Dy_out = (XF_PTNAME(WORDWIDTH_T))((long long int)y_out*(long long int)D);
 
+//	printf("ax= %d by=%d cx= %d dy=%d\n",Ax_out,By_out,Cx_out,Dy_out);
 	x_frac[0] = (Ax_out + By_out + ROUND_DELTA);
 	y_frac[0] = (Cx_out + Dy_out + ROUND_DELTA);
 
@@ -727,6 +728,7 @@ void xFCalculateBlockPositions(XF_PTNAME(WORDWIDTH_T) *transform_matrix,int16_t 
 
 	x_blockmin = x_patchmin[0];
 	y_blockmin = y_patchmin[0];
+	//printf("x_cons= %lld y_cons=%lld\n",(long long int)x_const,(long long int)y_const);
 
 	ytemp = 0;
 	BLOCKPOSITION_OUTERLOOP:for(ap_uint<2> i=0;i<3;i++)
@@ -737,14 +739,20 @@ void xFCalculateBlockPositions(XF_PTNAME(WORDWIDTH_T) *transform_matrix,int16_t 
 #pragma HLS PIPELINE
 
 			xFTransform<WORDWIDTH_T>((x_index + xtemp), (y_index + ytemp), A, B, C, D, x_const, y_const,&x_frac,&y_frac, &xpoint, &ypoint);
+			//printf("xpoint= %d ypoint=%d\n",(short int)xpoint,(short int)ypoint);
+			//printf("x_frac= %lld y_frac=%lld\n",(long long int)x_frac,(long long int)y_frac);
+
 			x_in[pointno] = xpoint>x_blockmin?xpoint:x_blockmin;
 			y_in[pointno] = ypoint>y_blockmin?ypoint:y_blockmin;
 			xtemp += (max_output_range>>1);
 			pointno++;
+			//printf("xtemp =%d ytemp=%d\n",xtemp,ytemp);
 		}
 		ytemp += (max_output_range>>1);
 	}
 
+//	printf("x_in[0] = %d x_in[1] = %d x_in[2] = %d x_in[3] = %d\n",x_in[0],x_in[1],x_in[2],x_in[3]);
+//	printf("y_in[0] = %d y_in[1] = %d y_in[2] = %d y_in[3] = %d\n",y_in[0],y_in[1],y_in[2],y_in[3]);
 	xFAffineFindMaxMin(x_in[0],x_in[1],x_in[3],x_in[4],x_max[0],x_min[0]);
 	xFAffineFindMaxMin(x_in[1],x_in[2],x_in[4],x_in[5],x_max[1],x_min[1]);
 	xFAffineFindMaxMin(x_in[3],x_in[4],x_in[6],x_in[7],x_max[2],x_min[2]);
@@ -906,8 +914,10 @@ void xFReadInputPatchBlocks_pingpong(unsigned long long int *gmem,XF_PTNAME(XF_4
 	int16_t y_max[4], x_max[4];
 
 	xFFindInputPatchPosition<ROWS, COLS, XF_48SP>(transform_matrix,y_patchmin,x_patchmin, y_index, x_index, blocksize, img_height, img_width);
-	xFCalculateBlockPositions<XF_48SP>(transform_matrix,y_index, x_index,y_patchmin,x_patchmin,y_min,x_min,y_max,x_max,blocksize);
 
+//	printf("the positions are %d %d %d %d %d\n",(unsigned short)y_patchmin[0],(unsigned short)x_patchmin[0], (unsigned short)y_index, (unsigned short)x_index, (unsigned short)blocksize);
+	xFCalculateBlockPositions<XF_48SP>(transform_matrix,y_index, x_index,y_patchmin,x_patchmin,y_min,x_min,y_max,x_max,blocksize);
+//	printf("the positions are %d %d %d %d %d\n",(unsigned short)y_min[0],(unsigned short)x_min[0],(unsigned short)y_max[0],(unsigned short)x_max[0],(unsigned short)blocksize);
 	bool flag = false;
 	int16_t i;
 	int _offset;
@@ -1041,6 +1051,7 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 
 	/* maximum output size calculation*/
 	max_output_range = xFFindMaxOutSize<XF_48SP>(transform_matrix);
+	//printf("max_output_range is %d \n ",(unsigned short)max_output_range);
 
 	assert(( max_output_range >= 48 )
 			&& "Scaling factor in the transformation matrix should be greater than 0.25");
@@ -1077,9 +1088,13 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 
 	y_index = 0;
 
+	//printf("max_out_blocks_row is %d  max_out_blocks_col is %d \n ",(unsigned short)max_out_blocks_row,(unsigned short)max_out_blocks_col);
+
+
 	ROWLOOP:
 	for (processed_blocks_row = 0; processed_blocks_row < max_out_blocks_row; processed_blocks_row++)
 	{
+//		printf("enter into the processed_blocks_row %d",(unsigned short)processed_blocks_row);
 #pragma HLS loop_tripcount  min=5 max=5 avg=5
 		x_index	 = 0;
 		x_index1 = 0;
@@ -1108,6 +1123,8 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 			{
 
 				xFReadInputPatchBlocks_pingpong<ROWS,COLS,WORDWIDTH_SRC, XF_48SP>(source,transform_matrix,y_index, x_index,max_output_range,&y_patchmin,&x_patchmin, y_min, x_min, bufs1, imgheight, imgwidth);
+//				printf("xFReadInputPatchBlocks done %d\n",(short int)processed_blocks_row);
+
 			}
 			else if(processed_blocks_col == 1) // One set of data is already read, hence it needs to be processed, and a new set of data has to be read
 			{
@@ -1115,6 +1132,7 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 
 				xFAffineProcessFunction<ROWS,COLS,NPC,WORDWIDTH_SRC, WORDWIDTH_DST, XF_48SP>(transform_matrix, y_patchmin1,x_patchmin1,y_min1, x_min1,
 						y_index, x_index1, lbuf_out1, max_output_range, bufs1, interpolation, imgheight, imgwidth, dst);
+//				printf("processed_blocks_col done %d\n\n",(short int)processed_blocks_row);
 			}
 			else if(processed_blocks_col == max_out_blocks_col+1 || processed_blocks_col == max_out_blocks_col ) // The last extra two iterations for flushing the already read data
 			{
@@ -1196,6 +1214,7 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 			}
 		} // End of Column Loop
 		y_index += max_output_range;
+//		printf("ended the processed_blocks_row %d",(unsigned short)processed_blocks_row);
 	} // End of Row Loop
 
 } // End of Affine Kernel Function
@@ -1208,7 +1227,9 @@ template<int INTERPOLATION_TYPE,int SRC_T,int ROWS, int COLS, int NPC=1>
 void xFwarpAffine(xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _src, xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _dst, float* transformation_matrix)
 {
 
+//	printf("kernel execution in .hpp started\n");
 	xFWarpAffine<ROWS,COLS,XF_DEPTH(SRC_T,XF_NPPC8),NPC,XF_WORDWIDTH(SRC_T,XF_NPPC8),XF_WORDWIDTH(SRC_T,XF_NPPC8),XF_32FP> ((unsigned long long int*)_src.data, (unsigned long long int*)_dst.data,_src.rows,_src.cols,INTERPOLATION_TYPE,transformation_matrix);
 
+//	printf("kernel execution in .hpp done\n");
 }
 #endif

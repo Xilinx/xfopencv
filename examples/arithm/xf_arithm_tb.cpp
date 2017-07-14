@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_arithm_config.h"
 
 
@@ -73,57 +73,27 @@ int main(int argc, char** argv)
 	out_img.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-//	xFabsdiff< XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-//	xFadd<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-//	xFsubtract<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_and<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_or<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_not<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput1,imgOutput);
-//	xFbitwise_xor< XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-	xFmultiply< XF_CONVERT_POLICY_SATURATE,XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput,0.05);
+	
+	arithm_accel(imgInput1,imgInput2,imgOutput);
 
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 	out_img.data = imgOutput.copyFrom();
-#endif
-#if RO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_gray1.rows,in_gray1.cols);
-
-	imgInput1.copyTo(in_gray1.data);
-	imgInput2.copyTo(in_gray2.data);
-#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-//	xFabsdiff< XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFadd<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFsubtract<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_and<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_or<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFbitwise_not<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput1,imgOutput);
-//	xFbitwise_xor< XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-	xFmultiply< XF_CONVERT_POLICY_SATURATE,XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput,0.05);
-#if __SDSCC__
-TIME_STAMP
-#endif
-	out_img.data = imgOutput.copyFrom();
-#endif
 	///////////// OpenCV reference  /////////////
-    //cv::absdiff(in_gray1,in_gray2,ocv_ref);
+    	//cv::absdiff(in_gray1,in_gray2,ocv_ref);
 	//cv::add(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
 	//cv::subtract(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
 	//cv::bitwise_and(in_gray1,in_gray2,ocv_ref);
@@ -140,11 +110,10 @@ TIME_STAMP
 	ocv_ref.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 	diff.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 
-#if NO
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo((short int*)in_gray1_16.data);
 	imgInput2.copyTo((short int*)in_gray2_16.data);
@@ -152,35 +121,15 @@ TIME_STAMP
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	//xFadd<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-	//xFsubtract<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput);
-	xFmultiply< XF_CONVERT_POLICY_SATURATE,XF_16SC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput1,imgInput2,imgOutput,0.05);
+
+	arithm_accel(imgInput1,imgInput2,imgOutput);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 
 	out_img.data = (unsigned char*)imgOutput.copyFrom();
-#endif
-#if RO
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC8> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC8> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_gray1.rows,in_gray1.cols);
-
-	imgInput1.copyTo((short int*)in_gray1_16.data);
-	imgInput2.copyTo((short int*)in_gray2_16.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-//	xFadd<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-//	xFsubtract<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput);
-	xFmultiply< XF_CONVERT_POLICY_SATURATE,XF_16SC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput1,imgInput2,imgOutput,0.05);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-	out_img.data = (unsigned char*)imgOutput.copyFrom();
-
-#endif
 	///////////// OpenCV reference  /////////////
 	//cv::add(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
 	//cv::subtract(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);

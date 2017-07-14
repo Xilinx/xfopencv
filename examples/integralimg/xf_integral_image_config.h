@@ -33,7 +33,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_integral_image.hpp"
@@ -41,8 +40,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef unsigned short  uint16_t;
 
+#define NPC1 XF_NPPC1
 
-
+void integral_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_32UC1, HEIGHT, WIDTH, NPC1> &_dst);
 #endif
 
 // _XF_INTEGRAL_IMAGE_CONFIG_H_

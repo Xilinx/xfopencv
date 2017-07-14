@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_hist_equalize_config.h"
 
 
@@ -65,44 +65,26 @@ int main(int argc, char** argv)
 	imwrite("out_ocv.jpg", ocv_ref);
 
 
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput1(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 	imgInput1.copyTo(in_gray.data);
 	#if __SDSCC__
 		TIME_STAMP_INIT
 	#endif
-		xFequalizeHist< XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput,imgInput1,imgOutput);
+		//xFequalizeHist< XF_8UC1, HEIGHT, WIDTH, NPIX >(imgInput,imgInput1,imgOutput);
+
+		equalizeHist_accel(imgInput,imgInput1,imgOutput);
 	#if __SDSCC__
 		TIME_STAMP
 	#endif
 		out_img.data = imgOutput.copyFrom();
-#endif
-#if RO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput1(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	imgInput1.copyTo(in_gray.data);
-	#if __SDSCC__
-		TIME_STAMP_INIT
-	#endif
-		xFequalizeHist< XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput,imgInput1,imgOutput);
-	#if __SDSCC__
-		TIME_STAMP
-	#endif
-	out_img.data = imgOutput.copyFrom();
-#endif
 
 
-
-		imwrite("out_hls.jpg", out_img);
-
-
+	imwrite("out_hls.jpg", out_img);
 
 	//////////////////  Compute Absolute Difference ////////////////////
 	absdiff(ocv_ref, out_img, diff); // Compute absolute difference image

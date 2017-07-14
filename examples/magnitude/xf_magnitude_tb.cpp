@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_magnitude_config.h"
 
 
@@ -99,68 +99,31 @@ int main(int argc, char** argv)
 
 
 
-#if NO
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC1> imgInputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC1> imgInputy(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInputx.copyTo(( short int*)c_grad_x.data);
 	imgInputy.copyTo(( short int*)c_grad_y.data);
 
 
-#if L1NORM
+
 	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFmagnitude<0,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC1>(imgInputx, imgInputy,imgOutput);
+	TIME_STAMP_INIT
+	#endif
+	
+	//xFmagnitude<NORM_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(imgInputx, imgInputy,imgOutput);
+	magnitude_accel(imgInputx, imgInputy,imgOutput);
+	
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
-#elif L2NORM
-	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFmagnitude<1,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC1>(imgInputx, imgInputy,imgOutput);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-#endif
 
 
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
 
-#endif
-#if RO
-
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC8> imgInputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC8> imgInputy(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInputx.copyTo(( short int*)c_grad_x.data);
-		imgInputy.copyTo(( short int*)c_grad_y.data);
-
-#if L1NORM
-	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFmagnitude<0,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC8>(imgInputx, imgInputy,imgOutput);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-#elif L2NORM
-	#if __SDSCC__
-TIME_STAMP_INIT
-#endif
-	xFmagnitude<1,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC8>(imgInputx, imgInputy,imgOutput);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-#endif
-
-	out_img.data = (unsigned char *)imgOutput.copyFrom();
-
-#endif
 
 
 	/////////////////    OpenCV reference  /////////////////

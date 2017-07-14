@@ -34,7 +34,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "features/xf_fast.hpp"
@@ -42,8 +41,14 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //////////////  To set the parameters in Top and Test bench //////////////////
 
+#if RO
+#define NPC1				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPC1				XF_NPPC1
+#endif
 
 
-
+void fast_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,ap_uint<32>* list,uchar_t threshold,unsigned int *nCorners);
 
 #endif

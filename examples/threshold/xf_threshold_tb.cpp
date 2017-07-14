@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_threshold_config.h"
 
 int main(int argc, char** argv)
@@ -79,46 +79,25 @@ int main(int argc, char** argv)
 
 
 
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-#if BINARY
-	xFThreshold<XF_THRESHOLD_TYPE_BINARY,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput,thresh_value,0,0);
-#elif RANGE
-	xFThreshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput,0,thresh_upper,thresh_lower);
-#endif
+
+	threshold_accel(imgInput, imgOutput,thresh_value,thresh_upper,thresh_lower);
+
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
+
 	out_img.data = imgOutput.copyFrom();
 
-#endif
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-#if BINARY
-	xFThreshold<XF_THRESHOLD_TYPE_BINARY,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutput,thresh_value,0,0);
-#elif RANGE
-	xFThreshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutput,0,thresh_upper,thresh_lower);
-#endif
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-	out_img.data = imgOutput.copyFrom();
-
-#endif
 
 
 	for(int i = 0; i < in_gray.rows; i++)

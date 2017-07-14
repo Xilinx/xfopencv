@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 
 #ifndef _XF_WARPPERSPECTIVE_HPP_
@@ -138,7 +138,7 @@ static ap_uint8_t xFPerspectiveDominantBits(ap_int64_t Val)
 template<int WORDWIDTH_T>
 void xFPerspectiveTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) A,XF_PTNAME(WORDWIDTH_T) B,XF_PTNAME(WORDWIDTH_T) C,
 		XF_PTNAME(WORDWIDTH_T) D,XF_PTNAME(WORDWIDTH_T) E,XF_PTNAME(WORDWIDTH_T) F,XF_PTNAME(WORDWIDTH_T) G,XF_PTNAME(WORDWIDTH_T) H,
-		XF_PTNAME(WORDWIDTH_T) I,int64_t *x_frac,int64_t *y_frac, int16_t *x_in, int16_t *y_in)
+		XF_PTNAME(WORDWIDTH_T) I,ap_int64_t *x_frac,ap_int64_t *y_frac, int16_t *x_in, int16_t *y_in)
 {
 #pragma HLS INLINE off
 	ap_int64_t Ax_out,By_out,Dx_out,Ey_out,Gx_out,Hy_out;
@@ -153,16 +153,20 @@ void xFPerspectiveTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) 
 	uint16_t temp_z_h;
 	int16_t z_hnew=0;
 
-	Ax_out = ((ap_int64_t)A*x_out + (ap_int64_t)C);			// A - Q16.32	x_out Q16.0
-	By_out = ((ap_int64_t)B*y_out);							// B - Q16.32	y_out Q16.0
-	Dx_out = ((ap_int64_t)D*x_out + (ap_int64_t)F);			// D - Q16.32	F - Q16.32
-	Ey_out = ((ap_int64_t)E*y_out);							// E - Q16.32
-	Gx_out = ((ap_int64_t)G*x_out + (ap_int64_t)I);			// G - Q16.32	I - Q16.32
-	Hy_out = ((ap_int64_t)H*y_out);							// H - Q16.32
+	//	Ax_out = ((ap_int64_t)A*x_out + (ap_int64_t)C);			// A - Q16.32	x_out Q16.0
+	//	By_out = ((ap_int64_t)B*y_out);							// B - Q16.32	y_out Q16.0
+	//	Dx_out = ((ap_int64_t)D*x_out + (ap_int64_t)F);			// D - Q16.32	F - Q16.32
+	//	Ey_out = ((ap_int64_t)E*y_out);							// E - Q16.32
+	//	Gx_out = ((ap_int64_t)G*x_out + (ap_int64_t)I);			// G - Q16.32	I - Q16.32
+	//	Hy_out = ((ap_int64_t)H*y_out);							// H - Q16.32
+	//
+	//	temp_x_h = (ap_int64_t)((Ax_out + By_out));
+	//	temp_y_h = (ap_int64_t)((Dx_out + Ey_out));
+	//	frac_z_h = (ap_int64_t)(Gx_out + Hy_out);				// frac_z_h - Q32.32
 
-	temp_x_h = (ap_int64_t)((Ax_out + By_out));
-	temp_y_h = (ap_int64_t)((Dx_out + Ey_out));
-	frac_z_h = (ap_int64_t)(Gx_out + Hy_out);				// frac_z_h - Q32.32
+	temp_x_h = ((ap_int64_t)A*(ap_int64_t)x_out + (ap_int64_t)C) + ((ap_int64_t)B*(ap_int64_t)y_out);
+	temp_y_h = ((ap_int64_t)D*(ap_int64_t)x_out + (ap_int64_t)F) + ((ap_int64_t)E*(ap_int64_t)y_out);
+	frac_z_h = ((ap_int64_t)G*(ap_int64_t)x_out + (ap_int64_t)I) + ((ap_int64_t)H*(ap_int64_t)y_out);
 
 	frac_x_h = (temp_x_h)>>16;								//	(temp_x_h)Q32.32 >> 16 --> (frac_x_h)Q32.16
 	frac_y_h = (temp_y_h)>>16;								//	(temp_y_h)Q32.32 >> 16 --> (frac_y_h)Q32.16
@@ -182,7 +186,7 @@ void xFPerspectiveTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) 
 	else
 		temp_z_hnew = 0;
 
-	
+
 
 	if(N > 12)
 	{
@@ -197,13 +201,17 @@ void xFPerspectiveTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) 
 	else
 		temp_z_hnew = (uint16_t)(temp_z_hnew<<(12-N));
 
-		if(frac_z_h < 0)
+	if(frac_z_h < 0)
 		z_hnew = -temp_z_hnew;
 	else
 		z_hnew = temp_z_hnew;
 
-	x_frac[0] = (int64_t)(((int64_t)frac_x_h*z_hnew)<<4);
-	y_frac[0] = (int64_t)(((int64_t)frac_y_h*z_hnew)<<4);
+	ap_int64_t tempvalue1 = (ap_int64_t)(frac_x_h<<4);
+	ap_int64_t  tempvalue2 = (ap_int64_t)(frac_y_h<<4);
+
+	x_frac[0] = (ap_int64_t)(tempvalue1*(ap_int64_t)z_hnew);
+	y_frac[0] = (ap_int64_t)(tempvalue2*(ap_int64_t)z_hnew);
+
 
 	if((x_frac[0] & 0xFFFFFFFF) >= 0x80000000)		// Rounding the x_frac value, if fractional part is >0.5
 		offsetX = 1;
@@ -228,7 +236,7 @@ int xFPerspectiveFindMaxOutSize(XF_PTNAME(WORDWIDTH_T) *transform_matrix, int x_
 	int16_t max_output_range=0,max_output_range_mul16=0;
 	int16_t x_min, y_min, x_max, y_max;
 	XF_PTNAME(WORDWIDTH_T) A, B, C, D, E, F, G, H, I;
-	int64_t x_fixed,y_fixed;
+	ap_int64_t x_fixed,y_fixed;
 
 	int16_t x_out[4],y_out[4],x_in[4],y_in[4];
 #pragma HLS ARRAY_PARTITION variable=x_out complete dim=1
@@ -309,7 +317,7 @@ void xFPerspectiveFindTopMin(int16_t x_index,int16_t y_index,XF_PTNAME(WORDWIDTH
 {
 #pragma HLS INLINE off
 	int16_t x_in,y_in,x_mintemp,y_mintemp,y_out=0;
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 	ap_uint<9> x_out=0;
 	x_mintemp = img_width;
 	y_mintemp = img_height;
@@ -345,7 +353,7 @@ void xFPerspectiveFindBottomMin(int16_t x_index,int16_t y_index,XF_PTNAME(WORDWI
 #pragma HLS INLINE off
 	int16_t x_in,y_in,x_mintemp,y_mintemp;
 	ap_uint<9> y_out2=max_output_range-1,x_out2=0;
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 
 	x_mintemp = img_width;
 	y_mintemp = img_height;
@@ -381,7 +389,7 @@ void xFPerspectiveFindLeftMin(int16_t x_index,int16_t y_index,XF_PTNAME(WORDWIDT
 #pragma HLS INLINE off
 	int16_t x_in,y_in,x_mintemp,y_mintemp;
 	ap_uint<9> x_out=0,y_out=0;
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 
 	x_mintemp = img_width;
 	y_mintemp = img_height;
@@ -417,7 +425,7 @@ void xFPerspectiveFindRightMin(int16_t x_index,int16_t y_index,XF_PTNAME(WORDWID
 #pragma HLS INLINE off
 	int16_t x_in,y_in,x_mintemp,y_mintemp;
 	ap_uint<9> x_out=max_output_range-1,y_out=0;
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 	x_mintemp = img_width;
 	y_mintemp = img_height;
 	for( y_out=0;y_out<max_output_range;y_out++)
@@ -492,7 +500,7 @@ void xFPerspectiveCalculateBlockPositions(XF_PTNAME(WORDWIDTH_T)* transform_matr
 {
 #pragma HLS inline
 	XF_PTNAME(WORDWIDTH_T) A, B, C, D, E, F, G, H, I;
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 	int16_t x_in[9],y_in[9],xpoint,ypoint,pointno=0,xtemp,ytemp,x_blockmin,y_blockmin,x_blockmax,y_blockmax;
 #pragma HLS ARRAY_PARTITION variable=x_in complete dim=1
 #pragma HLS ARRAY_PARTITION variable=y_in complete dim=1
@@ -726,7 +734,7 @@ void xFReadInputPatchBlocks_pingpong_perspective(unsigned long long int *gmem, X
 
 
 
-static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int16_t pix1,int16_t pix2,int16_t pix3,ap_uint8_t pixel1,ap_uint8_t pixel2,ap_uint8_t pixel3,ap_uint8_t pixel4,int64_t P1,int64_t P2,int64_t P3,int64_t P4,ap_uint8_t &pixel)
+static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int16_t pix1,int16_t pix2,int16_t pix3,ap_uint8_t pixel1,ap_uint8_t pixel2,ap_uint8_t pixel3,ap_uint8_t pixel4,ap_int<64> P1,ap_int<64> P2,ap_int<64> P3,ap_int<64> P4,ap_uint8_t &pixel)
 {
 #pragma HLS INLINE OFF
 	xy_frac = ((uint64_t)x_frac*y_frac) >> 32;
@@ -735,10 +743,10 @@ static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int
 	pix2 = pixel3 - pixel1;
 	pix3 = (pixel4 - pixel3)-pix1;
 
-	P1 = ((int64_t)pix3*xy_frac);
-	P2 = ((int64_t)pix1*x_frac);
-	P3 = ((int64_t)pix2*y_frac);
-	P4 = ((int64_t)pixel1<<32);
+	P1 = ((ap_int<64>)pix3*xy_frac);
+	P2 = ((ap_int<64>)pix1*x_frac);
+	P3 = ((ap_int<64>)pix2*y_frac);
+	P4 = ((ap_int<64>)pixel1<<32);
 	pixel = (uchar_t)((P1 + P2 + P3 + P4)>>32);
 }
 
@@ -760,10 +768,10 @@ void xFPerspectiveProcessBlock(XF_PTNAME(WORDWIDTH_T) *transform_matrix,int16_t 
 	ap_uint8_t pixel,pixel1,pixel2,pixel3,pixel4;
 	XF_SNAME(WORDWIDTH_DST) PackedPixel,PackedPixel2,PackedPixel3,PackedPixel4;
 
-	int64_t P1, P2, P3, P4;
+	ap_int<64> P1, P2, P3, P4;
 	int16_t pix1, pix2, pix3;
 	int16_t max_block_range = (max_output_range>>1);
-	int64_t x_fixed,y_fixed;
+	ap_int<64> x_fixed,y_fixed;
 	int16_t x_in1, x_in2,y_in1, y_in2;
 	XF_PTNAME(WORDWIDTH_T) A, B, C, D, E, F, G, H, I;
 	uint32_t x_frac, y_frac, xy_frac;
@@ -829,8 +837,8 @@ void xFPerspectiveProcessBlock(XF_PTNAME(WORDWIDTH_T) *transform_matrix,int16_t 
 					}
 					pixpos3 = pixpos;
 
-					x_frac = (uint32_t) (x_fixed - ((int64_t)x_in2<<32));
-					y_frac = (uint32_t) (y_fixed - ((int64_t)y_in2<<32));
+					x_frac = (uint32_t) (x_fixed - ((ap_int<64>)x_in2<<32));
+					y_frac = (uint32_t) (y_fixed - ((ap_int<64>)y_in2<<32));
 
 					pixel1 = PackedPixel.range((pixpos<<3)+7,(pixpos)<<3);
 					pixel2 = PackedPixel2.range((pixpos2<<3)+7,(pixpos2<<3));
@@ -1081,11 +1089,11 @@ template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDT
 void xFWarpPerspective(unsigned long long int *source, unsigned long long int *dst, unsigned short int img_height, unsigned short int img_width, ap_uint<1> interpolation, float *transformation_matrix)
 {
 
-//#pragma HLS license key=IPAUVIZ_WarpPerspective
-//	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
-//			&& "Interpolation supported are AU_INTERPOLATION_NN and AU_INTERPOLATION_BILINEAR");
-//
-//	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
+	//#pragma HLS license key=IPAUVIZ_WarpPerspective
+	//	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
+	//			&& "Interpolation supported are AU_INTERPOLATION_NN and AU_INTERPOLATION_BILINEAR");
+	//
+	//	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out1[4][BUFSIZE];
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out2[4][BUFSIZE];
@@ -1293,8 +1301,8 @@ void xFWarpPerspective(unsigned long long int *source, unsigned long long int *d
 	} // End of Row Loop
 }
 
-#pragma SDS data zero_copy("_src_mat.data"[0:259200])
-#pragma SDS data zero_copy("_dst_mat.data"[0:259200])
+#pragma SDS data zero_copy("_src_mat.data"[0:"_src_mat.size"])
+#pragma SDS data zero_copy("_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data zero_copy(transformation_matrix[0:9])
 
 #pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, transformation_mat:NON_CACHEABLE|PHYSICAL_CONTIGUOUS)

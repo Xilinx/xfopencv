@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_channel_combine_config.h"
 
 
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 #ifdef __SDSCC
 	TIME_STAMP_INIT
 #endif
-		xFmerge<XF_8UC1, XF_8UC4, HEIGHT, WIDTH, XF_NPPC1>(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
+		channel_combine_accel(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
 #ifdef __SDSCC
 	TIME_STAMP
 #endif

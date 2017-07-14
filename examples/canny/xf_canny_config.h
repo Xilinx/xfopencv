@@ -5,7 +5,6 @@
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_canny.hpp"
@@ -15,6 +14,21 @@
 #define WIDTH 1920
 #define HEIGHT 1080
 
+#if NO
+#define INTYPE XF_NPPC1
+#define OUTTYPE XF_NPPC4
+#elif RO
+#define INTYPE XF_NPPC8
+#define OUTTYPE XF_NPPC8
+#endif
 
+#if L1NORM
+#define NORM_TYPE XF_L1NORM
+#elif L2NORM
+#define NORM_TYPE XF_L2NORM
+#endif
+
+void canny_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xF::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,unsigned char low_threshold,unsigned char high_threshold);
+void edgetracing_accel(xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst);
 
 #endif

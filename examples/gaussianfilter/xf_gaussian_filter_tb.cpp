@@ -28,6 +28,7 @@
 
  ***************************************************************************/
 
+#include "xf_headers.h"
 #include "xf_gaussian_filter_config.h"
 
 
@@ -54,19 +55,16 @@ int main(int argc, char **argv) {
 	extractChannel(in_img, in_gray, 1);
 
 	ocv_ref.create(in_gray.rows, in_gray.cols, in_gray.depth()); // create memory for output image
-
 #if FILTER_WIDTH==3
 	float sigma = 0.5f;
-#define FILTER 3
 #endif
 #if FILTER_WIDTH==7
 	float sigma=1.16666f;
-	#define FILTER 7
 #endif
 #if FILTER_WIDTH==5
 	float sigma = 0.8333f;
-	#define FILTER 5
 #endif
+
 
 	// OpenCV Gaussian filter function
 	cv::GaussianBlur(in_gray, ocv_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH),FILTER_WIDTH / 6.0, FILTER_WIDTH / 6.0, cv::BORDER_CONSTANT);
@@ -75,43 +73,23 @@ int main(int argc, char **argv) {
 
 	out_img.create(in_gray.rows, in_gray.cols, in_gray.depth()); // create memory for output image
 
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFGaussianBlur<FILTER, XF_BORDER_CONSTANT,XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, sigma);
+
+	gaussian_filter_accel(imgInput,imgOutput,sigma);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 	out_img.data = imgOutput.copyFrom();
 
 
-#endif
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-
-
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-
-	xFGaussianBlur<FILTER, XF_BORDER_CONSTANT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, imgOutput, sigma);
-
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	out_img.data = imgOutput.copyFrom();
-
-#endif
 
 	imwrite("output_hls.png", out_img);
 	absdiff(ocv_ref, out_img, diff); // Compute absolute difference image

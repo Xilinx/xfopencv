@@ -30,9 +30,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef _XF_HISTOGRAM_CONFIG_H_
 #define _XF_HISTOGRAM_CONFIG_H_
+
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "imgproc/xf_histogram.hpp"
@@ -44,8 +44,14 @@ typedef unsigned short  uint16_t;
 #define WIDTH 	1920
 #define HEIGHT	1080
 
+#if NO
+	#define _NPPC XF_NPPC1
+#endif
 
+#if RO
+	#define _NPPC XF_NPPC8
+#endif
 
+void histogram_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram);
 
-
-#endif // _AU_HISTOGRAM_CONFIG_H_
+#endif // _XF_HISTOGRAM_CONFIG_H_

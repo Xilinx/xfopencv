@@ -32,7 +32,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_GAUSSIAN_FILTER_CONFIG_H_
 
 #include "hls_stream.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_gaussian_filter.hpp"
@@ -46,13 +45,22 @@ typedef unsigned short int  uint16_t;
 
 #if FILTER_SIZE_3
 #define FILTER_WIDTH 3
+#define FILTER 3
 #elif FILTER_SIZE_5
 #define FILTER_WIDTH 5
+#define FILTER 5
 #elif FILTER_SIZE_7
 #define FILTER_WIDTH 7
+#define FILTER 7
 #endif
 
-
+#if NO
+#define NPC1 XF_NPPC1
+#endif
+#if RO
+#define NPC1 XF_NPPC8
+#endif
+void gaussian_filter_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1>&imgOutput,float sigma);
 
 
 #endif //_XF_GAUSSIAN_FILTER_CONFIG_H_

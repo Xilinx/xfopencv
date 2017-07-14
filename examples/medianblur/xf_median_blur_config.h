@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _AU_MEDIAN_BLUR_CONFIG_
 #define _AU_MEDIAN_BLUR_CONFIG_
 
-#include "xf_headers.h"
 #include "hls_stream.h"
 #include "ap_int.h"
 #include "common/xf_common.h"
@@ -42,5 +41,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #else
 #define NPxPC XF_NPPC8
 #endif
+
+void median_blur_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst);
 	
 #endif  // end of _AU_MEDIAN_BLUR_CONFIG_H_

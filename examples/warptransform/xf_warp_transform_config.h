@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef __XF_TRANSFORM_CONFIG__
 #define __XF_TRANSFORM_CONFIG__
-#include "xf_headers.h"
 #include <ap_int.h>
 #include <cmath>
 #include <iostream>
@@ -40,5 +39,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_warp_transform.hpp"
-
+void warp_transform_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_src, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_dst, float *R);
 #endif

@@ -33,7 +33,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "imgproc/xf_hist_equalize.hpp"
@@ -43,10 +42,18 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIDTH 	1920
 #define HEIGHT	1080
 
+/*  define the input and output types  */
+#if NO
+#define NPIX XF_NPPC1
+#endif
+
+#if RO
+#define NPIX XF_NPPC8
+#endif
 
 
 
-
+void equalizeHist_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst);
 
 #endif // _XF_HIST_EQUALIZE_CONFIG_H_
 

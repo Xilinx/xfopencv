@@ -31,13 +31,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_STEREO_PIPELINE_CONFIG_H_
 #define _XF_STEREO_PIPELINE_CONFIG_H_
 
-#include "xf_headers.h"
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_stereo_pipeline.hpp"
 #include "xf_config_params.h"
-#include "cameraParameters.h"
 
 
 /* config width and height */
@@ -49,6 +47,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define IN_TYPE      ap_uint<8>
 #define OUT_TYPE     ap_uint<16>
+
+void stereopipeline_accel(xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat, xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, xF::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat, xF::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state,
+		ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix, ap_fixed<32,12> *distC_l_fix, ap_fixed<32,12> *distC_r_fix, ap_fixed<32,12> *irA_l_fix, ap_fixed<32,12> *irA_r_fix, int _cm_size, int _dc_size);
+
 
 #endif // _XF_STEREO_PIPELINE_CONFIG_H_
 

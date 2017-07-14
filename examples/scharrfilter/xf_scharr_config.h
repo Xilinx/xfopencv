@@ -31,7 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_SCHARR_CONFIG_H_
 #define _XF_SCHARR_CONFIG_H_
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_scharr.hpp"
@@ -45,16 +46,15 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef unsigned uint32_t;
 
-#if RO
-#define IN_TYPE      ap_uint<64>
-#define OUT_TYPE	 ap_uint<64>
-#define NPC1 2
-#endif
+/*  define the input and output types  */
 #if NO
-#define IN_TYPE      ap_uint<8>
-#define OUT_TYPE	 ap_uint<16>
-#define NPC1 0
+#define NPC1 XF_NPPC1
 #endif
 
+#if RO
+#define NPC1 XF_NPPC8
+#endif
+
+void scharr_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgy);
 
 #endif // _XF_SCHARR_CONFIG_H_

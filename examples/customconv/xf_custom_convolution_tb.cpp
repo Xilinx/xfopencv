@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_custom_convolution_config.h"
 
 int main(int argc, char** argv)
@@ -104,82 +104,28 @@ int main(int argc, char** argv)
 		}
 	}
 
-#if NO
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
-#if OUT_8U
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput,imgOutput,filter_ptr,shift);
+
+	//xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,OUTTYPE,HEIGHT, WIDTH,NPC1>(imgInput,imgOutput,filter_ptr,shift);
+	Filter2d_accel(imgInput,imgOutput,filter_ptr,shift);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
-	out_img.data = imgOutput.copyFrom();
-
-
-#else
-
-
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
-	
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput,imgOutput,filter_ptr,shift);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
-#endif
-
-#endif
-
-#if RO
 
 
-#if OUT_8U
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput,imgOutput,filter_ptr,shift);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	out_img.data = imgOutput.copyFrom();
-
-#else
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput,imgOutput,filter_ptr,shift);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	out_img.data = (unsigned char *)imgOutput.copyFrom();
-
-#endif
-
-
-#endif
 
 	imwrite("out_img.jpg", out_img);
 

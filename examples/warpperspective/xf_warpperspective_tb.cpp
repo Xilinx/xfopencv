@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_warpperspective_config.h"
 
 
@@ -190,66 +190,21 @@ int main(int argc,char **argv){
 
 	imgInput.copyTo(img_gray.data);
 
-#if RO
 
-#if BILINEAR
+	
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
 
-	xFperspective<1,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutput,transform_matrix);
+	perspective_accel(imgInput, imgOutput,transform_matrix);
 
-#if __SDSCC__
+	#if __SDSCC__
 	TIME_STAMP
 	#endif
-
-#elif NN
-
-#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-
-	xFperspective<0,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutput,transform_matrix);
-
-#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-#endif
-
-#elif NO
-
-#if BILINEAR
-
-#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-
-	xFperspective<1,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput,transform_matrix);
-
-#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-#elif NN
-
-#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-
-	xFperspective<0,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput,transform_matrix);
-
-#if __SDSCC__
-	TIME_STAMP
-	#endif
-#endif
-
-#endif
-
+	
 	hls_out_img.data = imgOutput.copyFrom();
 
-
-
+	
 	uchar* out_ptr = (uchar *)hls_out_img.data;
 	uchar* ocv_ref_ptr = (uchar *)ocv_out_img.data;
 	uchar* diff_ptr = (uchar *)diff_img.data;
@@ -281,15 +236,17 @@ int main(int argc,char **argv){
 		}
 	}
 	per_error = 100*(float)pix_cnt/(img_gray.rows*img_gray.cols);
-	printf("Min Error = %d Max Error = %d\n",min_error,max_error);
+	printf("\nMin Error = %d Max Error = %d\n",min_error,max_error);
 	printf("Percentage of pixels above error threshold = %f\n",per_error);
 
-	if(per_error > 2.0f)
-		return 1;
+
 
 	imwrite("testcase_hls.png", hls_out_img);
 	imwrite("testcase_ocv.png", ocv_out_img);
 	imwrite("testcase_diff.png", diff_img);
+
+	if(per_error > 2.0f)
+			return 1;
 
 	return 0;
 }

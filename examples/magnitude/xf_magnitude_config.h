@@ -31,7 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_MAGNITUDE_CONFIG_H_
 #define _XF_MAGNITUDE_CONFIG_H_
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "core/xf_magnitude.hpp"
@@ -45,15 +46,20 @@ typedef unsigned short int  uint16_t;
 
 /*  define the input and output types  */
 #if NO
-#define NPC1 0
-#define IN_T   ap_uint<16>
-#define OUT_T  ap_uint<16>
+#define NPC1 XF_NPPC1
 #endif
 
 #if RO
-#define NPC1 2
-#define IN_T ap_uint<64> // ap_uint128_t
-#define OUT_T ap_uint<64> //ap_uint128_t
+#define NPC1 XF_NPPC8
 #endif
+
+#if L1NORM
+#define NORM_TYPE XF_L1NORM
+#endif
+#if L2NORM
+#define NORM_TYPE XF_L2NORM
+#endif
+
+void magnitude_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst);
 
 #endif  // end of _XF_MAGNITUDE_CONFIG_H_

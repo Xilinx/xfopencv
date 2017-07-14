@@ -31,7 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 
-
+#include "xf_headers.h"
 #include "xf_sobel_config.h"
 
 
@@ -93,25 +93,33 @@ int main(int argc, char** argv)
 	imwrite("out_ocvy.jpg", c_grad_y_1);
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	IN_TYPE *src_ptr = (IN_TYPE *)in_gray.data;
-	OUT_TYPE *dst_ptrx = (OUT_TYPE *)hls_grad_x.data;
-	OUT_TYPE  *dst_ptry = (OUT_TYPE  *)hls_grad_y.data;
+#if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
+	ap_uint<8> *src_ptr = (ap_uint<8> *)in_gray.data;
+	ap_uint<16> *dst_ptrx = (ap_uint<16> *)hls_grad_x.data;
+	ap_uint<16>  *dst_ptry = (ap_uint<16>  *)hls_grad_y.data;
+#elif (FILTER_WIDTH == 7)
+	ap_uint<8> *src_ptr = (ap_uint<8> *)in_gray.data;
+	ap_uint<32> *dst_ptrx = (ap_uint<32> *)hls_grad_x.data;
+	ap_uint<32>  *dst_ptry = (ap_uint<32>  *)hls_grad_y.data;
+#endif
 	unsigned short height = in_gray.rows;
 	unsigned short width = in_gray.cols;
 
-#if (FILTER_WIDTH != 7)
 
-#if NO
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputy(in_gray.rows,in_gray.cols);
+	xF::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
+	xF::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutputx,imgOutputy);
+
+	//xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_TYPE,OUT_TYPE,HEIGHT, WIDTH,NPC1>(imgInput, imgOutputx,imgOutputy);
+
+	sobel_accel(imgInput, imgOutputx,imgOutputy);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
@@ -120,49 +128,6 @@ int main(int argc, char** argv)
 	hls_grad_y.data = (unsigned char *)imgOutputy.copyFrom();
 
 
-#endif
-#if RO
-
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutputy(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutputx,imgOutputy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-	hls_grad_x.data = (unsigned char *)imgOutputx.copyFrom();
-	hls_grad_y.data = (unsigned char *)imgOutputy.copyFrom();
-
-#endif
-
-#else
-
-
-#if NO
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> imgOutputy(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutputx,imgOutputy);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-	hls_grad_x.data = (unsigned char *)imgOutputx.copyFrom();
-	hls_grad_y.data = (unsigned char *)imgOutputy.copyFrom();
-#endif
-
-#endif
 
 	imwrite("out_hlsx.jpg", hls_grad_x);
 	imwrite("out_hlsy.jpg", hls_grad_y);

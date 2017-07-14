@@ -27,6 +27,7 @@
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
+#include "xf_headers.h"
 #include "xf_pyr_dense_optical_flow_config.h"
 
 /* Color Coding */
@@ -95,9 +96,9 @@ void getPseudoColorInt (IN_TYPE pix, float fx, float fy, rgba_t& rgba)
 
 
 
-void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[5] , xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[5] , int pyr_h[5], int pyr_w[5])
+void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS] , xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS] , int pyr_h[NUM_LEVELS], int pyr_w[NUM_LEVELS])
 {	                                                                              
-	for(int l=0; l<5; l++)
+	for(int l=0; l<NUM_LEVELS; l++)
 	{
 		mat_imagepyr1[l].rows = pyr_h[l];
 		mat_imagepyr1[l].cols = pyr_w[l];
@@ -124,14 +125,7 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 	#endif
 	for(int pyr_comp=0;pyr_comp<NUM_LEVELS-1; pyr_comp++)
 	{
-	#pragma SDS async(1)
-	#pragma SDS resource(1)
-		xFPyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr1[pyr_comp], mat_imagepyr1[pyr_comp+1]);
-	#pragma SDS async(2)
-	#pragma SDS resource(2)
-		xFPyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr2[pyr_comp], mat_imagepyr2[pyr_comp+1]);
-	#pragma SDS wait(1)
-	#pragma SDS wait(2)	
+		pyr_dense_optical_flow_pyr_down_accel(mat_imagepyr1, mat_imagepyr2);
 	}
 	
 	bool flag_flowin = 1;
@@ -160,7 +154,7 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 					flow.rows = pyr_h[l];
 					flow.cols = pyr_w[l];
 					flow.size = pyr_h[l]*pyr_w[l];
-					xFDensePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(mat_imagepyr1[l], mat_imagepyr2[l], flow_iter, flow, l, scale_up_flag, scale_in);
+					pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow_iter, flow, l, scale_up_flag, scale_in);
 					flag_flowin = 0;
 				}
 				else
@@ -168,7 +162,7 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 					flow_iter.rows = pyr_h[l];
 					flow_iter.cols = pyr_w[l];
 					flow_iter.size = pyr_h[l]*pyr_w[l];
-					xFDensePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(mat_imagepyr1[l], mat_imagepyr2[l], flow, flow_iter, l, scale_up_flag, scale_in);
+					pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow, flow_iter, l, scale_up_flag, scale_in);
 					flag_flowin = 1;
 				}
 		}//end iterative coptical flow computation
@@ -217,12 +211,12 @@ int main (int argc, char **argv) {
 		return -1;
 	}
 	//allocating memory spaces for all the hardware operations
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[5];
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[5];
+	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
+	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
 	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
 	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
 	
-	for(int i=0; i<5 ; i++)
+	for(int i=0; i<NUM_LEVELS ; i++)
 	{
 		imagepyr1[i].init(HEIGHT,WIDTH);
 		imagepyr2[i].init(HEIGHT,WIDTH);
@@ -256,7 +250,7 @@ int main (int argc, char **argv) {
 	cv::Mat gly (im0.size(), CV_32F, cv::Scalar::all(0));
 	/***********************************************************************************/
 	//Setting image sizes for each pyramid level
-	int pyr_w[5], pyr_h[5];
+	int pyr_w[NUM_LEVELS], pyr_h[NUM_LEVELS];
 	pyr_h[0] = im0.rows;
 	pyr_w[0] = im0.cols;
 	for(int lvls=1; lvls< NUM_LEVELS; lvls++)

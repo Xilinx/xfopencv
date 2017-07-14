@@ -31,7 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_SOBEL_CONFIG_H_
 #define _XF_SOBEL_CONFIG_H_
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_sobel.hpp"
@@ -67,36 +68,25 @@ typedef unsigned int uint32_t;
 
 #if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
 #if RO
-#define IN_TYPE      ap_uint<64>
-#define OUT_TYPE     ap_uint<64>
-#define NPC1 3
-#define NPC2 2
-#define NPC3 0
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE     XF_16UC1
+#define NPC1 XF_NPPC8
 #endif
 #if NO
-#define IN_TYPE      ap_uint<8>
-#define OUT_TYPE	 ap_uint<16>
-#define NPC1 0
-#define NPC2 0
-#define NPC3 0
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE	XF_16UC1
+#define NPC1 XF_NPPC1
 #endif
 #endif
 
 #if (FILTER_WIDTH == 7)
-#if RO
-#define IN_TYPE      ap_uint<64>
-#define OUT_TYPE	 ap_uint<64>
-#define NPC1 3
-#define NPC2 0
-#define NPC3 1
-#endif
 #if NO
-#define IN_TYPE      ap_uint<8>
-#define OUT_TYPE	 ap_uint<32>
-#define NPC1 0
-#define NPC2 0
-#define NPC3 0
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE     XF_32UC1
+#define NPC1 XF_NPPC1
 #endif
 #endif
+
+void sobel_accel(xF::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
 
 #endif //  _XF_SOBEL_CONFIG_H_

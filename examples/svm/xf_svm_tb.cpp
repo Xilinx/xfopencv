@@ -27,9 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
 
+#include "xf_headers.h"
 #include "xf_svm_config.h"
 
 
@@ -81,7 +80,7 @@ int main()
 #if __SDSCC__
 	TIME_STAMP_INIT
 #endif
-	xFSVM<XF_16SC1,XF_16SC1,XF_32SC1,1,IN_ARRAY_SIZE_1, 1, IN_ARRAY_SIZE_2, XF_NPPC1, NO_OF_KERNEL_ELEMENTS>(Input1, Input2, ind1,ind2, frac1, frac2, n, &out_frac, &resultFIX);
+	svm_accel(Input1, Input2, ind1,ind2, frac1, frac2, n, out_frac, resultFIX);
 #if __SDSCC__
 	TIME_STAMP
 #endif

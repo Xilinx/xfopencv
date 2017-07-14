@@ -34,12 +34,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "ap_int.h"
-
-
-
-#include "hls_stream.h"
-#include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_custom_convolution.hpp"
@@ -54,6 +48,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* set the height and width */
 #define 	HEIGHT 		1080
 #define 	WIDTH  		1920
+
+#if RO
+#define NPC1				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPC1				XF_NPPC1
+#endif
+
+#if OUT_8U
+#define OUTTYPE XF_8UC1
+#endif
+
+#if OUT_16S
+#define OUTTYPE XF_16SC1
+#endif
+
+void Filter2d_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift);
 
 
 #endif  // end of _XF_CUSTOM_CONV_CONFIG_H_

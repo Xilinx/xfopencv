@@ -31,7 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_OTSUTHRESHOLD_CONFIG_H_
 #define _XF_OTSUTHRESHOLD_CONFIG_H_
 
-#include "xf_headers.h"
+#include "ap_int.h"
+#include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_otsuthreshold.hpp"
@@ -48,14 +49,17 @@ typedef unsigned char 	uint8_t;
 
 
 #if NO
+#define NPPC XF_NPPC1
 #define IN_TYPE		ap_uint<8>
 #define NPC1 0
 #endif
 
 #if RO
+#define NPPC XF_NPPC8
 #define IN_TYPE		ap_uint<64>
 #define NPC1 3
 #endif
 
+void otsuthreshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> &imgInput, unsigned char &Otsuval);
 
 #endif

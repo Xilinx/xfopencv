@@ -34,7 +34,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_headers.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "features/xf_harris.hpp"
@@ -45,10 +44,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #if RO
-#define NPIX				3
-#endif
-#if NO
-#define NPIX				0
+#define NPIX				XF_NPPC8
+#endif                      
+#if NO                      
+#define NPIX				XF_NPPC1
 #endif
 
 #define WIDTH 				1920
@@ -62,6 +61,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if NO
 #define IN_TYPE 			ap_uint<8>
 #endif
-
+void harris_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src, ap_uint<32> *list, unsigned short Thresh, unsigned short k, uint32_t *nCorners);
 
 #endif

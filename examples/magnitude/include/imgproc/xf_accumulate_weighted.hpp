@@ -42,7 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-int auAccumulateWeightedKernel(
+int AccumulateWeightedKernel(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
@@ -89,14 +89,14 @@ int auAccumulateWeightedKernel(
 }
 
 template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-int xFAccumulateWeighted(
+void kernel_process(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
 		float _alpha,uint16_t height,uint16_t width)
 {
 
-//#pragma HLS license key=IPAUVIZ_CV_BASIC
+
 	width = width  >> XF_BITSHIFT(NPC);
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
 			"NPC must be XF_NPPC1 or XF_NPPC8");
@@ -108,7 +108,7 @@ int xFAccumulateWeighted(
 	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
 
 
-	 auAccumulateWeightedKernel<ROWS,COLS,NPC,DEPTH_SRC,DEPTH_DST,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>
+	 AccumulateWeightedKernel<ROWS,COLS,NPC,DEPTH_SRC,DEPTH_DST,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>
 			 (_src1, _src2, _dst, _alpha, height, width);
 
 
@@ -145,7 +145,7 @@ void xFaccumulateWeighted(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T,
 		}
 
 
-		xFAccumulateWeighted<ROWS, COLS,NPC ,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC)>(_src1, _src2, _dst,alpha,src1.rows, src1.cols);
+		kernel_process<ROWS, COLS,NPC ,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC)>(_src1, _src2, _dst,alpha,src1.rows, src1.cols);
 
 		for(int i=0; i<dst.rows;i++)
 		{

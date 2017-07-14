@@ -31,7 +31,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_STEREOBM_CONFIG_H_
 #define _XF_STEREOBM_CONFIG_H_
 
-#include "xf_headers.h"
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
@@ -41,5 +40,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* config width and height */
 #define XF_WIDTH 	1920
 #define XF_HEIGHT	1080
+
+void stereolbm_accel(xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat, xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, xF::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat, xF::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state);
 
 #endif // _XF_STEREOBM_CONFIG_H_

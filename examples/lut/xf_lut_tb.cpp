@@ -28,7 +28,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
+#include "xf_headers.h"
 #include "xf_lut_config.h"
 
 
@@ -70,34 +70,22 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
 
-#if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 	#if __SDSCC__
 	TIME_STAMP_INIT
 	#endif
-	xFLUT< XF_8UC1, HEIGHT, WIDTH, XF_NPPC1 >(imgInput,imgOutput,lut_ptr);
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
-	out_img.data = imgOutput.copyFrom();
-#endif
-#if RO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_gray.rows,in_gray.cols);
 
-	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
-	xFLUT< XF_8UC1, HEIGHT, WIDTH, XF_NPPC8 >(imgInput,imgOutput,lut_ptr);
+	lut_accel(imgInput,imgOutput,lut_ptr);
+
 	#if __SDSCC__
 	TIME_STAMP
 	#endif
 	out_img.data = imgOutput.copyFrom();
-#endif
+
 
 
 	imwrite("out_img.jpg", out_img);

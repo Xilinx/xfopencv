@@ -33,6 +33,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <sstream>
+#include <fstream>
 
 #if __SDSCC__
 #undef __ARM_NEON__

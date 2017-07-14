@@ -33,7 +33,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include <ap_int.h>
-#include "xf_headers.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
@@ -46,6 +45,19 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* set the height and width */
 #define HEIGHT 1080
 #define WIDTH  1920
+#if NO
+#define NPC1 XF_NPPC1
+#endif
+#if RO
+#define NPC1 XF_NPPC8
+#endif
+
+#if T_8U
+void arithm_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+#endif
+#if T_16S
+void arithm_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+#endif
 
 
 #endif // end of _XF_ARITHM_CONFIG_H_

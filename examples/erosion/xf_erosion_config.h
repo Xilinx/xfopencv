@@ -32,7 +32,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_EROSION_CONFIG_H_
 
 
-#include "xf_headers.h"
+#include "hls_stream.h"
+#include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 #include "imgproc/xf_erosion.hpp"
@@ -46,13 +47,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HEIGHT	1080
 
 
-#if RO
-#define STRM_TYPE  ap_uint<64>
-#define NPC1 3
-#endif
+
+/*  define the input and output types  */
 #if NO
-#define STRM_TYPE  ap_uint<8>
-#define NPC1 0
+#define NPC1 XF_NPPC1
 #endif
+
+#if RO
+#define NPC1 XF_NPPC8
+#endif
+
+void erosion_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst);
 
 #endif // _XF_EROSION_CONFIG_H_

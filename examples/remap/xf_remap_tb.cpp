@@ -27,7 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-
+#include "xf_headers.h"
 #include "xf_remap_config.h"
 
 using namespace std;
@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 #if __SDSCC__
 		TIME_STAMP_INIT
 #endif
-	xFRemap<XF_WIN_ROWS>(inMat,remappedMat,mapxMat,mapyMat,XF_REMAP_INTERPOLATION);
+	remap_accel(inMat,remappedMat,mapxMat,mapyMat,XF_REMAP_INTERPOLATION);
 #if __SDSCC__
 		TIME_STAMP
 #endif

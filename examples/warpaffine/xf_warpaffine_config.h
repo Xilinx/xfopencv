@@ -32,7 +32,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_AFFINE_CONFIG_H
 
 #include "hls_stream.h"
-#include "xf_headers.h"
 #include "xf_config_params.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
@@ -51,6 +50,10 @@ typedef unsigned short int uint16_t;
 #define SCALEVAL 	7 		// Range of scaleval is 0.25-8
 #define ANGLE 		(45)			// angle in degrees
 
-
-
+#if BILINEAR
+#define INTER_POLATION XF_INTERPOLATION_BILINEAR
+#else
+#define INTER_POLATION XF_INTERPOLATION_NN
+#endif
+void warpaffine_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgOutput,float *transform_matrix);
 #endif
