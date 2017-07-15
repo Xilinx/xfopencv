@@ -1,4 +1,4 @@
-APPSOURCES =xf_channel_combine_tb.cpp xf_channel_combine_tb.cpp
+APPSOURCES =xf_channel_combine_tb.cpp xf_channel_combine_accel.cpp
 EXECUTABLE = xfChannelCombine.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
