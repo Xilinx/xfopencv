@@ -1,9 +1,9 @@
-APPSOURCES = xf_dense_npyr_optical_flow_tb.cpp 
+APPSOURCES = xf_dense_npyr_optical_flow_tb.cpp xf_dense_npyr_optical_flow_accel.cpp
 EXECUTABLE = lknpyrof.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFDenseNonPyrLKOpticalFlow <25, 0, 2160, 3840, 1>" xf_dense_npyr_optical_flow_tb.cpp -files ./include/imgproc/xf_dense_npyr_optical_flow.hpp -clkid 2 -sds-end
+-sds-hw "xFDenseNonPyrLKOpticalFlow <25, 0, 2160, 3840, 1>" xf_dense_npyr_optical_flow_accel.cpp -files ./include/imgproc/xf_dense_npyr_optical_flow.hpp -clkid 2 -sds-end
 
 
 CC = sds++ ${SDSCC_FLAGS}

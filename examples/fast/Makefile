@@ -1,9 +1,9 @@
-APPSOURCES = xf_fast_tb.cpp 
+APPSOURCES = xf_fast_tb.cpp xf_fast_accel.cpp 
 EXECUTABLE = fast.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFFAST<1,1024,0,1080, 1920,1>" xf_fast_tb.cpp -files ./include/features/xf_fast.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFFAST<1,1024,0,1080, 1920,1>" xf_fast_accel.cpp -files ./include/features/xf_fast.hpp -clkid 2 -sds-end -dmclkid 2
 #
 CC = sds++ ${SDSCC_FLAGS}
 

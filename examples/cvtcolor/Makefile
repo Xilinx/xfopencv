@@ -1,9 +1,9 @@
-APPSOURCES = xf_cvt_color_tb.cpp 
+APPSOURCES = xf_cvt_color_tb.cpp xf_cvt_color_accel.cpp 
 EXECUTABLE = color.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFiyuv2nv12<0, 6, 1080, 1920, 1,1>" xf_cvt_color_tb.cpp -files ./include/imgproc/xf_cvt_color.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xFiyuv2nv12<0, 6, 1080, 1920, 1,1>" xf_cvt_color_accel.cpp -files ./include/imgproc/xf_cvt_color.hpp -clkid 2 -sds-end -dmclkid 2\
 
 CC = sds++ ${SDSCC_FLAGS}
 

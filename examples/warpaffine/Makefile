@@ -1,9 +1,9 @@
-APPSOURCES = xf_warpaffine_tb.cpp xf_warpaffine_cref.cpp
+APPSOURCES = xf_warpaffine_tb.cpp xf_warpaffine_cref.cpp xf_warpaffine_accel.cpp
 EXECUTABLE = warpaffine.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFwarpAffine<1, 0, 1080, 1920,1>" xf_warpaffine_tb.cpp -files ./include/imgproc/xf_warpaffine.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xFwarpAffine<1, 0, 1080, 1920,1>" xf_warpaffine_accel.cpp -files ./include/imgproc/xf_warpaffine.hpp -clkid 2 -sds-end -dmclkid 2\
 
 CC = sds++ ${SDSCC_FLAGS}
 

@@ -1,8 +1,8 @@
-APPSOURCES =xf_channel_combine_tb.cpp
+APPSOURCES =xf_channel_combine_tb.cpp xf_channel_combine_tb.cpp
 EXECUTABLE = xfChannelCombine.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFmerge<0,7,1080,1920,1>" xf_channel_combine_tb.cpp -files ./include/imgproc/xf_channel_combine.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFmerge<0,7,1080,1920,1>" xf_channel_combine_accel.cpp -files ./include/imgproc/xf_channel_combine.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

@@ -1,9 +1,9 @@
-APPSOURCES = xf_stereo_pipeline_tb.cpp 
+APPSOURCES = xf_stereo_pipeline_tb.cpp xf_stereo_pipeline_accel.cpp
 EXECUTABLE = stereo_pipeline.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFStereoPipeline<128,1080,1920,0,1,1,9,5,15,48,16>" xf_stereo_pipeline_tb.cpp -files ./include/imgproc/xf_stereo_pipeline.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFStereoPipeline<128,1080,1920,0,1,1,9,5,15,48,16>" xf_stereo_pipeline_accel.cpp -files ./include/imgproc/xf_stereo_pipeline.hpp -clkid 2 -sds-end -dmclkid 2
 
 CC = sds++ ${SDSCC_FLAGS}
 

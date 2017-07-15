@@ -1,8 +1,8 @@
-APPSOURCES =xf_svm_tb.cpp
+APPSOURCES =xf_svm_tb.cpp xf_svm_accel.cpp
 EXECUTABLE = xFSVMTop
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFSVM<2,2,5,1,200,1,200,1,200>" xf_svm_tb.cpp -files ./include/imgproc/xf_svm.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFSVM<2,2,5,1,200,1,200,1,200>" xf_svm_accel.cpp -files ./include/imgproc/xf_svm.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

@@ -1,9 +1,9 @@
-APPSOURCES = xf_box_filter_tb.cpp 
+APPSOURCES = xf_box_filter_tb.cpp xf_box_filter_accel.cpp 
 EXECUTABLE = boxfilter.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFboxfilter<0,3,2,1080, 1920,1>" xf_box_filter_tb.cpp -files ./include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFboxfilter<0,3,2,1080, 1920,1>" xf_box_filter_accel.cpp -files ./include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

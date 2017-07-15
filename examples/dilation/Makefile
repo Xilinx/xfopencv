@@ -1,9 +1,9 @@
-APPSOURCES = xf_dilation_tb.cpp 
+APPSOURCES = xf_dilation_tb.cpp xf_dilation_accel.cpp 
 EXECUTABLE = dilation.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFdilate<0,0,1080, 1920,1>" xf_dilation_tb.cpp -files ./include/imgproc/xf_dilation.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFdilate<0,0,1080, 1920,1>" xf_dilation_accel.cpp -files ./include/imgproc/xf_dilation.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

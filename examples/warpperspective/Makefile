@@ -1,9 +1,9 @@
-APPSOURCES = xf_warpperspective_tb.cpp 
+APPSOURCES = xf_warpperspective_tb.cpp xf_warpperspective_accel.cpp
 EXECUTABLE = warpperspective.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFperspective<1,0,1080, 1920,1>" xf_warpperspective_tb.cpp -files ./include/imgproc/xf_warpperspective.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFperspective<1,0,1080, 1920,1>" xf_warpperspective_accel.cpp -files ./include/imgproc/xf_warpperspective.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

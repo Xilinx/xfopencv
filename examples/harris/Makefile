@@ -1,9 +1,9 @@
-APPSOURCES = xf_harris_tb.cpp 
+APPSOURCES = xf_harris_tb.cpp xf_harris_accel.cpp
 EXECUTABLE = harris.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFCornerHarris<1024,3,3,1,0,1080,1920,1>" xf_harris_tb.cpp -files ./include/features/xf_harris.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFCornerHarris<1024,3,3,1,0,1080,1920,1>" xf_harris_accel.cpp -files ./include/features/xf_harris.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

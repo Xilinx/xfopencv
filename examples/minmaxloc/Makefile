@@ -1,9 +1,9 @@
-APPSOURCES = xf_min_max_loc_tb.cpp 
+APPSOURCES = xf_min_max_loc_tb.cpp xf_min_max_loc_accel.cpp
 EXECUTABLE = min_max.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFminMaxLoc<2,1080, 1920, 1>" xf_min_max_loc_tb.cpp -files ./include/core/xf_min_max_loc.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xFminMaxLoc<2,1080, 1920, 1>" xf_min_max_loc_accel.cpp -files ./include/core/xf_min_max_loc.hpp -clkid 2 -sds-end -dmclkid 2\
 
 CC = sds++ ${SDSCC_FLAGS}
 

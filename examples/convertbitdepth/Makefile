@@ -1,8 +1,8 @@
-APPSOURCES =xf_convert_bitdepth_tb.cpp
+APPSOURCES =xf_convert_bitdepth_tb.cpp xf_convert_bitdepth_accel.cpp
 EXECUTABLE = ConvertBitDepthTop.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFconvertTo<2,5,1080,1920,1>" xf_convert_bitdepth_tb.cpp -files ./include/imgproc/xf_convert_bitdepth.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFconvertTo<2,5,1080,1920,1>" xf_convert_bitdepth_accel.cpp -files ./include/imgproc/xf_convert_bitdepth.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

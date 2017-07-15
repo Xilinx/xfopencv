@@ -1,9 +1,9 @@
-APPSOURCES = xf_stereoBM_tb.cpp 
+APPSOURCES = xf_stereoBM_tb.cpp xf_stereoBM_accel.cpp
 EXECUTABLE = stereoBM.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFStereoBM<1080,1920,0,1,1,11,32,32>" xf_stereoBM_tb.cpp -files ./include/imgproc/xf_stereoBM.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFStereoBM<1080,1920,0,1,1,11,32,32>" xf_stereoBM_accel.cpp -files ./include/imgproc/xf_stereoBM.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

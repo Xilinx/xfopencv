@@ -1,9 +1,9 @@
-APPSOURCES = xf_custom_convolution_tb.cpp 
+APPSOURCES = xf_custom_convolution_tb.cpp xf_custom_convolution_accel.cpp 
 EXECUTABLE = customconv.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFfilter2D<0,3,3,0,0,1080,1920,1>" xf_custom_convolution_tb.cpp -files ./include/imgproc/xf_custom_convolution.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFfilter2D<0,3,3,0,0,1080,1920,1>" xf_custom_convolution_accel.cpp -files ./include/imgproc/xf_custom_convolution.hpp -clkid 2 -sds-end -dmclkid 2
 #xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC1>
 
 CC = sds++ ${SDSCC_FLAGS}

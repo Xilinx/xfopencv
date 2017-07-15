@@ -1,9 +1,9 @@
-APPSOURCES = xf_sobel_tb.cpp 
+APPSOURCES = xf_sobel_tb.cpp xf_sobel_accel.cpp
 EXECUTABLE = sobel.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFSobel<0,3,0,1,1080, 1920,1>" xf_sobel_tb.cpp -files ./include/imgproc/xf_sobel.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xFSobel<0,3,0,1,1080, 1920,1>" xf_sobel_accel.cpp -files ./include/imgproc/xf_sobel.hpp -clkid 2 -sds-end -dmclkid 2
 #sobel<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutputx,imgOutputy);
 
 CC = sds++ ${SDSCC_FLAGS}
