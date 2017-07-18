@@ -76,7 +76,7 @@
 #endif
 
 #if NV122IYUV
-	void cvtcolor_nv122iyuv(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 				imgOutput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2)
+	void cvtcolor_nv122iyuv(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 				&imgOutput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput2)
 	{
 		xFnv122iyuv<XF_8UC1,XF_8UC2,HEIGHT,WIDTH,NPC1,NPC2>(imgInput0,imgInput1,imgOutput0,imgOutput1,imgOutput2);
 	}

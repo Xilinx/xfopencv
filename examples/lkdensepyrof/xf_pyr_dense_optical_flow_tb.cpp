@@ -123,10 +123,7 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 	#if __SDSCC__
 		TIME_STAMP_INIT
 	#endif
-	for(int pyr_comp=0;pyr_comp<NUM_LEVELS-1; pyr_comp++)
-	{
-		pyr_dense_optical_flow_pyr_down_accel(mat_imagepyr1, mat_imagepyr2);
-	}
+	pyr_dense_optical_flow_pyr_down_accel(mat_imagepyr1, mat_imagepyr2);
 	
 	bool flag_flowin = 1;
 	flow.rows = pyr_h[NUM_LEVELS-1];
