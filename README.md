@@ -53,8 +53,9 @@ Date      | Readme Version | Release Notes
 --------  |----------------|-------------------------
 June2017  | 1.0            | Initial Xilinx release <br> -Windows OS support is in Beta.
  #### Known Issues:
-1. Currently, examples only build in Linux OS. Windows OS support is coming soon. For Windows examples, refer to the xfOpenCV examples in the reVision platform, available at here: [reVISION Platform]
-2. Hardware kernels using 128-bit streaming interfaces will experience twice the expected latency. This will be resolved in a coming update. 
+1. Hardware kernels using 128-bit streaming interfaces will experience twice the expected latency. This will be resolved in a coming update. 
+2. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
+
 
 [reVISION Getting Started Guide]: http://www.wiki.xilinx.com/reVISION+Getting+Started+Guide
 [reVISION Platform]: https://secure.xilinx.com/oam/server/obrareq.cgi?wh%3Dwww.xilinx.com%20wu%3D%2Fmember%2Fforms%2Fdownload%2Fdesign-license-xef.html%3Fakdm%3D1%26filename%3Dzcu102-es2-reVISION-2017-1.zip%20wo%3D1%20rh%3Dhttp%3A%2F%2Fwww.xilinx.com%20ru%3D%252Fmember%252Fforms%252Fdownload%252Fdesign-license-xef.html%20rq%3Dakdm%253D1%2526filename%253Dzcu102-es2-reVISION-2017-1.zip
