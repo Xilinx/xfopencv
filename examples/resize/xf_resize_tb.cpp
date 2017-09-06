@@ -58,18 +58,20 @@ int main(int argc,char **argv){
 	out_width = result.cols;
 	out_height = result.rows;
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_height,in_width);
-	xF::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> imgOutput(out_height,out_width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_height,in_width);
+	xf::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> imgOutput(out_height,out_width);
 	imgInput.copyTo(img.data);
 	
 	#ifdef __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
 	
 	resize_accel(imgInput, imgOutput);
 	
 	#ifdef __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
 	result.data = imgOutput.copyFrom();

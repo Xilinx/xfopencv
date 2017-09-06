@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_convert_bitdepth_config.h"
 
-void convert_bitdepth_accel(xF::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> &imgInput, xF::Mat<_DST_T, HEIGHT, WIDTH, _NPC> &imgOutput, ap_int<4> _convert_type, int shift)
+void convert_bitdepth_accel(xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> &imgInput, xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> &imgOutput, ap_int<4> _convert_type, int shift)
 {
-	xFconvertTo<_SRC_T, _DST_T, HEIGHT, WIDTH, _NPC>(imgInput, imgOutput, _convert_type, shift);
+	xf::convertTo<_SRC_T, _DST_T, HEIGHT, WIDTH, _NPC>(imgInput, imgOutput, _convert_type, shift);
 }

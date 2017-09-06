@@ -52,6 +52,6 @@ typedef unsigned short  uint16_t;
 	#define _NPPC XF_NPPC8
 #endif
 
-void histogram_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram);
+void histogram_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram);
 
 #endif // _XF_HISTOGRAM_CONFIG_H_

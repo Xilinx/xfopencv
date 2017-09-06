@@ -60,6 +60,6 @@ typedef unsigned char 	uint8_t;
 #define NPC1 3
 #endif
 
-void otsuthreshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> &imgInput, unsigned char &Otsuval);
+void otsuthreshold_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> &imgInput, unsigned char &Otsuval);
 
 #endif

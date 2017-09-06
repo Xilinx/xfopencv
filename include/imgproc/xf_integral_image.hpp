@@ -37,6 +37,8 @@ typedef unsigned short  uint16_t;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int TC>
 void XFIntegralImageKernel(
 		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _in,
@@ -101,12 +103,12 @@ void xFIntegralImg(
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int SRC_TYPE,int DST_TYPE, int ROWS, int COLS, int NPC>
-void xFIntegralImage(xF::Mat<SRC_TYPE, ROWS, COLS, NPC> & _src_mat, xF::Mat<DST_TYPE, ROWS, COLS, NPC> & _dst_mat)
+void integral(xf::Mat<SRC_TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_TYPE, ROWS, COLS, NPC> & _dst_mat)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -140,7 +142,7 @@ void xFIntegralImage(xF::Mat<SRC_TYPE, ROWS, COLS, NPC> & _src_mat, xF::Mat<DST_
 		}
 	}
 }
-
+}
 
 #endif//_XF_INTEGRAL_IMAGE_HPP_
 

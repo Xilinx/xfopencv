@@ -48,6 +48,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIDTH 	1920
 #define HEIGHT	1080
 
-void mean_stddev_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev);
+void mean_stddev_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev);
 
 #endif // _XF_MEAN_STDDEV_CONFIG_H_

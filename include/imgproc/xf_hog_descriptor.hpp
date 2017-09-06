@@ -43,20 +43,22 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	#include "xf_hog_descriptor_kernel.hpp"
 #endif
 
-#pragma SDS data data_mover("_in_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_desc_mat.data":AXIDMA_SIMPLE)
+namespace xf {
+//#pragma SDS data data_mover("_in_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_desc_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_in_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_desc_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_in_mat.data"[0:"_in_mat.size"])
 #pragma SDS data copy("_desc_mat.data"[0:"_desc_mat.size"])
 template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int BLOCK_HEIGHT, int BLOCK_WIDTH, int CELL_HEIGHT, int CELL_WIDTH, int NOB, int ROWS, int COLS, int SRC_T, int DST_T, int DESC_SIZE, int NPC = XF_NPPC1, int IMG_COLOR, int OUTPUT_VARIANT>
-void xFHOGDescriptor(xF::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xF::Mat<DST_T, 1, DESC_SIZE, NPC> &_desc_mat)
+void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, DESC_SIZE, NPC> &_desc_mat)
 {
 
 #ifdef __SDSVHLS_SYNTHESIS__
 	#include "xf_hog_descriptor_body.inc"
 #endif
 
+}
 }
 
 #endif   // _XF_HOG_DESCRIPTOR_WRAPPER_HPP_

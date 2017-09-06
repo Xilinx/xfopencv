@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_channel_extract_config.h"
 
-void channel_extract_accel(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput, unsigned short channel){
+void channel_extract_accel(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput, unsigned short channel){
 
-		xFextractChannel<XF_8UC4, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, channel);
+		xf::extractChannel<XF_8UC4, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, channel);
 }

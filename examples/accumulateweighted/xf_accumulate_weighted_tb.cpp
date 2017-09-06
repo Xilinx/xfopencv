@@ -87,19 +87,26 @@ int main(int argc, char** argv)
 
 	in_gray1.convertTo(inout_gray, CV_8U);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
 
 	imgInput1.copyTo(in_gray.data);
 	imgInput2.copyTo(inout_gray.data);
+
+
+
 #if __SDSCC__
-TIME_STAMP_INIT
+perf_counter hw_ctr;
+hw_ctr.start();
 #endif
 	accumulate_weighted_accel(imgInput1,imgInput2,imgOutput,alpha);
 #if __SDSCC__
-TIME_STAMP
+hw_ctr.stop();
+uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+
+
 	out_gray.data = (unsigned char*)imgOutput.copyFrom();
 
 

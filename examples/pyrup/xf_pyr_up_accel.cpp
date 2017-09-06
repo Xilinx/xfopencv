@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_pyr_up_config.h"
 
-void pyr_up_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_dst)
+void pyr_up_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_dst)
 {	
-	xFPyrUp<XF_8UC1, HEIGHT, WIDTH,  XF_NPPC1>(_src, _dst);
+	xf::pyrUp<XF_8UC1, HEIGHT, WIDTH,  XF_NPPC1>(_src, _dst);
 }

@@ -42,6 +42,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPxPC XF_NPPC8
 #endif
 
-void median_blur_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst);
+void median_blur_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst);
 	
 #endif  // end of _AU_MEDIAN_BLUR_CONFIG_H_

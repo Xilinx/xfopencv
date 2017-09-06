@@ -106,22 +106,22 @@ int main(int argc, char** argv)
 	unsigned short width = in_gray.cols;
 
 
-	xF::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
+	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
-
-	//xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_TYPE,OUT_TYPE,HEIGHT, WIDTH,NPC1>(imgInput, imgOutputx,imgOutputy);
 
 	sobel_accel(imgInput, imgOutputx,imgOutputy);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
 	hls_grad_x.data = (unsigned char *)imgOutputx.copyFrom();

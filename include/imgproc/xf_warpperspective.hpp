@@ -43,9 +43,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_utility.h"
 #include "core/xf_math.h"
 
-
-
-
 #define TWO_POW_32		4294967296
 
 #define INPUT_BLOCK_LENGTH 		256
@@ -60,6 +57,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define nBLOCKS				(HBLOCKS*VBLOCKS)
 #define BUFSIZE				(BLOCKSIZE_BY8*BLOCKSIZE/nBLOCKS)
 #define BRAMSIZE			(SUBBLOCKSIZE*((SUBBLOCKSIZE>>3)+1)/HBLOCKS)
+
+
+namespace xf{
 
 /*
  * Finding the maximum and minimum of the four input values
@@ -182,7 +182,7 @@ void xFPerspectiveTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) 
 
 
 	if(temp_z_h != 0)
-		temp_z_hnew = xFInverse(temp_z_h,integerbits,&N); 	// calculating 1/temp_z_h
+		temp_z_hnew = xf::Inverse(temp_z_h,integerbits,&N); 	// calculating 1/temp_z_h
 	else
 		temp_z_hnew = 0;
 
@@ -1089,11 +1089,17 @@ template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDT
 void xFWarpPerspective(unsigned long long int *source, unsigned long long int *dst, unsigned short int img_height, unsigned short int img_width, ap_uint<1> interpolation, float *transformation_matrix)
 {
 
-	//#pragma HLS license key=IPAUVIZ_WarpPerspective
-	//	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
-	//			&& "Interpolation supported are AU_INTERPOLATION_NN and AU_INTERPOLATION_BILINEAR");
-	//
-	//	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
+	
+	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
+			&& "Interpolation supported are XF_INTERPOLATION_NN and XF_INTERPOLATION_BILINEAR");
+	
+	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
+#if _WIN32
+
+		assert(((interpolation != XF_INTERPOLATION_BILINEAR))
+			&& "XF_INTERPOLATION_BILINEAR is not supported in windows");
+
+#endif
 
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out1[4][BUFSIZE];
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out2[4][BUFSIZE];
@@ -1308,11 +1314,12 @@ void xFWarpPerspective(unsigned long long int *source, unsigned long long int *d
 #pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, transformation_mat:NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
 template<int INTERPOLATION_TYPE,int SRC_T, int ROWS, int COLS,int NPC>
-void xFperspective(xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _src_mat,xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _dst_mat,float *transformation_matrix)
+void warpPerspective(xf::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _dst_mat,float *transformation_matrix)
 {
 
 	xFWarpPerspective<ROWS,COLS,XF_DEPTH(SRC_T,XF_NPPC8),NPC,XF_WORDWIDTH(SRC_T,XF_NPPC8),XF_WORDWIDTH(SRC_T,XF_NPPC8)>((unsigned long long int*)_src_mat.data,(unsigned long long int*)_dst_mat.data,_src_mat.rows,_src_mat.cols,INTERPOLATION_TYPE,transformation_matrix);
 
+}
 }
 
 #endif

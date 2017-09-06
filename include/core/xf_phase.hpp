@@ -43,6 +43,8 @@ typedef unsigned short  uint16_t;
 #include "common/xf_utility.h"
 #include "core/xf_math.h"
 
+namespace xf{
+
 // to convert the radians value to degrees
 #define XF_NORM_FACTOR 	58671					// (180/PI)  in  Q6.10
 
@@ -102,7 +104,7 @@ void xfPhaseKernel(
 				p = val_src1.range(k + (step - 1), k);		// Get bits from certain range of positions.
 				q = val_src2.range(k + (step - 1), k);		// Get bits from certain range of positions.
 
-				ret = xFAtan2LookupFP(p, q, M1, N1, M2, N2);
+				ret = xf::Atan2LookupFP(p, q, M1, N1, M2, N2);
 
 				if(ret < 0)
 				{
@@ -160,14 +162,14 @@ void xFPhaseComputation(
 #pragma SDS data mem_attribute("_src_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_src_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_matx.data":SEQUENTIAL, "_src_maty.data":SEQUENTIAL,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_matx.data"[0:"_src_matx.size"], "_src_maty.data"[0:"_src_maty.size"],"_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int RET_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void xFphase(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xF::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
+void phase(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
 {
 	uint16_t imgwidth = _src_matx.cols >> XF_BITSHIFT(NPC);
 
@@ -207,6 +209,6 @@ void xFphase(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xF::Mat<DST_T, ROWS, CO
 	}
 }
 
-
+}
 
 #endif

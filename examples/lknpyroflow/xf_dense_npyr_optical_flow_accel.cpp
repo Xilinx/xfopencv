@@ -29,8 +29,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_dense_npyr_optical_flow_config.h"
 
-void dense_non_pyr_of_accel(xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy)
+void dense_non_pyr_of_accel(xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy)
 {	
-	xFDenseNonPyrLKOpticalFlow<KMED, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(buf0, buf1, flowx, flowy);
+	xf::DenseNonPyrLKOpticalFlow<KMED, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(buf0, buf1, flowx, flowy);
 }
 

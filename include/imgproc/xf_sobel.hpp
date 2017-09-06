@@ -40,6 +40,8 @@ typedef unsigned int  uint32_t;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 /*****************************************************************
  * 		                 SobelFilter3x3
  *****************************************************************
@@ -1278,13 +1280,13 @@ void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
 #pragma SDS data mem_attribute("_dst_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_matx.data":SEQUENTIAL,"_dst_maty.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_matx.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_matx.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_matx.data"[0:"_dst_matx.size"],"_dst_maty.data"[0:"_dst_maty.size"])
 
 template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void xFSobel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
+void Sobel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
 {
 	
 
@@ -1324,6 +1326,7 @@ void xFSobel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COL
 		}
 	}
 
+}
 }
 // xFSobelFilter
 #endif // _XF_SOBEL_HPP_

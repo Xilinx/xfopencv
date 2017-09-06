@@ -107,25 +107,27 @@ int main(int argc, char** argv)
 
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
-
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	#endif
+	#if __SDSCC__
+	hw_ctr.start();
 	#endif
 
 	//xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,OUTTYPE,HEIGHT, WIDTH,NPC1>(imgInput,imgOutput,filter_ptr,shift);
 	Filter2d_accel(imgInput,imgOutput,filter_ptr,shift);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
 	#endif
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
-
-
-
+	#if __SDSCC__
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	imwrite("out_img.jpg", out_img);
 

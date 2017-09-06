@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_warpperspective_config.h"
 
-void perspective_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst,float *transform_matrix)
+void perspective_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst,float *transform_matrix)
 {
 	
-	xFperspective<TRANSTYPE,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,transform_matrix);
+	xf::warpPerspective<TRANSTYPE,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,transform_matrix);
 }

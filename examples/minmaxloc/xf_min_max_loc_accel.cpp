@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_min_max_loc_config.h"
 
-void min_max_loc_accel(xF::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> &imgInput, int32_t &min_value, int32_t &max_value, unsigned short &_min_locx, unsigned short &_min_locy, unsigned short &_max_locx, unsigned short &_max_locy)
+void min_max_loc_accel(xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> &imgInput, int32_t &min_value, int32_t &max_value, unsigned short &_min_locx, unsigned short &_min_locy, unsigned short &_max_locx, unsigned short &_max_locy)
 {
-	xFminMaxLoc<PTYPE, HEIGHT, WIDTH, _NPPC>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
+	xf::minMaxLoc<PTYPE, HEIGHT, WIDTH, _NPPC>(imgInput, &min_value, &max_value, &_min_locx, &_min_locy, &_max_locx, &_max_locy);
 }

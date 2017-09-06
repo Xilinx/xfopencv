@@ -51,7 +51,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OUT_TYPE ap_uint<64>
 #endif
 
-void channel_combine_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput);
+void channel_combine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput);
 
 
 #endif//_XF_CHANNEL_COMBINE_CONFIG_H_

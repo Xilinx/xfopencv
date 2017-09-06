@@ -38,7 +38,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef unsigned char uchar;
 
 
-
+namespace xf{
 
 /****************************************************************************************
  * xFApplyCustomFilter: Applies the user defined kernel to the input image.
@@ -717,14 +717,12 @@ void xFCustomConvolution(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _src,
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,filter:RANDOM,"_dst_mat.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
 
 
 template<int BORDER_TYPE,int FILTER_WIDTH,int FILTER_HEIGHT, int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void xFfilter2D(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,short int filter[FILTER_HEIGHT*FILTER_WIDTH],unsigned char _shift)
+void filter2D(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,short int filter[FILTER_HEIGHT*FILTER_WIDTH],unsigned char _shift)
 {
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
@@ -774,6 +772,7 @@ void xFfilter2D(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, 
 		}
 	}
 
+}
 }
 #endif // _XF_CUSTOM_CONVOLUTION_HPP_
 

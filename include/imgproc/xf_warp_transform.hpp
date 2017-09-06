@@ -47,6 +47,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ROUND_DELTA (1 << (AB_BITS - INTER_BITS - 1))
 typedef float image_comp;
 
+namespace xf{
+
 //function to store the image in 4 memories of a combined size of (0:STORE_LINES-1,0:COLS-1)
 template<int COLS, int STORE_LINES, int DEPTH, int NPC>
 void store_EvOd_image1(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, XF_TNAME(DEPTH,NPC) store1_pt_2EvR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2EvR_OdC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_OdC[(STORE_LINES>>2)][COLS])
@@ -490,13 +492,13 @@ return 0;
 
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"])
 #pragma SDS data copy("_dst_mat.data"[0:"_dst_mat.size"])
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
 #pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC>
-void xFWarpTransform(xF::Mat<TYPE,ROWS,COLS,NPC> & _src_mat, xF::Mat<TYPE,ROWS,COLS,NPC> & _dst_mat, float P_matrix[9])
+void warpTransform(xf::Mat<TYPE,ROWS,COLS,NPC> & _src_mat, xf::Mat<TYPE,ROWS,COLS,NPC> & _dst_mat, float P_matrix[9])
 {
 	#pragma HLS INLINE OFF
 	#pragma HLS DATAFLOW
@@ -526,6 +528,7 @@ xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, 
 			*(_dst_mat.data + i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j) = out_stream.read();
 		}
 	}
+}
 }
 
 #endif

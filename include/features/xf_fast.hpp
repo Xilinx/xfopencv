@@ -1,9 +1,39 @@
+/***************************************************************************
+Copyright (c) 2016, Xilinx, Inc.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, 
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, 
+this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, 
+this list of conditions and the following disclaimer in the documentation 
+and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors 
+may be used to endorse or promote products derived from this software 
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+***************************************************************************/
+
+#ifndef _XF_FAST_HPP_
+#define _XF_FAST_HPP_
 
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
-
-
 
 #define __MIN(a,b) ((a < b) ? a : b)
 #define __MAX(a,b) ((a > b) ? a : b)
@@ -11,6 +41,7 @@
 #define PSize       16
 #define NUM         25
 
+namespace xf{
 
 template<int NPC,int WORDWIDTH_DST,int MAXSIZE,int TC>
 void xFFillList(ap_uint<32> listcorners[MAXSIZE],XF_SNAME(WORDWIDTH_DST) tmp_cor_bufs[][MAXSIZE>>XF_BITSHIFT(NPC)], uint16_t *cor_cnts, uint32_t *nCorners )
@@ -1032,14 +1063,14 @@ void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
 
 
 
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern(list:SEQUENTIAL)
 #pragma SDS data copy ("_src_mat.data"[0:"_src_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
 template<int NMS,int MAXPNTS,int SRC_T,int ROWS, int COLS,int NPC=1>
-void xFFAST(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,ap_uint<32> list[MAXPNTS],unsigned char _threshold,uint32_t *nCorners)
+void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,ap_uint<32> list[MAXPNTS],unsigned char _threshold,uint32_t *nCorners)
 {
 
 #pragma HLS inline off
@@ -1065,4 +1096,5 @@ void xFFAST(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,ap_uint<32> list[MAXPNTS]
 	xFFastCornerDetection<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_32UW,MAXPNTS,NMS>(_src,list,_src_mat.rows,_src_mat.cols,_threshold,nCorners);
 
 }
-
+}
+#endif //_XF_FAST_HPP_

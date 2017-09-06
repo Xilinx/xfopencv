@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_histogram_config.h"
 
-void histogram_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram)
+void histogram_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram)
 {
-	xFcalcHist<XF_8UC1, HEIGHT, WIDTH, _NPPC> (imgInput, histogram);
+	xf::calcHist<XF_8UC1, HEIGHT, WIDTH, _NPPC> (imgInput, histogram);
 }

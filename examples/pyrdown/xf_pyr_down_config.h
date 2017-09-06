@@ -36,5 +36,5 @@
 #include "common/xf_common.h"
 #include "imgproc/xf_pyr_down.hpp"
 
-void pyr_down_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_dst);
+void pyr_down_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &_dst);
 #endif

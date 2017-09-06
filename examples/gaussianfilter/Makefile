@@ -3,7 +3,7 @@ EXECUTABLE = gaussian.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFGaussianBlur<3,0,0,1080,1920,1>" xf_gaussian_filter_accel.cpp -files ./include/imgproc/xf_gaussian_filter.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::GaussianBlur<3,0,0,1080,1920,1>" xf_gaussian_filter_accel.cpp -files ./include/imgproc/xf_gaussian_filter.hpp -clkid 2 -sds-end -dmclkid 2\
 
 
 CC = sds++ ${SDSCC_FLAGS}

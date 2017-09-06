@@ -69,25 +69,28 @@ int main(int argc, char **argv)
 	uint16_t width = in_gray1.cols;
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray2.rows,in_gray2.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput3(in_gray3.rows,in_gray3.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray2.rows,in_gray2.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput3(in_gray3.rows,in_gray3.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
 	imgInput3.copyTo(in_gray3.data);
 	imgInput4.copyTo(in_gray4.data);
+#if __SDSCC__
+	perf_counter hw_ctr;
 
-#ifdef __SDSCC
-	TIME_STAMP_INIT
+
+	hw_ctr.start();
 #endif
 		channel_combine_accel(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
-#ifdef __SDSCC
-	TIME_STAMP
-#endif
+#if __SDSCC__
+	hw_ctr.stop();
 
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 	out_img.data = imgOutput.copyFrom();
 
 	// output image

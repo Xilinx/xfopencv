@@ -119,18 +119,21 @@ cv::RNG rng;
 	cv::imwrite("input.png",image_input);
 	image_output.create(image_input.rows,image_input.cols,image_input.depth());
 
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _src(image_input.rows,image_input.cols);
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _dst(image_input.rows,image_input.cols);
-	
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _src(image_input.rows,image_input.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _dst(image_input.rows,image_input.cols);
+
 	_src.copyTo(image_input.data);
 	#if __SDSCC__
-		TIME_STAMP_INIT
+	perf_counter hw_ctr;
+		hw_ctr.start();
 	#endif
 	warp_transform_accel(_src, _dst, R);
 	#if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	image_output.data = _dst.copyFrom();
+
 	cv::imwrite("output.png",image_output);
 								
 	cv::Mat opencv_image;

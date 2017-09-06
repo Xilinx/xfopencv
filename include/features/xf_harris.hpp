@@ -46,6 +46,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_max_suppression.hpp"
 #include "xf_pack_corners.hpp"
 
+namespace xf{
+
 /************************************************************************
  * xFCornerHarrisDetector : CornerHarris function to find corners in the image
  ************************************************************************/
@@ -172,14 +174,14 @@ void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 }
 // xFCornerHarrisTop
 //
-#pragma SDS data data_mover("src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src.data":SEQUENTIAL)
 #pragma SDS data access_pattern(points:SEQUENTIAL)
 #pragma SDS data copy ("src.data"[0:"src.size"])
 #pragma SDS data mem_attribute("src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
 template<int MAXPNTS,int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int SRC_T,int ROWS, int COLS,int NPC=1>
-void xFCornerHarris(xF::Mat<SRC_T, ROWS, COLS, NPC> & src,ap_uint<32> points[MAXPNTS],uint16_t threshold, uint16_t k, uint32_t *nCorners)
+void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,ap_uint<32> points[MAXPNTS],uint16_t threshold, uint16_t k, uint32_t *nCorners)
 {
 
 #pragma HLS interface ap_fifo port=points
@@ -205,6 +207,7 @@ void xFCornerHarris(xF::Mat<SRC_T, ROWS, COLS, NPC> & src,ap_uint<32> points[MAX
 
 	xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS, MAXPNTS>(_src, points, src.rows, src.cols, threshold, k,nCorners);
 
+}
 }
 
 #endif // _XF_HARRIS_HPP_

@@ -43,6 +43,8 @@ typedef unsigned short  uint16_t;
 #include "common/xf_utility.h"
 #include "core/xf_math.h"
 
+namespace xf{
+
 /**	
  *  xFMagnitudeKernel : The Gradient Magnitude Computation Kernel.
  *  This kernel takes two gradients in AU_16SP format and computes the
@@ -108,7 +110,7 @@ void xFMagnitudeKernel(
 					tempgx = p * p;
 					tempgy = q * q;
 					result_temp = tempgx + tempgy;
-					int tmp1 = xFSqrt(result_temp);		// Square root of the gradient images
+					int tmp1 = xf::Sqrt(result_temp);		// Square root of the gradient images
 					result = (int16_t)tmp1;
 				}
 				val_dst.range(k + (step - 1), k) = result;
@@ -146,14 +148,14 @@ void xFMagnitudeComputation(
 #pragma SDS data mem_attribute("_src_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_src_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_matx.data":SEQUENTIAL, "_src_maty.data":SEQUENTIAL,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_matx.data"[0:"_src_matx.size"], "_src_maty.data"[0:"_src_maty.size"],"_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void xFmagnitude(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xF::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
+void magnitude(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
 {
 	
 
@@ -192,6 +194,7 @@ void xFmagnitude(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xF::Mat<DST_T, ROWS
 		}
 	}
 
+}
 }
 
 #endif

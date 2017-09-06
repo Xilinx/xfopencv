@@ -3,7 +3,7 @@ EXECUTABLE = magnitude.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFmagnitude<0,2,2,1080, 1920,1>" xf_magnitude_accel.cpp -files ./include/core/xf_magnitude.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::magnitude<0,2,2,1080, 1920,1>" xf_magnitude_accel.cpp -files ./include/core/xf_magnitude.hpp -clkid 2 -sds-end -dmclkid 2
 #magnitude<XF_16SC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC8,0>(imgInputx, imgInputy,imgOutput);
 
 CC = sds++ ${SDSCC_FLAGS}

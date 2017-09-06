@@ -40,9 +40,21 @@
 #include "xf_types.h"
 #if __SDSCC__
 #include "sds_lib.h"
+
+
+class perf_counter
+{
+public:
+     uint64_t tot, cnt, calls;
+     perf_counter() : tot(0), cnt(0), calls(0) {};
+     inline void reset() { tot = cnt = calls = 0; }
+     inline void start() { cnt = sds_clock_counter(); calls++; };
+     inline void stop() { tot += (sds_clock_counter() - cnt); };
+     inline uint64_t avg_cpu_cycles() { std::cout << "elapsed time "<< ((tot+(calls>>1)) / calls) << std::endl; return ((tot+(calls>>1)) / calls); };
+};
 #endif
 
-namespace xF {
+namespace xf {
 
 /*  LOCAL STEREO BLOCK MATCHING UTILITY  */
 template<int WSIZE, int NDISP, int NDISP_UNIT>
@@ -365,7 +377,7 @@ public:
 
 	void copyTo(XF_PTSNAME(T,NPC)* fromData);
 	XF_PTSNAME(T,NPC)* copyFrom();
-
+	unsigned char allocatedFlag; //flag to mark memory allocation in this class
 	int rows, cols,size;               // actual image size
 
 #ifndef __SYNTHESIS__
@@ -392,6 +404,7 @@ inline Mat<T, ROWS, COLS, NPPC>::Mat(int _rows, int _cols, void *_data) {
 	cols = _cols;
 	size = _rows * (_cols >> (XF_BITSHIFT(NPPC)));
 	data = (XF_TNAME(T,NPPC) *)_data;
+	allocatedFlag = 0;
 }
 
 template<int T, int ROWS, int COLS, int NPPC>
@@ -410,6 +423,7 @@ inline Mat<T, ROWS, COLS, NPPC>::Mat(int _sz, int _rows, int _cols) {
 	rows = _rows;
 	cols = _cols;
 	size = _rows * (_cols >> (XF_BITSHIFT(NPPC)));
+	allocatedFlag = 0;
 }
 
 template<int T, int ROWS, int COLS, int NPPC>
@@ -460,13 +474,17 @@ inline void Mat<T, ROWS, COLS, NPPC>::init(int _rows, int _cols) {
 	if (data == NULL) {
 		fprintf(stderr, "\nFailed to allocate memory\n");
 	}
+	else
+	{
+		allocatedFlag = 1;
+	}
 }
 
 template<int SRC_T, int ROWS, int COLS, int NPC>
 inline Mat<SRC_T, ROWS, COLS, NPC>::~Mat() {
 
 #ifndef __SYNTHESIS__
-	if (data != NULL) {
+	if (data != NULL && allocatedFlag == 1) {
 #ifdef __SDSCC__
 		sds_free(data);
 #else

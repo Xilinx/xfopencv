@@ -60,6 +60,6 @@ typedef unsigned short int  uint16_t;
 #define NORM_TYPE XF_L2NORM
 #endif
 
-void magnitude_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst);
+void magnitude_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst);
 
 #endif  // end of _XF_MAGNITUDE_CONFIG_H_

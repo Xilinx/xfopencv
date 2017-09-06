@@ -31,12 +31,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_canny_config.h"
 
-void canny_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xF::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,unsigned char low_threshold,unsigned char high_threshold)
+void canny_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,unsigned char low_threshold,unsigned char high_threshold)
 {
-	xFcanny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE>(_src,_dst,low_threshold,high_threshold);
+	xf::Canny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE>(_src,_dst,low_threshold,high_threshold);
 }
 
-void edgetracing_accel(xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst)
+void edgetracing_accel(xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst)
 {
-	xFEdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(_src,_dst);
+	xf::EdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(_src,_dst);
 }

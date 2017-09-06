@@ -3,7 +3,7 @@ EXECUTABLE = hist_equalize.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFequalizeHist<0,1080,1920,1>" xf_hist_equalize_accel.cpp -files ./include/imgproc/xf_hist_equalize.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::equalizeHist<0,1080,1920,1>" xf_hist_equalize_accel.cpp -files ./include/imgproc/xf_hist_equalize.hpp -clkid 2 -sds-end -dmclkid 2\
 
 CC = sds++ ${SDSCC_FLAGS}
 

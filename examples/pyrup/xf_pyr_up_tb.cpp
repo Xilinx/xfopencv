@@ -48,19 +48,21 @@ int main(int argc, char *argv[]){
 	output_xf.create(output_height,output_width,CV_8UC1);
 	output_diff_xf_cv.create(output_height,output_width,CV_8UC1);
 	
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(input_image.rows,input_image.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(output_height,output_width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(input_image.rows,input_image.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(output_height,output_width);
 	imgInput.copyTo(input_image.data);
 	
 	
 	#if __SDSCC__
-		TIME_STAMP_INIT
+	perf_counter hw_ctr;		
+	hw_ctr.start();
 	#endif
 	
 	pyr_up_accel(imgInput, imgOutput);
 	
 	#if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	output_xf.data = imgOutput.copyFrom();
 	

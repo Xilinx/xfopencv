@@ -35,6 +35,8 @@
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf {
+
 template<int WORDWIDTH_T>
 void xFTransform(int16_t x_out, int16_t y_out,XF_PTNAME(WORDWIDTH_T) A, XF_PTNAME(WORDWIDTH_T) B, XF_PTNAME(WORDWIDTH_T) C,
 		XF_PTNAME(WORDWIDTH_T) D, XF_PTNAME(WORDWIDTH_T) x_const, XF_PTNAME(WORDWIDTH_T) y_const,XF_PTNAME(WORDWIDTH_T) *x_frac,XF_PTNAME(WORDWIDTH_T) *y_frac,int16_t *x_in, int16_t *y_in)
@@ -1224,12 +1226,13 @@ void xFWarpAffine(unsigned long long int *source, unsigned long long int *dst, u
 #pragma SDS data copy(transformation_matrix[0:6])
 
 template<int INTERPOLATION_TYPE,int SRC_T,int ROWS, int COLS, int NPC=1>
-void xFwarpAffine(xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _src, xF::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _dst, float* transformation_matrix)
+void warpAffine(xf::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _src, xf::Mat<SRC_T, ROWS, COLS, XF_NPPC8> & _dst, float* transformation_matrix)
 {
 
 //	printf("kernel execution in .hpp started\n");
 	xFWarpAffine<ROWS,COLS,XF_DEPTH(SRC_T,XF_NPPC8),NPC,XF_WORDWIDTH(SRC_T,XF_NPPC8),XF_WORDWIDTH(SRC_T,XF_NPPC8),XF_32FP> ((unsigned long long int*)_src.data, (unsigned long long int*)_dst.data,_src.rows,_src.cols,INTERPOLATION_TYPE,transformation_matrix);
 
 //	printf("kernel execution in .hpp done\n");
+}
 }
 #endif

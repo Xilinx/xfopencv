@@ -204,7 +204,7 @@ static uint32_t xFUdivResizeDownArea(unsigned short in_n, unsigned short in_d)
 template<int SRC_ROWS,int SRC_COLS,int DEPTH,int NPC,int WORDWIDTH,int DST_ROWS,int DST_COLS,int SRC_TC,int DST_TC>
 void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::stream <XF_TNAME(DEPTH,NPC)> &resize_out, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
 {
-#pragma HLS ALLOCATION instances=xFInverse limit=1 function
+#pragma HLS ALLOCATION instances=xf::Inverse limit=1 function
 #pragma HLS ALLOCATION instances=xFUdivResizeDownArea limit=1 function
 
 	XF_TNAME(DEPTH,NPC) lbuf_in[6][(SRC_COLS>>XF_BITSHIFT(NPC))];
@@ -271,7 +271,7 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 		Xtemp1 = Xtemp0 + Xscale;				//Xtemp0 (16.16)  Xtemp1 (16.16)
 		cellWidth = (Xscale < (((width<<XF_BITSHIFT(NPC))<<16) - Xtemp0) ? Xscale : (((width<<XF_BITSHIFT(NPC))<<16) - Xtemp0));
 		// (WIDTH<<16)-16.16   Xscale (16.16)
-		inv_cellWidth = (xFInverse((uint16_t)(cellWidth>> 4),4,&N)>>(N-16));
+		inv_cellWidth = (xf::Inverse((uint16_t)(cellWidth>> 4),4,&N)>>(N-16));
 		// shifting cellWidth by 4 to convert t0 (4.12) , inv_cellwidth is (0.16)
 
 		offset_temp0 = (Xtemp0>>16) + ((Xtemp0 & 0x0000FFFF)>0?1:0);	// Ceil(Xtemp0)
@@ -327,7 +327,7 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 		Ytemp0 = ((uint64_t)(x)*Yscale);
 		Ytemp1 = (uint64_t)Ytemp0 + Yscale;
 		cellWidth = (Yscale < ((height<<16) - Ytemp0) ? Yscale : ((height<<16) - Ytemp0));
-		inv_cellWidth = (xFInverse((uint16_t)(cellWidth>> 4),4,&N) >> (N-16));
+		inv_cellWidth = (xf::Inverse((uint16_t)(cellWidth>> 4),4,&N) >> (N-16));
 
 		offset_temp0 = (Ytemp0>>16) + ((Ytemp0 & 0x0000FFFF)>0?1:0);
 		offset_temp1 = (Ytemp1>>16);

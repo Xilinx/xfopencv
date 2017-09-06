@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_harris_config.h"
 
-void harris_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src, ap_uint<32> *list, unsigned short Thresh, unsigned short k, uint32_t *nCorners)
+void harris_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src, ap_uint<32> *list, unsigned short Thresh, unsigned short k, uint32_t *nCorners)
 {	
-    xFCornerHarris<MAXCORNERS,FILTER_WIDTH,BLOCK_WIDTH,NMS_RADIUS,XF_8UC1,HEIGHT,WIDTH,NPIX>(_src, list, Thresh, k, nCorners);
+    xf::cornerHarris<MAXCORNERS,FILTER_WIDTH,BLOCK_WIDTH,NMS_RADIUS,XF_8UC1,HEIGHT,WIDTH,NPIX>(_src, list, Thresh, k, nCorners);
 }

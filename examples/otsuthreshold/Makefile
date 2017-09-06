@@ -4,7 +4,7 @@ VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFOtsuThreshold<0,1080,1920,1>" xf_otsuthreshold_accel.cpp -files ./include/imgproc/xf_otsuthreshold.hpp -files ./include/imgproc/xf_histogram.hpp -clkid 2 -sds-end -dmclkid 2 ${VERBOSE}
+-sds-hw "xf::OtsuThreshold<0,1080,1920,1>" xf_otsuthreshold_accel.cpp -files ./include/imgproc/xf_otsuthreshold.hpp -files ./include/imgproc/xf_histogram.hpp -clkid 2 -sds-end -dmclkid 2 ${VERBOSE}
 
 
 CC = sds++ ${SDSCC_FLAGS}

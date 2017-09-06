@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 		frame = cv::imread(nm,1);
 #endif
 
-	xF::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(frame.rows,frame.cols);
+	xf::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(frame.rows,frame.cols);
 
 	for(int f_no = 1; f_no <= no_of_frames; f_no++)
 	{
@@ -154,13 +154,18 @@ int main(int argc, char* argv[])
 		uint8_t max_obj = XF_MAX_OBJECTS;
 
 		printf("starting the kernel...\n");
+		
+
 #if __SDSCC__
-		TIME_STAMP_INIT
+		perf_counter hw_ctr;
+		hw_ctr.start();
 #endif
 		mean_shift_accel(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,max_obj,no_of_iterations);
 #if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+		
 		printf("end of kernel...\n");
 
 		std::cout<<"frame "<<f_no<<":"<<std::endl;

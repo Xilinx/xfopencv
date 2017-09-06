@@ -36,6 +36,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 #define XF_STEP_NEXT 8
 
 
@@ -208,11 +210,11 @@ void xfChannelCombine(
 }
 
 
-#pragma SDS data data_mover("_src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src3.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src4.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src3.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src4.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_src2.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_src3.data":SEQUENTIAL)
@@ -224,7 +226,7 @@ void xfChannelCombine(
 #pragma SDS data copy("_src4.data"[0:"_src4.size"])
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
-void xFmerge(xF::Mat<SRC_T, ROWS, COLS, NPC> &_src1, xF::Mat<SRC_T, ROWS, COLS, NPC> &_src2, xF::Mat<SRC_T, ROWS, COLS, NPC> &_src3, xF::Mat<SRC_T, ROWS, COLS, NPC> &_src4, xF::Mat<DST_T, ROWS, COLS, NPC> &_dst){
+void merge(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src1, xf::Mat<SRC_T, ROWS, COLS, NPC> &_src2, xf::Mat<SRC_T, ROWS, COLS, NPC> &_src3, xf::Mat<SRC_T, ROWS, COLS, NPC> &_src4, xf::Mat<DST_T, ROWS, COLS, NPC> &_dst){
 
 		hls::stream< XF_TNAME(SRC_T, NPC) > _in1;
 		hls::stream< XF_TNAME(SRC_T, NPC) > _in2;
@@ -265,7 +267,7 @@ void xFmerge(xF::Mat<SRC_T, ROWS, COLS, NPC> &_src1, xF::Mat<SRC_T, ROWS, COLS, 
 		}
 	}
 }
-
+}
 
 
 

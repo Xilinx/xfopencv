@@ -100,21 +100,24 @@ int main(int argc, char **argv)
 	////////////////////////////   END OF REFERENCE   ////////////////////////////
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	xF::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(img.rows,img.cols);
+	xf::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(img.rows,img.cols);
 	inMat.copyTo(img.data);
-
+	#ifdef __SDSCC__
+	perf_counter hw_ctr;
+	#endif
 #if REPETITIVE_BLOCKS
-	xF::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_rb);
+	xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_rb);
 #elif NON_REPETITIVE_BLOCKS
-	xF::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_nrb);
+	xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_nrb);
 #endif
 
 #ifdef __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	hog_descriptor_accel(inMat,outMat);
 #ifdef __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 #if REPETITIVE_BLOCKS

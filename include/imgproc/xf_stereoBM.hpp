@@ -42,6 +42,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define __XF_MIN(a,b) a<b?a:b
 
+namespace xf{
+
 template  < unsigned int _Num, unsigned int _I=_Num/2>
 class xFBitWidth
 {
@@ -257,7 +259,7 @@ void xFSADBlockMatching(
 		hls::stream<XF_TNAME(WORDWIDTH_SRC,1)> &left,
 		hls::stream<XF_TNAME(WORDWIDTH_SRC,1)> &right,
 		hls::stream<XF_TNAME(WORDWIDTH_DST,1)>& out,
-		xF::xFSBMState<WSIZE, NDISP, NDISP_UNIT>& state,
+		xf::xFSBMState<WSIZE, NDISP, NDISP_UNIT>& state,
 		short int height, short int width)
 {
 	//create the left and right line buffers.
@@ -565,7 +567,7 @@ template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDIS
 void xFFindStereoCorrespondenceLBMNO_pipeline (hls::stream<XF_TNAME(SRC_T,NPC)> &_left_strm,
 		hls::stream<XF_TNAME(SRC_T,NPC)> &_right_strm,
 		XF_TNAME(DST_T,NPC) *disp_ptr ,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
+		xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
 		short int height, short int width)
 {
 #pragma HLS INLINE
@@ -601,7 +603,7 @@ template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDIS
 void xFFindStereoCorrespondenceLBMNO (XF_TNAME(SRC_T,NPC) *left_ptr,
 		XF_TNAME(SRC_T,NPC) *right_ptr,
 		XF_TNAME(DST_T,NPC) *disp_ptr ,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
+		xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
 		short int height, short int width)
 {
 	hls::stream< XF_TNAME(SRC_T,NPC) > _left_strm;
@@ -644,7 +646,7 @@ template<int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDISP
 void xFFindStereoCorrespondenceLBM_pipeline(hls::stream<XF_TNAME(SRC_T,NPC)> &_left_strm,
 		hls::stream<XF_TNAME(SRC_T,NPC)> &_right_strm,
 		XF_TNAME(DST_T,NPC) *out_ptr,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
+		xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
 		short int height,short int width)
 {
 #pragma HLS INLINE
@@ -668,7 +670,7 @@ template<int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDISP
 void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
 		XF_TNAME(SRC_T,NPC) *right_ptr,
 		XF_TNAME(DST_T,NPC) *out_ptr,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
+		xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
 		short int height,short int width)
 {
 	assert((SRC_T == XF_8UW) && " WORDWIDTH_SRC must be XF_8UW ");
@@ -686,7 +688,7 @@ void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
 }
 
 
-#pragma SDS data data_mover("_left_mat.data":AXIDMA_SIMPLE,"_right_mat.data":AXIDMA_SIMPLE,"_disp_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_left_mat.data":AXIDMA_SIMPLE,"_right_mat.data":AXIDMA_SIMPLE,"_disp_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_left_mat.data":SEQUENTIAL,"_right_mat.data":SEQUENTIAL,"_disp_mat.data":SEQUENTIAL)
 //#pragma SDS data sys_port("_left_mat.data":ps_e_S_AXI_HP3_FPD)
 //#pragma SDS data sys_port("_right_mat.data":ps_e_S_AXI_HP1_FPD)
@@ -695,15 +697,16 @@ void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
 #pragma SDS data copy("_disp_mat.data"[0:"_disp_mat.size"])
 template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC = XF_NPPC1,
 		int WSIZE, int NDISP, int NDISP_UNIT>
-void xFStereoBM(xF::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
-		xF::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
-		xF::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate)
+void StereoBM(xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,
+		xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate)
 {
 #pragma HLS INLINE OFF
 
 	xFFindStereoCorrespondenceLBM<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT>(_left_mat.data,_right_mat.data,_disp_mat.data,sbmstate,
 			_left_mat.rows,_left_mat.cols);
+}
 }
 
 #endif  // _XF_STEREOBM_HPP_

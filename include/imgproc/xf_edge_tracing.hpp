@@ -25,6 +25,8 @@
 #define PIXEL_PROCESS_BITS	68
 #define BRAMS_TOTAL			BRAMS_SETS+2
 
+namespace xf{
+
 static void applyEqn(ap_uint<2>& x0, ap_uint<2>& x1, ap_uint<2>& x2, ap_uint<2>& x3,
 		ap_uint<2>& a, ap_uint<2>& x4, ap_uint<2>& x5, ap_uint<2>& x6,
 		ap_uint<2>& x7) {
@@ -360,11 +362,11 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 #pragma SDS data zero_copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 
 template<int SRC_T, int DST_T, int ROWS, int COLS,int NPC_SRC,int NPC_DST>
-void xFEdgeTracing(xF::Mat<SRC_T, ROWS, COLS, NPC_SRC> & _src,xF::Mat<DST_T, ROWS, COLS, NPC_DST> & _dst)
+void EdgeTracing(xf::Mat<SRC_T, ROWS, COLS, NPC_SRC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC_DST> & _dst)
 {
 	xfEdgeTracing((unsigned long long *)_dst.data,(unsigned long long *)_src.data,_dst.rows,_dst.cols);
 }
 
-
+}
 #endif
 

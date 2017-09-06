@@ -108,7 +108,7 @@ void xFMagnitudeKernel(
 					tempgx = p * p;
 					tempgy = q * q;
 					result_temp = tempgx + tempgy;
-					int tmp1 = xFSqrt(result_temp);		// Square root of the gradient images
+					int tmp1 = xf::Sqrt(result_temp);		// Square root of the gradient images
 					result = (int16_t)tmp1;
 				}
 				val_dst.range(k + (step - 1), k) = result;

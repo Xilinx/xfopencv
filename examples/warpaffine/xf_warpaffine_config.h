@@ -55,5 +55,5 @@ typedef unsigned short int uint16_t;
 #else
 #define INTER_POLATION XF_INTERPOLATION_NN
 #endif
-void warpaffine_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgOutput,float *transform_matrix);
+void warpaffine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgOutput,float *transform_matrix);
 #endif

@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_svm_config.h"
 
-void svm_accel(xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input1, xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input2, unsigned short ind1, unsigned short ind2, unsigned short frac1, unsigned short frac2, unsigned short n, unsigned char &out_frac, ap_int<32> &resultFIX)
+void svm_accel(xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input1, xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input2, unsigned short ind1, unsigned short ind2, unsigned short frac1, unsigned short frac2, unsigned short n, unsigned char &out_frac, ap_int<32> &resultFIX)
 {
-	xFSVM<XF_16SC1,XF_16SC1,XF_32SC1,1,IN_ARRAY_SIZE_1, 1, IN_ARRAY_SIZE_2, XF_NPPC1, NO_OF_KERNEL_ELEMENTS>(Input1, Input2, ind1,ind2, frac1, frac2, n, &out_frac, &resultFIX);
+	xf::SVM<XF_16SC1,XF_16SC1,XF_32SC1,1,IN_ARRAY_SIZE_1, 1, IN_ARRAY_SIZE_2, XF_NPPC1, NO_OF_KERNEL_ELEMENTS>(Input1, Input2, ind1,ind2, frac1, frac2, n, &out_frac, &resultFIX);
 }

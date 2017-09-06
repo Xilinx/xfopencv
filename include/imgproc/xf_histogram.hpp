@@ -37,9 +37,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "common/xf_common.h"
+namespace xf {
+
 template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int SRC_TC>
 //void xFHistogramKernel(hls::stream< XF_SNAME(WORDWIDTH) >&  _src_mat, uint32_t* _dst, uint16_t &imgheight, uint16_t &imgwidth)
-void xFHistogramKernel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t* _dst, uint16_t &imgheight, uint16_t &imgwidth)
+void xFHistogramKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t* _dst, uint16_t &imgheight, uint16_t &imgwidth)
 {
 
 	// Temporary array used while computing histogram
@@ -109,7 +111,7 @@ void xFHistogramKernel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t* _d
 	}
 }
 template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFHistogram(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat ,uint32_t* _dst, uint16_t imgheight, uint16_t imgwidth)
+void xFHistogram(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat ,uint32_t* _dst, uint16_t imgheight, uint16_t imgwidth)
 {
 
 
@@ -124,8 +126,8 @@ void xFHistogram(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat ,uint32_t* _dst, uin
 
 	xFHistogramKernel<SRC_T, ROWS, COLS, DEPTH, NPC, WORDWIDTH, ((COLS>>(XF_BITSHIFT(NPC)))>>1)>(_src_mat, _dst ,imgheight,imgwidth);
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover(histogram:AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover(histogram:AXIDMA_SIMPLE)
 
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern(histogram:SEQUENTIAL)
@@ -134,7 +136,7 @@ void xFHistogram(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat ,uint32_t* _dst, uin
 #pragma SDS data copy(histogram[0:256])
 
 template<int SRC_T,int ROWS, int COLS,int NPC=1>
-void xFcalcHist(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, uint32_t *histogram)
+void calcHist(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, uint32_t *histogram)
 {
 	
 	
@@ -142,6 +144,7 @@ void xFcalcHist(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, uint32_t *histogram)
 
 	xFHistogram<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src, histogram, _src.rows, _src.cols);
 
+}
 }
 #endif // _XF_HISTOGRAM_HPP_
 

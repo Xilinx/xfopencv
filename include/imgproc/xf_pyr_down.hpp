@@ -35,6 +35,8 @@
 #include "common/xf_common.h"
 #include "imgproc/xf_pyr_down_gaussian_blur.hpp"
 
+namespace xf{
+
 template <unsigned int ROWS, unsigned int COLS, unsigned int TYPE, unsigned int NPC>
 void xFpyrDownKernel(XF_TNAME(TYPE,NPC) *in_image, XF_TNAME(TYPE,NPC) *out_image, unsigned short in_rows, unsigned short in_cols)
 {
@@ -78,16 +80,17 @@ void xFpyrDownKernel(XF_TNAME(TYPE,NPC) *in_image, XF_TNAME(TYPE,NPC) *out_image
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int TYPE, int ROWS, int COLS, int NPC> 
-void xFPyrDown (xF::Mat<TYPE, ROWS, COLS, NPC> & _src, xF::Mat<TYPE, ROWS, COLS, NPC> & _dst)
+void pyrDown (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 	unsigned short input_height = _src.rows;
 	unsigned short input_width = _src.cols;
 	xFpyrDownKernel<ROWS, COLS, TYPE, NPC>(_src.data, _dst.data, input_height, input_width);
 	return;
+}
 }
 #endif

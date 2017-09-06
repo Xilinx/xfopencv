@@ -129,18 +129,21 @@ int main(int argc,char **argv){
 	uint16_t img_width  = in_gray.cols;
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> imgInput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
+	
 
     #if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
     #endif
 		otsuthreshold_accel(imgInput, Otsuval);
     #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
     #endif
-
+	
 
 
 	if(abs(Otsuval_ref-Otsuval) > maxdiff)

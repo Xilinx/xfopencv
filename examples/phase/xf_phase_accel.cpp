@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_phase_config.h"
 
-void phase_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst)
+void phase_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst)
 {
 	
-	xFphase<DEG_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(_src1, _src2,_dst);
+	xf::phase<DEG_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(_src1, _src2,_dst);
 }

@@ -39,12 +39,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_video.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
-#include "imgproc/xf_stereoBM.hpp"
-#include "imgproc/xf_remap.hpp"
-
 
 #define _XF_INTER_BITS_ 5
 
+namespace xf {
 template <typename FRAMET, typename FRAME2T, typename ROWT, typename COLT, typename ROWOUTT, typename COLOUTT, typename CM_T, int CM_SIZE, int N>
 void xFComputeUndistortCoordinates(
 		CM_T *cameraMatrix,
@@ -107,12 +105,12 @@ void xFComputeUndistortCoordinates(
 }
 
 template< int ROWS, int COLS, int CM_SIZE, typename CM_T, int N, typename MAP_T >
-void xFInitUndistortRectifyMapInverse (
+void xFInitUndistortRectifyMapInverseKernel (
 		CM_T *cameraMatrix,
 		CM_T *distCoeffs,
 		CM_T *ir,
-		hls::stream< MAP_T >  &map1,
-		hls::stream< MAP_T >  &map2,
+		MAP_T *map1,
+		MAP_T *map2,
 		uint16_t rows, uint16_t cols,
 		int noRotation=false)
 {
@@ -138,6 +136,7 @@ void xFInitUndistortRectifyMapInverse (
 	static hls::RangeAnalyzer<float> rau, rav;
 	static hls::RangeAnalyzer<float> rauerr, raverr;
 
+	int idx = 0;
 	loop_height: for(int i=0; i< rows; i++) {
 		loop_width: for(int j=0; j< cols; j++) {
 #pragma HLS PIPELINE II=1
@@ -157,104 +156,35 @@ void xFInitUndistortRectifyMapInverse (
 			mx = u;
 			my = v;
 
-			map1 << mx;
-			map2 << my;
+			// TODO check if incr works
+			*(map1 + idx) = mx;
+			*(map2 + idx) = my;
+			idx++;
 		}
 	}
 }
 
 
-template <int ROWS, int COLS, int REMAP_WIN_ROWS,typename PARAM_T, int SRC_T, int DST_T, int NPC, int CM_SIZE, int DC_SIZE>
-void xFStereoRectificationKernel(
-		XF_TNAME(SRC_T,NPC) *_left_ptr,
-		XF_TNAME(SRC_T,NPC) *_right_ptr,
-		PARAM_T *cameraMatrixLeft,
-		PARAM_T *cameraMatrixRight,
-		PARAM_T *distCoeffsLeft,
-		PARAM_T *distCoeffsRight,
-		PARAM_T *iRnewCameraMatrixLeft,
-		PARAM_T *iRnewCameraMatrixRight,
-		hls::stream< XF_TNAME(DST_T,NPC)>  &_remapped_left_strm,
-		hls::stream< XF_TNAME(DST_T,NPC)>  &_remapped_right_strm,
-		uint16_t rows, uint16_t cols)
-{
-#pragma HLS INLINE
-
-	hls::stream< float > mapx_left;
-	hls::stream< float > mapy_left;
-	hls::stream< float > mapx_right;
-	hls::stream< float > mapy_right;
-
-
-	hls::stream< XF_TNAME(SRC_T,NPC)> _left_strm;
-	hls::stream< XF_TNAME(SRC_T,NPC)> _right_strm;
-
-#pragma HLS dataflow
-
-	int TC=(ROWS*COLS);
-	for (int i = 0; i < rows*cols; i++)
-	{
-#pragma HLS pipeline ii=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-		_left_strm.write(*(_left_ptr + i));
-		_right_strm.write(*(_right_ptr + i));
-	}
-
-
-	xFInitUndistortRectifyMapInverse<ROWS,COLS,CM_SIZE,PARAM_T,DC_SIZE,float>(cameraMatrixLeft, distCoeffsLeft, iRnewCameraMatrixLeft, mapx_left, mapy_left, rows, cols);
-	xFRemapKernel<REMAP_WIN_ROWS,ROWS,COLS>(_left_strm, _remapped_left_strm, mapx_left, mapy_left, XF_INTERPOLATION_BILINEAR, rows, cols);
-	xFInitUndistortRectifyMapInverse<ROWS,COLS,CM_SIZE,PARAM_T,DC_SIZE,float>(cameraMatrixRight, distCoeffsRight, iRnewCameraMatrixRight, mapx_right, mapy_right, rows, cols);
-	xFRemapKernel<REMAP_WIN_ROWS,ROWS,COLS>(_right_strm, _remapped_right_strm, mapx_right, mapy_right, XF_INTERPOLATION_BILINEAR, rows, cols);
-}
-
-
-#pragma SDS data data_mover("_left_mat.data":AXIDMA_SIMPLE,"_right_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data access_pattern("_left_mat.data":SEQUENTIAL,"_right_mat.data":SEQUENTIAL)
-#pragma SDS data data_mover("_disp_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data access_pattern("_disp_mat.data":SEQUENTIAL)
-#pragma SDS data copy("_left_mat.data"[0:"_left_mat.size"])
-#pragma SDS data copy("_right_mat.data"[0:"_right_mat.size"])
-#pragma SDS data copy("_disp_mat.data"[0:"_disp_mat.size"])
-
-#pragma SDS data zero_copy(cameraMatrixLeft[0:_cm_size])
-#pragma SDS data zero_copy(cameraMatrixRight[0:_cm_size])
-#pragma SDS data zero_copy(iRnewCameraMatrixLeft[0:_cm_size])
-#pragma SDS data zero_copy(iRnewCameraMatrixRight[0:_cm_size])
-#pragma SDS data zero_copy(distCoeffsLeft[0:_dc_size])
-#pragma SDS data zero_copy(distCoeffsRight[0:_dc_size])
-
-template <int REMAP_WIN_ROWS, int ROWS, int COLS, int SRC_T, int DST_T, int NPC = XF_NPPC1,
-		int CM_SIZE, int DC_SIZE, int WSIZE, int NDISP, int NDISP_UNIT>
-void xFStereoPipeline(
-		xF::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
-		xF::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
-		xF::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,
-		xF::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
-		ap_fixed<32,12> *cameraMatrixLeft,
-		ap_fixed<32,12> *cameraMatrixRight,
-		ap_fixed<32,12> *distCoeffsLeft,
-		ap_fixed<32,12> *distCoeffsRight,
-		ap_fixed<32,12> *iRnewCameraMatrixLeft,
-		ap_fixed<32,12> *iRnewCameraMatrixRight,
+//#pragma SDS data data_mover("_mapx_mat.data":AXIDMA_SIMPLE,"_mapy_mat.data":AXIDMA_SIMPLE)
+#pragma SDS data access_pattern("_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
+#pragma SDS data copy("_mapx_mat.data"[0:"_mapx_mat.size"])
+#pragma SDS data copy("_mapy_mat.data"[0:"_mapy_mat.size"])
+#pragma SDS data zero_copy(cameraMatrix[0:_cm_size])
+#pragma SDS data zero_copy(distCoeffs[0:_dc_size])
+#pragma SDS data zero_copy(ir[0:_cm_size])
+template< int ROWS, int COLS, int CM_SIZE, int DC_SIZE, int MAP_T, int NPC >
+void InitUndistortRectifyMapInverse (
+		ap_fixed<32,12> *cameraMatrix,
+		ap_fixed<32,12> *distCoeffs,
+		ap_fixed<32,12> *ir,
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat,
 		int _cm_size, int _dc_size)
 {
 #pragma HLS INLINE OFF
 
-	int rows = _left_mat.rows;
-	int cols = _left_mat.cols;
-
-	hls::stream<XF_TNAME(SRC_T,NPC)> _left_rect_strm;
-	hls::stream<XF_TNAME(SRC_T,NPC)> _right_rect_strm;
-
-#pragma HLS dataflow
-
-	xFStereoRectificationKernel<ROWS,COLS,REMAP_WIN_ROWS,ap_fixed<32,12>,SRC_T,SRC_T,NPC,CM_SIZE,DC_SIZE >(_left_mat.data, _right_mat.data, cameraMatrixLeft, cameraMatrixRight, distCoeffsLeft, distCoeffsRight,
-			iRnewCameraMatrixLeft, iRnewCameraMatrixRight, _left_rect_strm, _right_rect_strm, rows, cols);
-
-	xFFindStereoCorrespondenceLBM_pipeline<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT>(_left_rect_strm,_right_rect_strm,_disp_mat.data,sbmstate,
-			_left_mat.rows,_left_mat.cols);
+	xFInitUndistortRectifyMapInverseKernel<ROWS,COLS,CM_SIZE,ap_fixed<32,12>,DC_SIZE,XF_TNAME(MAP_T,NPC)>(cameraMatrix, distCoeffs, ir, _mapx_mat.data, _mapy_mat.data, _mapx_mat.rows, _mapx_mat.cols);
 }
-
+}
 #endif  // _XF_STEREO_PIPELINE_HPP_
-
 

@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_erosion_config.h"
 
-void erosion_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst)
+void erosion_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst)
 {
 	
-	xFerode<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPC1>(_src, _dst);
+	xf::erode<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPC1>(_src, _dst);
 }

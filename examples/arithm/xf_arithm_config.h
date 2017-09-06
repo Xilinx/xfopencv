@@ -53,10 +53,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #if T_8U
-void arithm_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+void arithm_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 #if T_16S
-void arithm_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+void arithm_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 
 

@@ -53,7 +53,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-void equalizeHist_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst);
+void equalizeHist_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst);
 
 #endif // _XF_HIST_EQUALIZE_CONFIG_H_
 

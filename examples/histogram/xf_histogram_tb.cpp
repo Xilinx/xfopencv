@@ -43,7 +43,7 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img, in_gray,hist_ocv;
 
-	//uint32_t *histogram;//[256];
+	
 #if __SDSCC__
 	uint32_t *histogram=(uint32_t *)sds_alloc_non_cacheable(256*sizeof(uint32_t));
 #else
@@ -70,20 +70,24 @@ int main(int argc, char** argv)
 	cv::calcHist( &in_gray, 1, 0, cv::Mat(), hist_ocv, 1, &histSize, &histRange, 1, 0 );
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
+#if __SDSCC__
+	perf_counter hw_ctr;
+
+	
+	hw_ctr.start();
 	#endif
 
 	histogram_accel (imgInput, histogram);
 
 	#if __SDSCC__
-	TIME_STAMP
-	#endif
-
-
+	hw_ctr.stop();
+	
+	
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 	FILE *fp, *fp1;
 	fp = fopen("out_hls.txt", "w");
 	fp1 = fopen("out_ocv.txt", "w");

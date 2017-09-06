@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_scharr_config.h"
 
-void scharr_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgy)
+void scharr_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgy)
 {
 	
-	xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,NPC1>(_src, _dstgx,_dstgy);
+	xf::Scharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,NPC1>(_src, _dstgx,_dstgy);
 }

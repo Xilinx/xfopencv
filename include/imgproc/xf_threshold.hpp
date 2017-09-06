@@ -42,6 +42,8 @@ typedef unsigned char  uchar;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 /**
  * xFThresholdKernel: Thresholds an input image and produces an output boolean image depending
  * 		upon the type of thresholding.
@@ -170,12 +172,12 @@ void xFThresholding(hls::stream <XF_SNAME(WORDWIDTH_SRC)> & _src,
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 
 
 template<int THRESHOLD_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
-void xFThreshold(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short thresh_val,short thresh_upper,short thresh_lower)
+void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short thresh_val,short thresh_upper,short thresh_lower)
 {
 
 #pragma HLS DATAFLOW
@@ -209,6 +211,7 @@ void xFThreshold(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS,
 			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
 		}
 	}
+}
 }
 
 #endif

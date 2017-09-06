@@ -30,12 +30,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_threshold_config.h"
 
-void threshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,int thresh_value,int thresh_upper,int thresh_lower)
+void threshold_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,int thresh_value,int thresh_upper,int thresh_lower)
 {
 	
 	#if BINARY
-	xFThreshold<XF_THRESHOLD_TYPE_BINARY,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,thresh_value,0,0);
+	xf::Threshold<XF_THRESHOLD_TYPE_BINARY,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,thresh_value,0,0);
 	#elif RANGE
-	xFThreshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,0,thresh_upper,thresh_lower);
+	xf::Threshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, _dst,0,thresh_upper,thresh_lower);
 	#endif
 }

@@ -63,21 +63,21 @@ int main(int argc, char **argv)
 	uint16_t channel = XF_EXTRACT_CH_R;
 
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_rgba.rows,in_rgba.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_rgba.rows,in_rgba.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_rgba.rows,in_rgba.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_rgba.rows,in_rgba.cols);
 
 	imgInput.copyTo(in_rgba.data);
+	 #if __SDSCC__
+	perf_counter hw_ctr;   
+	hw_ctr.start();
+    	#endif
 
-    #if __SDSCC__
-	TIME_STAMP_INIT
-    #endif
-	printf("\nKernel has started\n");
 		channel_extract_accel(imgInput, imgOutput, channel);		
-	printf("\nKernel has Finished\n");
-    #if __SDSCC__
-	TIME_STAMP
-    #endif
 
+   	 #if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	 #endif
 	out_img.data = imgOutput.copyFrom();
 
 	std::vector<cv::Mat> bgr_planes;

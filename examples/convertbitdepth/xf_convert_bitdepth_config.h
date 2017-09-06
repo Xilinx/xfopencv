@@ -139,7 +139,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IN_TYPE 		int
 #endif
 
-void convert_bitdepth_accel(xF::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> &imgInput, xF::Mat<_DST_T, HEIGHT, WIDTH, _NPC> &imgOutput, ap_int<4> _convert_type, int shift);
+void convert_bitdepth_accel(xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> &imgInput, xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> &imgOutput, ap_int<4> _convert_type, int shift);
 
 #endif // _XF_CONVERT_BITDEPTH_CONFIG_H_
 

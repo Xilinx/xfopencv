@@ -87,6 +87,6 @@ typedef unsigned int uint32_t;
 #endif
 #endif
 
-void sobel_accel(xF::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
+void sobel_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
 
 #endif //  _XF_SOBEL_CONFIG_H_

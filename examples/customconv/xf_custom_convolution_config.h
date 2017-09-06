@@ -64,7 +64,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OUTTYPE XF_16SC1
 #endif
 
-void Filter2d_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift);
+void Filter2d_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift);
 
 
 #endif  // end of _XF_CUSTOM_CONV_CONFIG_H_

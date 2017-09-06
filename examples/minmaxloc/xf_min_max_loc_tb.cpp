@@ -80,19 +80,19 @@ int main(int argc, char** argv)
 
 
 
-	xF::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_conv.rows,in_conv.cols);
+	xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_conv.rows,in_conv.cols);
 	imgInput.copyTo((INTYPE *)in_conv.data);
 	
+	
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
 	min_max_loc_accel(imgInput, min_value, max_value, _min_locx, _min_locy, _max_locx, _max_locy);
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-
-
-
 
 	/////// OpenCV output ////////
 	std::cout<<"OCV-Minvalue = "<<cv_minval<<std::endl;

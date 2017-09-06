@@ -85,30 +85,31 @@ int main( int argc, char **argv)
 
 
 
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 
 	imgInputx.copyTo(( short int*)c_grad_x.data);
 	imgInputy.copyTo(( short int*)c_grad_y.data);
 
-
+	
 
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
 
 	//xFphase<DEG_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(imgInputx, imgInputy,imgOutput);
 	phase_accel(imgInputx, imgInputy,imgOutput);
 	
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
-
+	
 
 
 #if DEGREES

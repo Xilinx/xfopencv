@@ -41,6 +41,7 @@
  * Inputs: _src1, _src2
  * Output: _dst
  */
+namespace xf {
 template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
 		int WORDWIDTH_DST, int COLS_TRIP>
 void xFAbsDiffKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1, hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src2, hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _dst, uint16_t image_height, uint16_t image_width)
@@ -520,9 +521,9 @@ void xFAbsDiff(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1, hls::stream< XF_SNA
 
 	xFAbsDiffKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,image_height,image_width);
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -530,7 +531,7 @@ void xFAbsDiff(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1, hls::stream< XF_SNA
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC =1>
-void xFabsdiff(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1,xF::Mat<SRC_T, ROWS, COLS, NPC> & src2,xF::Mat<SRC_T, ROWS, COLS, NPC> & dst) {
+void absdiff(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1,xf::Mat<SRC_T, ROWS, COLS, NPC> & src2,xf::Mat<SRC_T, ROWS, COLS, NPC> & dst) {
 
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -595,9 +596,9 @@ void xFAdd(hls::stream< XF_SNAME(WORDWIDTH_SRC)> & _src1,hls::stream< XF_SNAME(W
 	xFAddKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,_policytype,image_height,image_width);
 
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -605,7 +606,7 @@ void xFAdd(hls::stream< XF_SNAME(WORDWIDTH_SRC)> & _src1,hls::stream< XF_SNAME(W
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int POLICY_TYPE, int SRC_T, int ROWS, int COLS, int NPC =1>
-void xFadd(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1,xF::Mat<SRC_T, ROWS, COLS, NPC> & src2,xF::Mat<SRC_T, ROWS, COLS, NPC> & dst)
+void add(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1,xf::Mat<SRC_T, ROWS, COLS, NPC> & src2,xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
@@ -673,9 +674,9 @@ void xFSub(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1, hls::stream< XF_SNAME(W
 		xFSubKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,_policytype,image_height,image_width);
 
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -684,7 +685,7 @@ void xFSub(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1, hls::stream< XF_SNAME(W
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 
 template<int POLICY_TYPE, int SRC_T, int ROWS, int COLS, int NPC =1>
-void xFsubtract(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<SRC_T, ROWS, COLS, NPC> & dst)
+void subtract(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
@@ -744,9 +745,9 @@ void xFBitwiseAND(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1,hls::stream< XF_S
 
 	xFBitwiseANDKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,image_height,image_width);
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -754,7 +755,7 @@ void xFBitwiseAND(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src1,hls::stream< XF_S
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFbitwise_and(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<SRC_T, ROWS, COLS, NPC> & dst)
+void bitwise_and(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -811,9 +812,9 @@ hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst,uint16_t image_height,uint16_t imag
 	xFBitwiseORKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,
 	(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,image_height,image_width);
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -821,7 +822,7 @@ hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst,uint16_t image_height,uint16_t imag
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFbitwise_or(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<SRC_T, ROWS, COLS, NPC> & dst)
+void bitwise_or(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -875,14 +876,14 @@ void xFBitwiseNOT(hls::stream< XF_SNAME(WORDWIDTH_SRC)>& _src,hls::stream< XF_SN
 	image_width = image_width >> XF_BITSHIFT(NPC);
 	xFBitwiseNOTKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst,image_height,image_width);
 }
-#pragma SDS data data_mover("src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src.data":SEQUENTIAL)
 #pragma SDS data copy("src.data"[0:"src.size"])
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFbitwise_not(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
+void bitwise_not(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
 {
 
 		hls::stream<XF_TNAME(SRC_T, NPC)> src1;
@@ -940,9 +941,9 @@ hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _dst,uint16_t image_height,uint16_t imag
 	xFBitwiseXORKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,
 	(COLS>>XF_BITSHIFT(NPC))>(_src1,_src2,_dst,image_height,image_width);
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -950,7 +951,7 @@ hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _dst,uint16_t image_height,uint16_t imag
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFbitwise_xor(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<SRC_T, ROWS, COLS, NPC> & dst)
+void bitwise_xor(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 	hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -1021,9 +1022,9 @@ int _policytype, float _scale_val,uint16_t image_height,uint16_t image_width)
 
 
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -1031,7 +1032,7 @@ int _policytype, float _scale_val,uint16_t image_height,uint16_t image_width)
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int POLICY_TYPE, int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFmultiply(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<SRC_T, ROWS, COLS, NPC> & dst,float scale)
+void multiply(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst,float scale)
 {
 			hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 			hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -1069,4 +1070,5 @@ void xFmultiply(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COL
 				}
 			}
 }
+}//namespace
 #endif

@@ -3,7 +3,7 @@ EXECUTABLE = scharr.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFScharr<0,0,1,1080, 1920,1>" xf_scharr_accel.cpp -files ./include/imgproc/xf_scharr.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::Scharr<0,0,1,1080, 1920,1>" xf_scharr_accel.cpp -files ./include/imgproc/xf_scharr.hpp -clkid 2 -sds-end -dmclkid 2
 #Scharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutputx,imgOutputy);
 
 CC = sds++ ${SDSCC_FLAGS}

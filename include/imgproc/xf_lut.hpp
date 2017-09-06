@@ -45,6 +45,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *	Input		 : _src, _lut
  *	Output		 : _dst
  */
+namespace xf {
+
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST, int COLS_TRIP>
 void xFLUTKernel(
@@ -130,7 +132,7 @@ void xFLUTKernel(
 
 
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void LUT(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst,hls::stream< unsigned char >& _lut,uint16_t height,uint16_t width)
+void LUT_kernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst,hls::stream< unsigned char >& _lut,uint16_t height,uint16_t width)
 {
 
 
@@ -145,9 +147,7 @@ void LUT(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNAME(WORD
 
 	xFLUTKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst, _lut, height, width);
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover(_lut:AXIDMA_SIMPLE)
+
 								
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
@@ -158,7 +158,7 @@ void LUT(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNAME(WORD
 #pragma SDS data copy(_lut[0:256])
 
 template <int SRC_T, int ROWS, int COLS,int NPC=1>
-void xFLUT(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst,unsigned char* _lut)
+void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst,unsigned char* _lut)
 {
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src_stream;
@@ -188,7 +188,7 @@ void xFLUT(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS, COLS, NP
 		_lut_stream.write(*(_lut + i));
 	}
 
-	LUT<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _dst_stream, _lut_stream, _src.rows, _src.cols);
+	LUT_kernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _dst_stream, _lut_stream, _src.rows, _src.cols);
 
 	for(int i=0; i<_dst.rows;i++)
 	{
@@ -204,5 +204,5 @@ void xFLUT(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS, COLS, NP
 	}
 
 }
-
+}
 #endif

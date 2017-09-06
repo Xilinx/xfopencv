@@ -106,25 +106,25 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPC2 XF_NPPC4
 #endif
 #endif
-void cvtcolor_rgba2iyuv(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgOutput1,xF::Mat<XF_8UC1,HEIGHT/4,WIDTH,XF_NPPC1> &imgOutput2);
-void cvtcolor_rgba2nv12(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgOutput1);
-void cvtcolor_rgba2nv21(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgOutput1);
-void cvtcolor_rgba2yuv4(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>&imgOutput2);
-	void cvtcolor_iyuv2nv12(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput2,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
-	void cvtcolor_iyuv2rgba(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgInput2,xF::Mat<XF_8UC4, HEIGHT, WIDTH, 				XF_NPPC1> &imgOutput0);
-	void cvtcolor_iyuv2yuv4(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput2,xF::Mat<XF_8UC1, HEIGHT, WIDTH, 					NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
-	void cvtcolor_nv122iyuv(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 				&imgOutput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput2);
-	void cvtcolor_nv122rgba(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgInput1,xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
-	void cvtcolor_nv122yuv4(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
-	void cvtcolor_nv212iyuv(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 					&imgOutput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput2);
-	void cvtcolor_nv212rgba(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgInput1,xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
-	void cvtcolor_nv212yuv4(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
-	void cvtcolor_uyvy2iyuv(xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> &imgOutput1,xF::Mat<XF_8UC1, HEIGHT / 4, WIDTH, 					NPC1> &imgOutput2);
-	void cvtcolor_uyvy2nv12(xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
-	void cvtcolor_uyvy2rgba(xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
-	void cvtcolor_yuyv2iyuv(xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput1,xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, 					NPC1> &imgOutput2);
-	void cvtcolor_yuyv2nv12(xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
-	void cvtcolor_yuyv2rgba(xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
+void cvtcolor_rgba2iyuv(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgOutput1,xf::Mat<XF_8UC1,HEIGHT/4,WIDTH,XF_NPPC1> &imgOutput2);
+void cvtcolor_rgba2nv12(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgOutput1);
+void cvtcolor_rgba2nv21(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgOutput1);
+void cvtcolor_rgba2yuv4(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>&imgOutput2);
+	void cvtcolor_iyuv2nv12(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
+	void cvtcolor_iyuv2rgba(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> &imgInput2,xf::Mat<XF_8UC4, HEIGHT, WIDTH, 				XF_NPPC1> &imgOutput0);
+	void cvtcolor_iyuv2yuv4(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, 					NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
+	void cvtcolor_nv122iyuv(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 				&imgOutput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput2);
+	void cvtcolor_nv122rgba(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgInput1,xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
+	void cvtcolor_nv122yuv4(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
+	void cvtcolor_nv212iyuv(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> 					&imgOutput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput2);
+	void cvtcolor_nv212rgba(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> &imgInput1,xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
+	void cvtcolor_nv212yuv4(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> 					&imgOutput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput2);
+	void cvtcolor_uyvy2iyuv(xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> &imgOutput1,xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, 					NPC1> &imgOutput2);
+	void cvtcolor_uyvy2nv12(xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
+	void cvtcolor_uyvy2rgba(xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
+	void cvtcolor_yuyv2iyuv(xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> &imgOutput1,xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, 					NPC1> &imgOutput2);
+	void cvtcolor_yuyv2nv12(xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput0,xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> &imgOutput1);
+	void cvtcolor_yuyv2rgba(xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput,xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput0);
 
 
 

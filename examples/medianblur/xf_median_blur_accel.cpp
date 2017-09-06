@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_median_blur_config.h"
 
-void median_blur_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst)
+void median_blur_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst)
 {	
-	xFMedianBlur <WINDOW_SIZE, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH,  NPxPC> (_src, _dst);
+	xf::medianBlur <WINDOW_SIZE, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH,  NPxPC> (_src, _dst);
 }

@@ -71,19 +71,22 @@ int main(int argc, char **argv)
 	uint16_t width = in_gray.cols;
 	uint16_t height = in_gray.rows;
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _src(height,width);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _dst(height,width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _src(height,width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _dst(height,width);
 	
 	_src.copyTo(in_gray.data);
 	#if __SDSCC__
-		TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
 	
 	bilateral_filter_accel(_src,_dst, sigma_space, sigma_color);
 	
 	#if __SDSCC__
-		TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
+	
 	out_img.data = _dst.copyFrom();
 	imwrite("output_hls.png", out_img);
 

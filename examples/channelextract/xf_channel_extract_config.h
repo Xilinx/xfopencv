@@ -50,6 +50,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define	IN_TYPE  ap_uint<64>//ap_uint256_t
 #endif
 
-void channel_extract_accel(xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput, unsigned short channel);
+void channel_extract_accel(xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgOutput, unsigned short channel);
 
 #endif //_XF_CHANNEL_EXTRACT_CONFIG_H_

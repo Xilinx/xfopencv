@@ -41,7 +41,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef XF_OUT_STEP
 #define XF_OUT_STEP 16
 #endif
-
+namespace xf {
 template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 int AcuumulateSquaredKernel(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
@@ -98,9 +98,9 @@ int xFAccumulateSquared(
 
 	    AcuumulateSquaredKernel<ROWS,COLS,NPC,DEPTH_SRC,DEPTH_DST,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1, _src2, _accum, height,width);
 }
-#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
@@ -108,7 +108,7 @@ int xFAccumulateSquared(
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
 template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
-void xFaccumulateSquare(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, ROWS, COLS, NPC> & src2, xF::Mat<DST_T, ROWS, COLS, NPC> & dst)
+void accumulateSquare(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst)
 {
 		hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
 		hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
@@ -146,4 +146,5 @@ void xFaccumulateSquare(xF::Mat<SRC_T, ROWS, COLS, NPC> & src1, xF::Mat<SRC_T, R
 
 
 }
-#endif//_AU_ACCUMULATE_SQUARED_HPP_
+}
+#endif//_XF_ACCUMULATE_SQUARED_HPP_

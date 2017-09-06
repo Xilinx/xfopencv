@@ -29,8 +29,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_stereoBM_config.h"
 
-void stereolbm_accel(xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat, xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, xF::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat, xF::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state)
+void stereolbm_accel(xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat, xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat, xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state)
 {	
-	xFStereoBM<XF_HEIGHT,XF_WIDTH,XF_8UC1,XF_16UC1,XF_NPPC1,SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS>(leftMat, rightMat, dispMat, bm_state);
+	xf::StereoBM<XF_HEIGHT,XF_WIDTH,XF_8UC1,XF_16UC1,XF_NPPC1,SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS>(leftMat, rightMat, dispMat, bm_state);
 }
 

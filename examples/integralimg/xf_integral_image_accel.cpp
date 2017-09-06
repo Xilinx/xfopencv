@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_integral_image_config.h"
 
-void integral_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_32UC1, HEIGHT, WIDTH, NPC1> &_dst)
+void integral_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_32UC1, HEIGHT, WIDTH, NPC1> &_dst)
 {
 	
-	xFIntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>(_src, _dst);
+	xf::integral<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>(_src, _dst);
 }

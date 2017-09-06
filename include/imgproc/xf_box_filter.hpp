@@ -43,11 +43,14 @@ typedef unsigned int  uint32_t;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+
+
 /////  Division factor for various filter sizes  /////
 #define XF_DIV_VAL_3x3 	3641   // 1/9  value converted into fixed point Q1.15 format.
 #define XF_DIV_VAL_5x5  1311   // 1/25 value converted into fixed point Q1.15 format.
 #define XF_DIV_VAL_7x7  669    // 1/49 value converted into fixed point Q1.15 format.
 
+namespace xf{
 
 /**
  * xFApplyMask3x3: apply a 3x3 mask
@@ -1084,12 +1087,10 @@ void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T, int ROWS, int COLS,int NPC>
-void xFboxfilter(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
+void boxFilter(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
@@ -1126,5 +1127,5 @@ void xFboxfilter(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS,
 		}
 	}
 }
-
+}
 #endif

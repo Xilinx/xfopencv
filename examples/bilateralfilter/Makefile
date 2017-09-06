@@ -2,7 +2,7 @@ APPSOURCES =xf_bilateral_filter_tb.cpp xf_bilateral_filter_accel.cpp
 EXECUTABLE = bilateralfilter.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xFBilateralFilter <3, 1, 0, 1080, 1920, 1>" xf_bilateral_filter_accel.cpp -files ./include/imgproc/xf_bilateral_filter.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xf::BilateralFilter <3, 1, 0, 1080, 1920, 1>" xf_bilateral_filter_accel.cpp -files ./include/imgproc/xf_bilateral_filter.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

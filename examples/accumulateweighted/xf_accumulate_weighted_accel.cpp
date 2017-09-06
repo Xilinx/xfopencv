@@ -32,7 +32,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-void accumulate_weighted_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput, float alpha)
+void accumulate_weighted_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput, float alpha)
 {
-	xFaccumulateWeighted<XF_8UC1,XF_16UC1,HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput,alpha);
+	xf::accumulateWeighted<XF_8UC1,XF_16UC1,HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput,alpha);
 }

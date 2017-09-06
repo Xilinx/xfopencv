@@ -31,7 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_accumulate_squared_config.h"
 
 
-void accumulate_squared(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1>&imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput)
+void accumulate_squared(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1>&imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput)
 {
-	xFaccumulateSquare<XF_8UC1,XF_16UC1, HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput);
+	xf::accumulateSquare<XF_8UC1,XF_16UC1, HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput);
 }

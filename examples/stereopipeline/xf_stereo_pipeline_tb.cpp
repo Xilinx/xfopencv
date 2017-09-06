@@ -43,24 +43,27 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
+
 	cv::Mat left_img, right_img;
 	left_img = cv::imread(argv[1],0);
-	if(!left_img.data)
-	{
-		printf("Failed to load left image ... %s\n!", argv[1]);
-		return -1;
-	}
 	right_img = cv::imread(argv[2],0);
-	if(!right_img.data)
-	{
-		printf("Failed to load right image ... %s\n!", argv[2]);
-		return -1;
-	}
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(left_img.rows,left_img.cols);
-	xF::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(left_img.rows,left_img.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(right_img.rows,right_img.cols);
+
+	int rows = left_img.rows;
+	int cols = left_img.cols;
+
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxLMat(rows,cols);
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyLMat(rows,cols);
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxRMat(rows,cols);
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyRMat(rows,cols);
+
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftRemappedMat(rows,cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightRemappedMat(rows,cols);
+
+	xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(rows,cols);
 
 	// camera parameters for rectification
 #if __SDSCC__
@@ -79,13 +82,10 @@ int main(int argc, char** argv)
 	ap_fixed<32,12> *distC_r_fix = (ap_fixed<32,12>*)malloc(XF_DIST_COEFF_SIZE*sizeof(ap_fixed<32,12>));
 #endif
 
-	left_img = cv::imread(argv[1],0);
-	right_img = cv::imread(argv[2],0);
-
 	leftMat.copyTo(left_img.data);
 	rightMat.copyTo(right_img.data);
 
-	xF::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
+	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
 	bm_state.preFilterCap = 31;
 	bm_state.uniquenessRatio = 15;
 	bm_state.textureThreshold = 20;
@@ -106,25 +106,28 @@ int main(int argc, char** argv)
 	}
 
 	printf("starting the kernel...\n");
-#ifdef __SDSCC__
-	TIME_STAMP_INIT
-#endif
-	stereopipeline_accel(leftMat,rightMat,dispMat,bm_state,cameraMA_l_fix,cameraMA_r_fix,distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix,9,5);
-#ifdef __SDSCC__
-	TIME_STAMP
-#endif
-	printf("end of kernel...\n");
 
-	cv::Mat out_disp_16(left_img.rows,left_img.cols,CV_16UC1);
-	cv::Mat out_disp_img(left_img.rows,left_img.cols,CV_8UC1);
+#ifdef __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+	stereopipeline_accel(leftMat,rightMat,dispMat,mapxLMat,mapyLMat,mapxRMat,mapyRMat,leftRemappedMat,rightRemappedMat,bm_state,cameraMA_l_fix,cameraMA_r_fix,distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix,9,5);
+#ifdef __SDSCC__
+	hw_ctr.stop();
+	printf("end of kernel...\n");
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
+	cv::Mat out_disp_16(rows,cols,CV_16UC1);
+	cv::Mat out_disp_img(rows,cols,CV_8UC1);
 
 	//	out_disp_16.data = dispMat.copyFrom();
 
-	for (int i=0; i<left_img.rows; i++)
+	for (int i=0; i<rows; i++)
 	{
-		for (int j=0; j<left_img.cols; j++)
+		for (int j=0; j<cols; j++)
 		{
-			out_disp_16.at<unsigned short>(i,j) = (unsigned short)dispMat.data[i*left_img.cols+j];
+			out_disp_16.at<unsigned short>(i,j) = (unsigned short)dispMat.data[i*cols+j];
 		}
 	}
 	out_disp_16.convertTo(out_disp_img, CV_8U, (256.0/NO_OF_DISPARITIES)/(16.));

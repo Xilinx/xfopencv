@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_magnitude_config.h"
 
-void magnitude_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst)
+void magnitude_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst)
 {
-	xFmagnitude<NORM_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(_src1, _src2,_dst);
+	xf::magnitude<NORM_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(_src1, _src2,_dst);
 }

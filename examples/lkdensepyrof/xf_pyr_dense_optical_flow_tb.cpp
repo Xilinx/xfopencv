@@ -96,7 +96,7 @@ void getPseudoColorInt (IN_TYPE pix, float fx, float fy, rgba_t& rgba)
 
 
 
-void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS] , xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS] , int pyr_h[NUM_LEVELS], int pyr_w[NUM_LEVELS])
+void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS] , xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS] , int pyr_h[NUM_LEVELS], int pyr_w[NUM_LEVELS])
 {	                                                                              
 	for(int l=0; l<NUM_LEVELS; l++)
 	{
@@ -120,8 +120,11 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 		}	
 	}
 	//creating image pyramid
+
+	
 	#if __SDSCC__
-		TIME_STAMP_INIT
+		perf_counter hw_ctr;
+		hw_ctr.start();
 	#endif
 	pyr_dense_optical_flow_pyr_down_accel(mat_imagepyr1, mat_imagepyr2);
 	
@@ -145,30 +148,31 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 			bool scale_up_flag = (iterations==0)&&(l != NUM_LEVELS-1);
 			int next_height = (scale_up_flag==1)?pyr_h[l+1]:pyr_h[l]; 
 			int next_width  = (scale_up_flag==1)?pyr_w[l+1]:pyr_w[l]; 
-			float scale_in = (next_height - 1)*1.0/(curr_height - 1); 
-				if(flag_flowin)
-				{
-					flow.rows = pyr_h[l];
-					flow.cols = pyr_w[l];
-					flow.size = pyr_h[l]*pyr_w[l];
-					pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow_iter, flow, l, scale_up_flag, scale_in);
-					flag_flowin = 0;
-				}
-				else
-				{
-					flow_iter.rows = pyr_h[l];
-					flow_iter.cols = pyr_w[l];
-					flow_iter.size = pyr_h[l]*pyr_w[l];
-					pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow, flow_iter, l, scale_up_flag, scale_in);
-					flag_flowin = 1;
-				}
+			float scale_in = (next_height - 1)*1.0/(curr_height - 1);
+			ap_uint<1> init_flag = ((iterations==0) && (l==NUM_LEVELS-1))? 1 : 0;
+			if(flag_flowin)
+			{
+				flow.rows = pyr_h[l];
+				flow.cols = pyr_w[l];
+				flow.size = pyr_h[l]*pyr_w[l];
+				pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow_iter, flow, l, scale_up_flag, scale_in, init_flag);
+				flag_flowin = 0;
+			}
+			else
+			{
+				flow_iter.rows = pyr_h[l];
+				flow_iter.cols = pyr_w[l];
+				flow_iter.size = pyr_h[l]*pyr_w[l];
+				pyr_dense_optical_flow_accel(mat_imagepyr1[l], mat_imagepyr2[l], flow, flow_iter, l, scale_up_flag, scale_in, init_flag);
+				flag_flowin = 1;
+			}
 		}//end iterative coptical flow computation
 	} // end pyramidal iterative optical flow HLS computation
 	#if __SDSCC__
-		TIME_STAMP
-		std::cout << "Total Latency\n";
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-
+	
 //write output flow vectors to Mat after splitting the bits.
 	for (int i=0; i<pyr_h[0]; i++) {
 		for (int j=0; j< pyr_w[0]; j++) {
@@ -183,11 +187,7 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xF::
 			{
 				tempcopy = *(flow.data + i*pyr_w[0] + j);
 			}
-			
-			//initializing the flow pointers to 0 for the next case.
-			*(flow_iter.data + i*pyr_w[0] + j) = 0;
-			*(flow.data + i*pyr_w[0] + j) = 0;
-			
+					
 			short splittemp1 = (tempcopy>>16);
 			short splittemp2 = (0x0000FFFF & tempcopy);
 			
@@ -208,10 +208,10 @@ int main (int argc, char **argv) {
 		return -1;
 	}
 	//allocating memory spaces for all the hardware operations
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
-	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
-	xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
+	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
+	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
 	
 	for(int i=0; i<NUM_LEVELS ; i++)
 	{

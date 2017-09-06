@@ -77,6 +77,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define XF_INPUT_COLOR XF_RGB
 #endif
 
-void hog_descriptor_accel(xF::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, xF::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> &outMat);
+void hog_descriptor_accel(xf::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> &outMat);
 
 #endif  // end of _AU_HOG_CONFIG_H_

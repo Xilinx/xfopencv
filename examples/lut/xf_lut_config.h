@@ -49,5 +49,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*  set the height and weight  */
 #define HEIGHT 1080
 #define WIDTH  1920
-void lut_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput,unsigned char *lut_ptr);
+void lut_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput,unsigned char *lut_ptr);
 #endif // end of _XF_LUT_CONFIG_H_

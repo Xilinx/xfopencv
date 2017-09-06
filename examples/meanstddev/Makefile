@@ -3,7 +3,7 @@ EXECUTABLE = mean_std.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFmeanstd<0, 1080, 1920, 1>" xf_mean_stddev_accel.cpp -files ./include/core/xf_mean_stddev.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::meanstd<0, 1080, 1920, 1>" xf_mean_stddev_accel.cpp -files ./include/core/xf_mean_stddev.hpp -clkid 2 -sds-end -dmclkid 2\
 
 CC = sds++ ${SDSCC_FLAGS}
 

@@ -2,7 +2,7 @@ APPSOURCES =xf_pyr_up_tb.cpp xf_pyr_up_accel.cpp
 EXECUTABLE = pyrup.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xFPyrUp <0, 2160, 3840, 1>" xf_pyr_up_accel.cpp -files ./include/imgproc/xf_pyr_up.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xf::PyrUp <0, 2160, 3840, 1>" xf_pyr_up_accel.cpp -files ./include/imgproc/xf_pyr_up.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

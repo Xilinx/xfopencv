@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_sobel_config.h"
 
-void sobel_accel(xF::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy)
+void sobel_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy)
 {
 	
-	xFSobel<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_TYPE,OUT_TYPE,HEIGHT, WIDTH,NPC1>(_src, _dstgx,_dstgy);
+	xf::Sobel<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_TYPE,OUT_TYPE,HEIGHT, WIDTH,NPC1>(_src, _dstgx,_dstgy);
 }

@@ -40,6 +40,8 @@
 #include "imgproc/xf_dense_npyr_optical_flow_types.h"
 #include "common/xf_common.h"
 
+namespace xf{
+
 // enable to run c-sim
 //#define HLS_SIM
 
@@ -1071,15 +1073,16 @@
 #pragma SDS data mem_attribute("frame1.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("flowx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("flowy.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-// #pragma SDS data access_pattern("frame0.data":SEQUENTIAL)
-// #pragma SDS data access_pattern("frame1.data":SEQUENTIAL)
-// #pragma SDS data access_pattern("framef.data":SEQUENTIAL)
-#pragma SDS data zero_copy("frame0.data"[0:"frame0.size"])
-#pragma SDS data zero_copy("frame1.data"[0:"frame1.size"])
-#pragma SDS data zero_copy("flowx.data"[0:"flowx.size"])
-#pragma SDS data zero_copy("flowy.data"[0:"flowy.size"])
+#pragma SDS data access_pattern("frame0.data":SEQUENTIAL)
+#pragma SDS data access_pattern("frame1.data":SEQUENTIAL)
+#pragma SDS data access_pattern("flowx.data":SEQUENTIAL)
+#pragma SDS data access_pattern("flowy.data":SEQUENTIAL)
+#pragma SDS data copy("frame0.data"[0:"frame0.size"])
+#pragma SDS data copy("frame1.data"[0:"frame1.size"])
+#pragma SDS data copy("flowx.data"[0:"flowx.size"])
+#pragma SDS data copy("flowy.data"[0:"flowy.size"])
 template<int WINDOW_SIZE, int TYPE, int ROWS, int COLS, int NPC>
-void xFDenseNonPyrLKOpticalFlow (xF::Mat<TYPE, ROWS, COLS, NPC> & frame0, xF::Mat<TYPE, ROWS, COLS, NPC> & frame1, xF::Mat<XF_32FC1, ROWS, COLS, NPC> & flowx, xF::Mat<XF_32FC1, ROWS, COLS, NPC> & flowy)
+void DenseNonPyrLKOpticalFlow (xf::Mat<TYPE, ROWS, COLS, NPC> & frame0, xf::Mat<TYPE, ROWS, COLS, NPC> & frame1, xf::Mat<XF_32FC1, ROWS, COLS, NPC> & flowx, xf::Mat<XF_32FC1, ROWS, COLS, NPC> & flowy)
 {
 	if(NPC==XF_NPPC1)
 	{
@@ -1089,5 +1092,6 @@ void xFDenseNonPyrLKOpticalFlow (xF::Mat<TYPE, ROWS, COLS, NPC> & frame0, xF::Ma
 	{
 		fpga_optflow16 <ROWS, COLS, NPC, WINDOW_SIZE> ( (ap_uint<16> *) frame0.data, (ap_uint<16> *) frame1.data, (ap_uint<64> *)flowx.data, (ap_uint<64> *)flowy.data, frame0.rows, frame0.cols, frame0.size);
 	}
+}
 }
 #endif

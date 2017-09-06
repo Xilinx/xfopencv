@@ -73,25 +73,28 @@ int main(int argc, char** argv)
 	imwrite("ocv_output.png",disp8);
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(left_img.rows,left_img.cols);
-	xF::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(left_img.rows,left_img.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(left_img.rows,left_img.cols);
+	xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(left_img.rows,left_img.cols);
 
 	leftMat.copyTo(left_img.data);
 	rightMat.copyTo(right_img.data);
 
-	xF::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
+	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
 	bm_state.preFilterCap = 31;
 	bm_state.uniquenessRatio = 15;
 	bm_state.textureThreshold = 20;
 	bm_state.minDisparity = 0;
 
+
 #if __SDSCC__
-		TIME_STAMP_INIT
+	perf_counter hw_ctr;
+		hw_ctr.start();
 #endif
 	stereolbm_accel(leftMat, rightMat, dispMat, bm_state);
 #if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 	cv::Mat out_disp_16(left_img.rows,left_img.cols,CV_16UC1);

@@ -60,6 +60,6 @@ typedef ap_uint<64>      ap_uint64_t;
 #define THRESHOLD_TYPE XF_THRESHOLD_TYPE_RANGE
 #endif
 
-void threshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,int thresh_value,int thresh_upper,int thresh_lower);
+void threshold_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,int thresh_value,int thresh_upper,int thresh_lower);
 
 #endif  // end of _XF_THRESHOLD_CONFIG_H_

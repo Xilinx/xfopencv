@@ -35,6 +35,8 @@
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 template<int NPC,int DEPTH, int WIN_SZ, int WIN_SZ_SQ>
 void xFMedianProc(
 		XF_PTUNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
@@ -416,11 +418,11 @@ void xFmedianBlurKernel(
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int FILTER_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC> 
-void xFMedianBlur (xF::Mat<TYPE, ROWS, COLS, NPC> & _src, xF::Mat<TYPE, ROWS, COLS, NPC> & _dst)
+void medianBlur (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -458,5 +460,6 @@ void xFMedianBlur (xF::Mat<TYPE, ROWS, COLS, NPC> & _src, xF::Mat<TYPE, ROWS, CO
 		}
 	}
 	return;
+}
 }
 #endif

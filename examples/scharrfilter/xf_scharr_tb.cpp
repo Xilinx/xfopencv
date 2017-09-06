@@ -85,24 +85,26 @@ int main(int argc, char** argv)
 
 
 
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xF::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
-
+	
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 	#endif
 
 	//xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,NPC1>(imgInput, imgOutputx,imgOutputy);
 	scharr_accel(imgInput, imgOutputx,imgOutputy);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-
+	
 	hls_grad_x.data = (unsigned char*)imgOutputx.copyFrom();
 	hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
 

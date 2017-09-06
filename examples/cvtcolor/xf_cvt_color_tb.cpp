@@ -45,6 +45,10 @@ int main(int argc, char** argv) {
 
 	cv::Mat img;
 
+	
+#if __SDSCC__
+	perf_counter hw_ctr;
+#endif
 #if IYUV2NV12
 
 	inputimg0 = cv::imread(argv[1], 0);
@@ -78,26 +82,27 @@ int main(int argc, char** argv) {
 	cv::Size S1(newwidth_uv,newheight_uv);
 	outputimg1.create(S1, CV_16UC1);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_uv,newwidth_uv);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_uv,newwidth_uv);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
 	imgInput2.copyTo(inputimg2.data);
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 
 	cvtcolor_iyuv2nv12(imgInput0,imgInput1,imgInput2,imgOutput0,imgOutput1);
 
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
-
+	
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 
@@ -159,24 +164,25 @@ int main(int argc, char** argv) {
 	error_img0.create(S,CV_8UC3);
 
 #if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(inputimg0.rows,inputimg0.cols);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
 	imgInput2.copyTo(inputimg2.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_iyuv2rgba(imgInput0,imgInput1,imgInput2,imgOutput0);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
-
+	
 	outputimg0.data = imgOutput0.copyFrom();
 
 	cvtColor(outputimg0,outputimg0,CV_RGBA2BGR);
@@ -226,25 +232,28 @@ int main(int argc, char** argv) {
 	outputimg2.create(S2,CV_8UC1);
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u,newwidth_u);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_v,newwidth_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u,newwidth_u);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_v,newwidth_v);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
 	imgInput2.copyTo(inputimg2.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_iyuv2yuv4(imgInput0,imgInput1,imgInput2,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
@@ -307,23 +316,27 @@ int main(int argc, char** argv) {
 
 	outputimg2.create(S1,CV_8UC1);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int *)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv122iyuv(imgInput0,imgInput1,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
@@ -379,21 +392,23 @@ int main(int argc, char** argv) {
 	img_height = inputimg0.rows;
 
 #if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv122rgba(imgInput0,imgInput1,imgOutput0);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 
@@ -439,23 +454,26 @@ int main(int argc, char** argv) {
 	img_height = inputimg0.rows; // + inputimg1.rows;
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv122yuv4(imgInput0,imgInput1,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
@@ -513,23 +531,26 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1,CV_8UC1);
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv212iyuv(imgInput0,imgInput1,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
@@ -580,21 +601,24 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 
 #if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv212rgba(imgInput0,imgInput1,imgOutput0);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 
 #endif
@@ -636,23 +660,26 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1,CV_8UC1);
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_nv212yuv4(imgInput0,imgInput1,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
@@ -708,22 +735,24 @@ int main(int argc, char** argv) {
 	cvtColor(inputimg,inputimg,CV_BGR2RGBA);
 
 #if NO
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 	imgInput.copyTo(inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 
 	cvtcolor_rgba2yuv4(imgInput,imgOutput0,imgOutput1,imgOutput2);
 
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
@@ -778,20 +807,22 @@ int main(int argc, char** argv) {
 	cvtColor(inputimg,inputimg,CV_BGR2RGBA);
 
 #if NO
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo(inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_rgba2iyuv(imgInput,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
@@ -853,20 +884,22 @@ int main(int argc, char** argv) {
 
 #if NO
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
 
 	imgInput.copyTo(inputimg0.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_rgba2nv12(imgInput,imgOutput0,imgOutput1);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
@@ -916,19 +949,21 @@ int main(int argc, char** argv) {
 
 #if NO
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
 
 	imgInput.copyTo(inputimg0.data);
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_rgba2nv21(imgInput,imgOutput0,imgOutput1);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
@@ -974,21 +1009,23 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1, CV_8UC1);
 
 
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_uyvy2iyuv(imgInput,imgOutput0, imgOutput1, imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
@@ -1046,21 +1083,24 @@ int main(int argc, char** argv) {
 	img_height = inputimg.rows;
 
 
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 	
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_uyvy2nv12(imgInput,imgOutput0,imgOutput1);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 
@@ -1099,19 +1139,22 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 #if NO
 
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
 	imgInput.copyTo((unsigned short int *)inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_uyvy2rgba(imgInput,imgOutput0);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
+
 	outputimg0.data = imgOutput0.copyFrom();
 
 	cvtColor(outputimg0,outputimg0,CV_RGBA2BGR);
@@ -1147,21 +1190,23 @@ int main(int argc, char** argv) {
 	img_width = inputimg.cols;
 	img_height = inputimg.rows;
 
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xF::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_yuyv2iyuv(imgInput,imgOutput0,imgOutput1,imgOutput2);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
@@ -1215,15 +1260,22 @@ int main(int argc, char** argv) {
 	img_height = inputimg.rows;
 
 
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xF::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo((unsigned short int*)inputimg.data);
 
-
+#if __SDSCC__
+	hw_ctr.start();
+#endif
 	cvtcolor_yuyv2nv12(imgInput,imgOutput0,imgOutput1);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+	
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
@@ -1265,19 +1317,21 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 
 #if NO
-	xF::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
 	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 #endif
 	cvtcolor_yuyv2rgba(imgInput,imgOutput0);
 #if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	
 
 		outputimg0.data = imgOutput0.copyFrom();
 

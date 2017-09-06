@@ -42,6 +42,8 @@ typedef unsigned short  uint16_t;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 template<int DEPTH>
 XF_PTNAME(DEPTH) xFapplyerode3x3(XF_PTNAME(DEPTH) D1, XF_PTNAME(DEPTH) D2, XF_PTNAME(DEPTH) D3,
 		XF_PTNAME(DEPTH) D4, XF_PTNAME(DEPTH) D5, XF_PTNAME(DEPTH) D6,
@@ -289,11 +291,11 @@ void xFErosion(
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 
 template<int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
-void xFerode(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
+void erode(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
 	
@@ -329,6 +331,7 @@ void xFerode(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, COL
 			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
 		}
 	}
+}
 }
 
 #endif //_XF_EROSION_HPP_

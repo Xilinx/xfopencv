@@ -2,7 +2,7 @@ APPSOURCES =xf_channel_extract_tb.cpp xf_channel_extract_accel.cpp
 EXECUTABLE = xfChannelExtract.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xFextractChannel<7,0,1080,1920,1>" xf_channel_extract_accel.cpp -files ./include/imgproc/xf_channel_extract.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xf::extractChannel<7,0,1080,1920,1>" xf_channel_extract_accel.cpp -files ./include/imgproc/xf_channel_extract.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

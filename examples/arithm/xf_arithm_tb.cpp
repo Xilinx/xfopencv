@@ -74,22 +74,27 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
+	
+	perf_counter hw_ctr;
+
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	 hw_ctr.start();
 	#endif
 	
 	arithm_accel(imgInput1,imgInput2,imgOutput);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
 	#endif
+
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	out_img.data = imgOutput.copyFrom();
 
 	///////////// OpenCV reference  /////////////
@@ -110,24 +115,28 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 	diff.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
-	xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo((short int*)in_gray1_16.data);
 	imgInput2.copyTo((short int*)in_gray2_16.data);
 
+	
+	
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	 hw_ctr.start();
 	#endif
 
 	arithm_accel(imgInput1,imgInput2,imgOutput);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-
+	
 	out_img.data = (unsigned char*)imgOutput.copyFrom();
 
 	///////////// OpenCV reference  /////////////

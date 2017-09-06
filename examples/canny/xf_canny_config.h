@@ -28,7 +28,7 @@
 #define NORM_TYPE XF_L2NORM
 #endif
 
-void canny_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xF::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,unsigned char low_threshold,unsigned char high_threshold);
-void edgetracing_accel(xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst);
+void canny_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,unsigned char low_threshold,unsigned char high_threshold);
+void edgetracing_accel(xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst);
 
 #endif

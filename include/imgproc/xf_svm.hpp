@@ -52,6 +52,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  out_frac: Fractional bits in the output result
  *
  ***************************************************************/
+namespace xf {
+
 template<int SRC1_T, int SRC2_T, int DST_T, int NPC, int N>
 ap_int<XF_PIXELDEPTH(DST_T)> xfSVM(ap_int<XF_DTPIXELDEPTH(SRC1_T, NPC)>* in_1, ap_int<XF_PIXELDEPTH(SRC2_T)>* in_2, uint16_t idx1,
 		uint16_t idx2, uchar_t frac1, uchar_t frac2, uint16_t n,
@@ -95,13 +97,13 @@ void xFSVM(ap_int<I1>* in_1, ap_int<I2>* in_2, uint16_t idx1,
 */
 #pragma SDS data copy("in_1.data"[0:"in_1.size"])
 #pragma SDS data copy("in_2.data"[0:"in_2.size"])
-#pragma SDS data data_mover("in_1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("in_2.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("in_1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("in_2.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("in_1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("in_2.data":SEQUENTIAL)
 #pragma SDS data mem_attribute ("in_1.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "in_2.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 template<int SRC1_T, int SRC2_T, int DST_T, int ROWS1, int COLS1, int ROWS2, int COLS2, int NPC=1, int N>
-void xFSVM(xF::Mat<SRC1_T, ROWS1, COLS1, NPC> &in_1, xF::Mat<SRC2_T, ROWS2, COLS2, NPC> &in_2, uint16_t idx1,
+void SVM(xf::Mat<SRC1_T, ROWS1, COLS1, NPC> &in_1, xf::Mat<SRC2_T, ROWS2, COLS2, NPC> &in_2, uint16_t idx1,
 		uint16_t idx2, uchar_t frac1, uchar_t frac2, uint16_t n,
 		uchar_t *out_frac, ap_int<XF_PIXELDEPTH(DST_T)> *result){
 
@@ -110,5 +112,5 @@ void xFSVM(xF::Mat<SRC1_T, ROWS1, COLS1, NPC> &in_1, xF::Mat<SRC2_T, ROWS2, COLS
 	*result = svm_res;
 
 }
-
+}
 #endif

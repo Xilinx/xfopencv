@@ -47,6 +47,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
  #include "hls_stream.h"
  #include "common/xf_common.h"
+
+namespace xf{
+
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int COL_TRIP>
 void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 		int &_minval1,  int &_maxval1,unsigned short int &_minlocx,unsigned short int &_minlocy,
@@ -280,11 +283,11 @@ void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 	xFMinMaxLoc_core<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 template<int SRC_T,int ROWS,int COLS,int NPC=0>
-void xFminMaxLoc(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *max_value, int32_t *min_value,uint16_t *_minlocx, uint16_t *_minlocy, uint16_t *_maxlocx, uint16_t *_maxlocy )
+void minMaxLoc(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *max_value, int32_t *min_value,uint16_t *_minlocx, uint16_t *_minlocy, uint16_t *_maxlocx, uint16_t *_maxlocy )
 {
 
 
@@ -311,5 +314,6 @@ void xFminMaxLoc(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *max_value, int3
 	  *_minlocy=_min_locy;
 	  *_maxlocx=_max_locx;
 	  *_maxlocy=_max_locy;
+}
 }
 #endif

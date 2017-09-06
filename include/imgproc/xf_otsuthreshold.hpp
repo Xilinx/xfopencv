@@ -35,6 +35,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "core/xf_math.h"
 #include "imgproc/xf_histogram.hpp"
 
+namespace xf{
+
 static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uint8_t &thresh)
 {
 #pragma HLS INLINE off
@@ -57,8 +59,8 @@ static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uin
 	unsigned long long int sumB = 0;
 	unsigned long long int varMax = 0;
 
-	unsigned int wdt = xFInverse(cols, 16, &shift1);				//Q0.24
-	unsigned int hgt = xFInverse(rows, 16, &shift2);				//Q0.24
+	unsigned int wdt = xf::Inverse(cols, 16, &shift1);				//Q0.24
+	unsigned int hgt = xf::Inverse(rows, 16, &shift2);				//Q0.24
 	char n1, n2;
 	if(shift1 > 24)
 	{
@@ -127,8 +129,8 @@ static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uin
 			unsigned short int x_inv1 = (unsigned short int)(wB >> 9);
 			unsigned short int x_inv2 = (unsigned short int)(wF >> 9);
 
-			unsigned int val1 = xFInverse(x_inv1, 0, &n1);
-			unsigned int val2 = xFInverse(x_inv2, 0, &n2);
+			unsigned int val1 = xf::Inverse(x_inv1, 0, &n1);
+			unsigned int val2 = xf::Inverse(x_inv2, 0, &n2);
 
 			unsigned long long int maxtmp = (unsigned long long int)((unsigned long long int)res * (unsigned long long int)val1) >> n1;
 			unsigned long long max = (maxtmp * (unsigned long long)val2)>>n2;
@@ -150,12 +152,12 @@ static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uin
 /*********************************************************************
  * auOtsuthreshold : Computes the otsu threshold for the input image
  *********************************************************************/
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"])
 
 template<int SRC_T, int ROWS, int COLS,int NPC=1>
-void xFOtsuThreshold(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, uint8_t &_thresh)
+void OtsuThreshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, uint8_t &_thresh)
 {
 
 	uint32_t hist[256];
@@ -164,10 +166,13 @@ void xFOtsuThreshold(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, uint8_t &_thres
 #pragma HLS INLINE off
 //#pragma HLS DATAFLOW
 #pragma HLS interface ap_fifo port=hist
-	xFcalcHist<SRC_T, ROWS, COLS, NPC>(_src_mat,  hist);
+	//xFcalcHist<SRC_T, ROWS, COLS, NPC>(_src_mat,  hist);
+
+	xFHistogram<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src_mat, hist, _src_mat.rows, _src_mat.cols);
 
 	xfOtsuKernel(hist, _src_mat.rows, _src_mat.cols, thresh);
 	_thresh = thresh;
+}
 }
 
 #endif //

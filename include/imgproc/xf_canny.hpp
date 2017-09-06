@@ -50,7 +50,7 @@ typedef unsigned char  uchar;
 #include "xf_canny_utils.hpp"
 
 
-
+namespace xf{
 /**
  *  xFDuplicate_rows
  */
@@ -213,7 +213,7 @@ void xFCannyEdgeDetector(hls::stream< XF_SNAME(WORDWIDTH_SRC)>&   _src_mat,
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int FILTER_TYPE,int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC,int NPC1>
-void xFcanny(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COLS, NPC1> & _dst_mat,unsigned char _lowthreshold,unsigned char _highthreshold)
+void Canny(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC1> & _dst_mat,unsigned char _lowthreshold,unsigned char _highthreshold)
 {
 
 
@@ -247,6 +247,7 @@ void xFcanny(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COL
 			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC1))) +j) = _dst.read();
 		}
 	}
+}
 }
 
 #endif

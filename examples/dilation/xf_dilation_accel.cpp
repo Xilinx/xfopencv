@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_dilation_config.h"
 
-void dilation_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst)
+void dilation_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst)
 {
 	
-	xFdilate<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPC1>(_src, _dst);
+	xf::dilate<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPC1>(_src, _dst);
 }

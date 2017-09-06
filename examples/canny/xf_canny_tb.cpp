@@ -202,16 +202,18 @@ int main(int argc, char **argv)
 	high_threshold = 64;
 
 
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> imgInput(img_gray.rows,img_gray.cols); //XF_NPPC1,XF_NPPC4
-	xF::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> nms_output(img_gray.rows,img_gray.cols);
-	xF::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> imgInput(img_gray.rows,img_gray.cols); //XF_NPPC1,XF_NPPC4
+	xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> nms_output(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
 
 
 	imgInput.copyTo(img_gray.data);
-
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+
+	
+	hw_ctr.start();
 	#endif
 
 	#pragma SDS async(1)
@@ -227,9 +229,11 @@ int main(int argc, char **argv)
 	edgetracing_accel(nms_output1,edge_output);
 
 	#if __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	
+	
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-
 	out_img.data = edge_output.copyFrom();
 
 

@@ -58,5 +58,5 @@ typedef unsigned short int  uint16_t;
 #elif FILTER_SIZE_7
 #define FILTER_WIDTH 7
 #endif
-void bilateral_filter_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst, float sigma_space, float sigma_color);
+void bilateral_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst, float sigma_space, float sigma_color);
 #endif //_AU_BILATERAL_FILTER_CONFIG_H_

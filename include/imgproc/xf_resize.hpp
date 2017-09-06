@@ -36,6 +36,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  * Image resizing function.
  */
+namespace xf {
 template<int SRC_ROWS,int SRC_COLS,int DEPTH,int NPC,int WORDWIDTH_SRC,int DST_ROWS,int DST_COLS>
 void xFresize(hls::stream <XF_TNAME(DEPTH,NPC)> &_in_mat,
 		hls::stream <XF_TNAME(DEPTH,NPC)> &_out_mat,
@@ -105,11 +106,11 @@ void xFresize(hls::stream <XF_TNAME(DEPTH,NPC)> &_in_mat,
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int INTERPOLATION_TYPE, int TYPE, int SRC_ROWS, int SRC_COLS, int DST_ROWS, int DST_COLS, int NPC> 
-void xFResize (xF::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> & _src, xF::Mat<TYPE, DST_ROWS, DST_COLS, NPC> & _dst)
+void resize (xf::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> & _src, xf::Mat<TYPE, DST_ROWS, DST_COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -147,5 +148,6 @@ void xFResize (xF::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> & _src, xF::Mat<TYPE, DST_
 		}
 	}
 	return;
+}
 }
 #endif

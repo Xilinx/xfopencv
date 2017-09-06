@@ -34,6 +34,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+
+namespace xf{
+
 static float xFBilateralFloatInv(float in_val)
 {
 	return float(1.0/(in_val));
@@ -105,7 +108,7 @@ static void xFBilateralProc(
 				}
 			}
 		}
-		OutputValues[0] = (XF_DTUNAME(DEPTH,NPC))((ap_ufixed<32,16>)(xFBilateralFloatMul(px_sum,xFBilateralFloatInv(weight_sum))) + (ap_ufixed<32,16>)(0.5));
+		OutputValues[0] = (XF_DTUNAME(DEPTH,NPC))((ap_ufixed<32,16>)(xf::xFBilateralFloatMul(px_sum,xf::xFBilateralFloatInv(weight_sum))) + (ap_ufixed<32,16>)(0.5));
 		return;
 }
 
@@ -405,9 +408,9 @@ static void xFbilateralFilterKernel(
 		int _border_type, uint16_t imgheight, uint16_t imgwidth, float sigma_color, float sigma_space)
 {
 	#pragma HLS INLINE OFF
-#pragma HLS ALLOCATION instances=xFBilateralFloatMul limit=1 function
-#pragma HLS ALLOCATION instances=xFBilateralFloatInv limit=1 function
-#pragma HLS ALLOCATION instances=xFBilateralExpf limit=1 function
+#pragma HLS ALLOCATION instances=xf::xFBilateralFloatMul limit=1 function
+#pragma HLS ALLOCATION instances=xf::xFBilateralFloatInv limit=1 function
+#pragma HLS ALLOCATION instances=xf::xFBilateralExpf limit=1 function
 	// assert(_border_type == XF_BORDER_REPLICATE && "Only XF_BORDER_REPLICATE is supported");
 
 	// assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
@@ -416,8 +419,8 @@ static void xFbilateralFilterKernel(
 	
 	
 	//compute the inverse square of sigma_color and sigma_space
-	float sigma_color_sqinv = xFBilateralFloatInv(xFBilateralFloatMul(sigma_color,sigma_color));
-	float sigma_space_sqinv = xFBilateralFloatInv(xFBilateralFloatMul(sigma_space,sigma_space));
+	float sigma_color_sqinv = xf::xFBilateralFloatInv(xf::xFBilateralFloatMul(sigma_color,sigma_color));
+	float sigma_space_sqinv = xf::xFBilateralFloatInv(xf::xFBilateralFloatMul(sigma_space,sigma_space));
 	
 	//find the number of valied distances for the filter size
 	//for 3x3, the euclidean distances to the neighborhood pixels, 0 and 1 are valid
@@ -500,7 +503,7 @@ static void xFbilateralFilterKernel(
 		for(unsigned short k=0; k<array_size; k++)
 		{
 			#pragma HLS UNROLL
-			exp_lut_sigma_color[k][i][m] = xFBilateralFloatMul(xFBilateralExpf( xFBilateralFloatMul(-0.5,xFBilateralFloatMul(sigma_color_sqinv,jsq)) ), xFBilateralExpf( xFBilateralFloatMul( -0.5,xFBilateralFloatMul(sigma_space_sqinv,distances_array[i]) ) ));
+			exp_lut_sigma_color[k][i][m] = xf::xFBilateralFloatMul(xf::xFBilateralExpf( xf::xFBilateralFloatMul(-0.5,xf::xFBilateralFloatMul(sigma_color_sqinv,jsq)) ), xf::xFBilateralExpf( xf::xFBilateralFloatMul( -0.5,xf::xFBilateralFloatMul(sigma_space_sqinv,distances_array[i]) ) ));
 		}
 		}
 	}
@@ -513,11 +516,11 @@ static void xFbilateralFilterKernel(
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
+
+
 template<int WINDOW_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC>
-void xFBilateralFilter(xF::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xF::Mat<TYPE, ROWS, COLS, NPC> & _dst_mat, float sigma_space, float sigma_color)
+void bilateralFilter(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst_mat, float sigma_space, float sigma_color)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -546,5 +549,6 @@ void xFBilateralFilter(xF::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xF::Mat<TYPE, 
 			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = out_stream.read();
 		}
 	}
+}
 }
 #endif

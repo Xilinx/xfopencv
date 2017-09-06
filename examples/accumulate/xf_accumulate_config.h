@@ -50,6 +50,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPC1 XF_NPPC8
 #endif
 
-void accumulate_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+void accumulate_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
 
 #endif//_XF_ACCUMULATE_CONFIG_H_

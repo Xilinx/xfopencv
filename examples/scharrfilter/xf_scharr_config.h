@@ -55,6 +55,6 @@ typedef unsigned uint32_t;
 #define NPC1 XF_NPPC8
 #endif
 
-void scharr_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgx,xF::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgy);
+void scharr_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &_dstgy);
 
 #endif // _XF_SCHARR_CONFIG_H_

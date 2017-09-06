@@ -60,6 +60,6 @@ typedef unsigned short int  uint16_t;
 #define DEG_TYPE XF_DEGREES
 #endif
 
-void phase_accel(xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xF::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst);
+void phase_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_src2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &_dst);
 
 #endif  // end of _XF_PHASE_CONFIG_H_

@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_resize_config.h"
 
-void resize_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst)
+void resize_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst)
 {	
-	xFResize <INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, NEWHEIGHT, NEWWIDTH, NPC1> (_src, _dst);
+	xf::resize <INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, NEWHEIGHT, NEWWIDTH, NPC1> (_src, _dst);
 }

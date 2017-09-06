@@ -39,7 +39,7 @@
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
-//namespace xF {
+namespace xf {
 
 static void weightsghcalculation3x3(float sigma, unsigned char *weights) {
 
@@ -1131,15 +1131,15 @@ void xFGaussianFilter(hls::stream< XF_SNAME(WORDWIDTH)> &_src, hls::stream< XF_S
 	}
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
 template<int FILTER_SIZE, int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC = 1>
-void xFGaussianBlur(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst, float sigma)
+void GaussianBlur(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst, float sigma)
 {
 #pragma HLS inline off
 
@@ -1177,5 +1177,6 @@ void xFGaussianBlur(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<SRC_T, ROWS,
 
 		}
 	}
+}
 }
 #endif //_XF_GAUSSIAN_HPP_

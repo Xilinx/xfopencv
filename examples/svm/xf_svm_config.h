@@ -51,6 +51,6 @@ typedef unsigned char uchar;
 #define 	IN_FRAC_BITS_1		15
 #define 	IN_FRAC_BITS_2		15
 
-void svm_accel(xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input1, xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input2, unsigned short ind1, unsigned short ind2, unsigned short frac1, unsigned short frac2, unsigned short n, unsigned char &out_frac, ap_int<32> &resultFIX);
+void svm_accel(xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input1, xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> &Input2, unsigned short ind1, unsigned short ind2, unsigned short frac1, unsigned short frac2, unsigned short n, unsigned char &out_frac, ap_int<32> &resultFIX);
 
 #endif  // end of _XF_SVM_CONFIG_H_

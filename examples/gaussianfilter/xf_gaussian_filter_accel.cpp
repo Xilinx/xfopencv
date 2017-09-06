@@ -30,7 +30,7 @@
 
 #include "xf_gaussian_filter_config.h"
 
-void gaussian_filter_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xF::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1>&imgOutput,float sigma)
+void gaussian_filter_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1>&imgOutput,float sigma)
 {
-	xFGaussianBlur<FILTER_WIDTH, XF_BORDER_CONSTANT, XF_8UC1, HEIGHT, WIDTH, NPC1>(imgInput, imgOutput, sigma);
+	xf::GaussianBlur<FILTER_WIDTH, XF_BORDER_CONSTANT, XF_8UC1, HEIGHT, WIDTH, NPC1>(imgInput, imgOutput, sigma);
 }

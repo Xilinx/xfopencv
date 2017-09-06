@@ -29,23 +29,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_pyr_dense_optical_flow_config.h"
 
-void pyr_dense_optical_flow_pyr_down_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS], xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS])
+void pyr_dense_optical_flow_pyr_down_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS], xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS])
 {	
 	for(int pyr_comp=0;pyr_comp<NUM_LEVELS-1; pyr_comp++)
 	{
 	#pragma SDS async(1)
 	#pragma SDS resource(1)
-		xFPyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr1[pyr_comp], mat_imagepyr1[pyr_comp+1]);
+		xf::PyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr1[pyr_comp], mat_imagepyr1[pyr_comp+1]);
 	#pragma SDS async(2)
 	#pragma SDS resource(2)
-		xFPyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr2[pyr_comp], mat_imagepyr2[pyr_comp+1]);
+		xf::PyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr2[pyr_comp], mat_imagepyr2[pyr_comp+1]);
 	#pragma SDS wait(1)
 	#pragma SDS wait(2)	
 	}
 }
 
-void pyr_dense_optical_flow_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in)
+void pyr_dense_optical_flow_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in, ap_uint<1> init_flag)
 {	
-	xFDensePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_current_img, _next_image, _streamFlowin, _streamFlowout, level, scale_up_flag, scale_in);
+	xf::DensePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_current_img, _next_image, _streamFlowin, _streamFlowout, level, scale_up_flag, scale_in, init_flag);
 }
 

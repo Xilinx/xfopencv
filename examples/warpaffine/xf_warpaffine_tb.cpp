@@ -97,19 +97,25 @@ int main(int argc,char **argv)
 
 	warpaffine_cref(img_gray, ocv_out_img,transform_matrix,interpolation);
 
-		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
-		xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
+		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
+		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
 
 		imgInput.copyTo(img_gray.data);
+		
+
 #if __SDSCC__
-TIME_STAMP_INIT
+		perf_counter hw_ctr;
+ hw_ctr.start();
 #endif
 
 		warpaffine_accel(imgInput, imgOutput, transform_matrix);
 
 #if __SDSCC__
-TIME_STAMP
+hw_ctr.stop();
+uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+
+	
 		hls_out_img.data = imgOutput.copyFrom();
 
 

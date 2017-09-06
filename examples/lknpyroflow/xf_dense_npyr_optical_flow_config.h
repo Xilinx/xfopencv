@@ -41,7 +41,7 @@
 #else
 	#define NPPC XF_NPPC1
 #endif
-void dense_non_pyr_of_accel(xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy);
+void dense_non_pyr_of_accel(xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy);
 
 #endif
 

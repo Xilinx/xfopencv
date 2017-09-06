@@ -46,6 +46,7 @@
  *  _src_mat	: Input image
  *  _dst_mat	: Output image
  */
+namespace xf{
 
 template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int SRC_TC>
 void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream, hls::stream<XF_SNAME(WORDWIDTH)> &out_strm,uint16_t img_height, uint16_t img_width)
@@ -115,7 +116,7 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 }
 
 template<int SRC_T,int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFHistEqualize(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2, hls::stream<XF_SNAME(WORDWIDTH)> &out_strm, uint16_t img_height,uint16_t img_width)
+void xFHistEqualize(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2, hls::stream<XF_SNAME(WORDWIDTH)> &out_strm, uint16_t img_height,uint16_t img_width)
  {
 
 #pragma HLS inline
@@ -143,9 +144,9 @@ void xFHistEqualize(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,hls::stream<XF_SN
 /****************************************************************
  * equalizeHist : Wrapper function which calls the main kernel
  ****************************************************************/
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_src1.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src1.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_src1.data":SEQUENTIAL)
@@ -155,7 +156,7 @@ void xFHistEqualize(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,hls::stream<XF_SN
 #pragma SDS data copy("_src1.data"[0:"_src1.size"])
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 template<int SRC_T, int ROWS, int COLS, int NPC = 1>
-void xFequalizeHist(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
+void equalizeHist(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS inline off
 #pragma HLS dataflow
@@ -193,4 +194,5 @@ void xFequalizeHist(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<SRC_T, ROWS, 
 	}
 
 }
+}//namespace
 #endif // _XF_HIST_EQUALIZE_H_

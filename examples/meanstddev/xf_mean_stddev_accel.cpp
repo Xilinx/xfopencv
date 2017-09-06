@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_mean_stddev_config.h"
 
-void mean_stddev_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev)
+void mean_stddev_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev)
 {
-	xFmeanstd<XF_8UC1, HEIGHT, WIDTH, _NPPC>(imgInput,&mean, &stddev);
+	xf::meanStdDev<XF_8UC1, HEIGHT, WIDTH, _NPPC>(imgInput,&mean, &stddev);
 }

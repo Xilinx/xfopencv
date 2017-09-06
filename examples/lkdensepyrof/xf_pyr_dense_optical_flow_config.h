@@ -40,6 +40,6 @@
 #define IN_TYPE unsigned char
 #define OUT_TYPE unsigned char
 
-void pyr_dense_optical_flow_pyr_down_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS], xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS]);
-void pyr_dense_optical_flow_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xF::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in);
+void pyr_dense_optical_flow_pyr_down_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS], xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS]);
+void pyr_dense_optical_flow_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in, ap_uint<1> init_flag);
 #endif

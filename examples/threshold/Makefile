@@ -3,8 +3,8 @@ EXECUTABLE = threshold.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFThreshold<0,0,1080, 1920,1>" xf_threshold_accel.cpp -files ./include/imgproc/xf_threshold.hpp -clkid 2 -sds-end -dmclkid 2
-#xFThreshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>
+-sds-hw "xf::Threshold<0,0,1080, 1920,1>" xf_threshold_accel.cpp -files ./include/imgproc/xf_threshold.hpp -clkid 2 -sds-end -dmclkid 2
+#xf::Threshold<XF_THRESHOLD_TYPE_RANGE,XF_8UC1,HEIGHT, WIDTH,XF_NPPC8>
 
 CC = sds++ ${SDSCC_FLAGS}
 

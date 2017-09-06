@@ -75,10 +75,13 @@ int main(int argc, char** argv)
 	//////////////////////////////////////////////////////////////
 
 	ap_int<4> _convert_type = CONVERT_TYPE;
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	#endif
 	int shift = 0;
 
-	xF::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_gray.rows,in_gray.cols);
 
 
 #if !(XF_CONVERT8UTO16S || XF_CONVERT8UTO16U || XF_CONVERT8UTO32S)
@@ -88,13 +91,16 @@ int main(int argc, char** argv)
 #endif
 
 #if __SDSCC__
-TIME_STAMP_INIT
+hw_ctr.start();
 #endif
 	convert_bitdepth_accel(imgInput, imgOutput, _convert_type, shift);
 #if __SDSCC__
-TIME_STAMP
+hw_ctr.stop();
 #endif
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
+	#if __SDSCC__
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	imwrite("out_hls.png", out_img);
 

@@ -79,11 +79,11 @@ int main(int argc, char** argv)
 
 	unsigned short height  = in_gray.rows;
 	unsigned short width  = in_gray.cols;
-
-
-
-	xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
-	xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	#endif
+	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
 #if T_8U
 	imgInput.copyTo((IN_TYPE *)in_gray.data);
 #elif T_16U
@@ -92,16 +92,18 @@ int main(int argc, char** argv)
 	imgInput.copyTo((short int*)in_conv_img.data);
 #endif
 	#if __SDSCC__
-	TIME_STAMP_INIT
+	hw_ctr.start();
 	#endif
 
 	//xFboxfilter<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_T,HEIGHT, WIDTH,NPIX>(imgInput,imgOutput);
 	boxfilter_accel(imgInput,imgOutput);
 
 	#if __SDSCC__
-	TIME_STAMP
-	#endif
+	hw_ctr.stop();
+	
 
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
 

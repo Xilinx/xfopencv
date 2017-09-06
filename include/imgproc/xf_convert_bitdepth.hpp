@@ -37,6 +37,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "common/xf_common.h"
+
+namespace xf{
 /**
  *   auConvertBitDepthKernel : Converts the input image bit depth to specified bit depth
  *  _src_strm  : Input  image
@@ -159,13 +161,13 @@ assert(((_height <= ROWS ) && (_width <= COLS)) && "ROWS and COLS should be grea
 
 }
 
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"])
 #pragma SDS data copy("_dst_mat.data"[0:"_dst_mat.size"])
 template <int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
-void xFconvertTo(xF::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xF::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat, ap_uint<4> _convert_type, int _shift)
+void convertTo(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat, ap_uint<4> _convert_type, int _shift)
 {
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
 	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
@@ -201,6 +203,7 @@ void xFconvertTo(xF::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xF::Mat<DST_T, ROWS,
 		}
 	}
 
+}
 }
 
 

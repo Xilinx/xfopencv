@@ -53,21 +53,23 @@ int main(int argc, char *argv[]){
 	unsigned int pix =0;
 
 	char out_string[200];
-	xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf0(frame0.rows,frame0.cols);
-	xF::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf1(frame0.rows,frame0.cols);
-	xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowx(frame0.rows,frame0.cols);
-	xF::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowy(frame0.rows,frame0.cols);
+	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf0(frame0.rows,frame0.cols);
+	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf1(frame0.rows,frame0.cols);
+	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowx(frame0.rows,frame0.cols);
+	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowy(frame0.rows,frame0.cols);
 	
 	buf0.copyTo(frame0.data);
 	buf1.copyTo(frame1.data);
 		
 		#if __SDSCC__
-			TIME_STAMP_INIT
+			perf_counter hw_ctr;hw_ctr.start();
 		#endif
 			dense_non_pyr_of_accel(buf0, buf1, flowx, flowy);
 		#if __SDSCC__
-			TIME_STAMP
+			hw_ctr.stop();
+			uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 		#endif
+		
 		/* getting the flow vectors from hardware and colorcoding the vectors on a canvas of the size of the input*/
 		float *flowx_copy;
 		float *flowy_copy;
@@ -88,8 +90,8 @@ int main(int argc, char *argv[]){
 		flowx_copy = (float *)flowx.copyFrom();
 		flowy_copy = (float *)flowy.copyFrom();
 		hls::stream <rgba_t> out_pix("Color pixel");
-		getOutPix<MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(flowx_copy,flowy_copy,frame1.data,out_pix,frame0.rows,frame0.cols,frame0.cols*frame0.rows);
-		writeMatRowsRGBA<MAX_HEIGHT, MAX_WIDTH, XF_NPPC1, KMED>(out_pix, outputBuffer,frame0.rows,frame0.cols,frame0.cols*frame0.rows);
+		xf::getOutPix<MAX_HEIGHT, MAX_WIDTH, XF_NPPC1>(flowx_copy,flowy_copy,frame1.data,out_pix,frame0.rows,frame0.cols,frame0.cols*frame0.rows);
+		xf::writeMatRowsRGBA<MAX_HEIGHT, MAX_WIDTH, XF_NPPC1, KMED>(out_pix, outputBuffer,frame0.rows,frame0.cols,frame0.cols*frame0.rows);
 		
 		rgba_t *outbuf_copy;
 		for(int i=0;i<frame0.rows;i++){

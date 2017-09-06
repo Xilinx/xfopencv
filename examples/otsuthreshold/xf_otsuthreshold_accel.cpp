@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_otsuthreshold_config.h"
 
-void otsuthreshold_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> &imgInput, unsigned char &Otsuval)
+void otsuthreshold_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> &imgInput, unsigned char &Otsuval)
 {
-		xFOtsuThreshold<XF_8UC1, HEIGHT, WIDTH, NPPC>(imgInput, Otsuval);
+		xf::OtsuThreshold<XF_8UC1, HEIGHT, WIDTH, NPPC>(imgInput, Otsuval);
 }

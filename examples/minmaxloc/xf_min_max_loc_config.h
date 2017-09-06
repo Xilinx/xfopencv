@@ -67,6 +67,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HEIGHT 1080
 #define WIDTH  1920
 
-void min_max_loc_accel(xF::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> &imgInput, int32_t &min_value, int32_t &max_value, unsigned short &_min_locx, unsigned short &_min_locy, unsigned short &_max_locx, unsigned short &_max_locy);
+void min_max_loc_accel(xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> &imgInput, int32_t &min_value, int32_t &max_value, unsigned short &_min_locx, unsigned short &_min_locy, unsigned short &_max_locx, unsigned short &_max_locy);
 
 #endif

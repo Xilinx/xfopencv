@@ -38,23 +38,29 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_config_params.h"
 
 
+// set 1 for video
 #define VIDEO_INPUT 0
+
+// total number of frames to be tracked
 #define TOTAL_FRAMES 100
 
 #define XF_HEIGHT 1080
 #define XF_WIDTH  1920
 
-// object coordinates (X1,Y1)--------> Top Left (Row, col) coordinates
-const int X1[XF_MAX_OBJECTS]= {150};
-const int Y1[XF_MAX_OBJECTS]= {257};
-const int HEIGHT_MST[XF_MAX_OBJECTS] = {206};
-const int WIDTH_MST[XF_MAX_OBJECTS] = {64};
+// Modify the information on objects to be tracked
+// coordinate system uses (row, col) where row = 0 and col = 0 correspond to the top-left corner of the input image
+const int X1[XF_MAX_OBJECTS]= {50, 200, 400};          // row coordinates of the top-left corner of all the objects to be tracked
+const int Y1[XF_MAX_OBJECTS]= {50, 170, 300};          // col coordinates of the top-left corner of all the objects to be tracked
+const int HEIGHT_MST[XF_MAX_OBJECTS] = {100, 100, 100};     // height of all the objects to be tracked (measured from top-left corner)      
+const int WIDTH_MST[XF_MAX_OBJECTS] = {100, 100, 100};       // width of all the objects to be tracked (measured from top-left corner)      
+
 
 #define IN_TYPE unsigned int
 
-void mean_shift_accel(xF::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, uint16_t* tlx, uint16_t* tly,
+void mean_shift_accel(xf::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, uint16_t* tlx, uint16_t* tly,
 		uint16_t* obj_height, uint16_t* obj_width, uint16_t* dx, uint16_t* dy, uint16_t* track,
 		uint8_t frame_status, uint8_t no_objects, uint8_t max_obj, uint8_t no_of_iterations);
 
 #endif 
+
 

@@ -5,8 +5,8 @@ DMCLK = -dmclkid 2
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  \
--sds-hw "xFPyrDown <0, 1080, 1920, 1>" xf_pyr_dense_optical_flow_accel.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end \
--sds-hw "xFDensePyrOpticalFlow<5,50,11,16,10,0,1080,1920,1>" xf_pyr_dense_optical_flow_tb.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end
+-sds-hw "xf::PyrDown <0, 1080, 1920, 1>" xf_pyr_dense_optical_flow_accel.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end \
+-sds-hw "xf::DensePyrOpticalFlow<5,50,11,16,10,0,1080,1920,1>" xf_pyr_dense_optical_flow_tb.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end
 
 CC = sds++ ${SDSCC_FLAGS}
 

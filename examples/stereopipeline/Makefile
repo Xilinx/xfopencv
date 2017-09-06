@@ -3,7 +3,9 @@ EXECUTABLE = stereo_pipeline.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFStereoPipeline<128,1080,1920,0,1,1,9,5,15,48,16>" xf_stereo_pipeline_accel.cpp -files ./include/imgproc/xf_stereo_pipeline.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::InitUndistortRectifyMapInverse<1080,1920,9,5,4,1>" ./example/xf_stereo_pipeline_accel.cpp -files ./include/imgproc/xf_stereo_pipeline.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::remap<128,0,4,0,1080,1920,1>" ./example/xf_stereo_pipeline_accel.cpp -files ./include/imgproc/xf_remap.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::StereoBM<1080,1920,0,1,1,15,48,16>" ./example/xf_stereo_pipeline_accel.cpp -files ./include/imgproc/xf_stereoBM.hpp -clkid 2 -sds-end -dmclkid 2
 
 CC = sds++ ${SDSCC_FLAGS}
 

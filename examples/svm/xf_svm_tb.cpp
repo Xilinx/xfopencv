@@ -64,8 +64,8 @@ int main()
 	uint16_t frac2 = IN_FRAC_BITS_2;
 	uint16_t n = NO_OF_KERNEL_ELEMENTS;
 
-	xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> Input1(1,arr_size1);
-	xF::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_2, XF_NPPC1> Input2(1,arr_size2);
+	xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_1, XF_NPPC1> Input1(1,arr_size1);
+	xf::Mat<XF_16SC1, 1, IN_ARRAY_SIZE_2, XF_NPPC1> Input2(1,arr_size2);
 
 	// fixed point conversion of input data & filling into Mat
 	ap_int<16> infix_1[IN_ARRAY_SIZE_1], infix_2[IN_ARRAY_SIZE_2];
@@ -78,13 +78,15 @@ int main()
 	ap_int<32> resultFIX;
 
 #if __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 #endif
 	svm_accel(Input1, Input2, ind1,ind2, frac1, frac2, n, out_frac, resultFIX);
 #if __SDSCC__
-	TIME_STAMP
-#endif
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 
+#endif
 	int bias_fix = bias * pow(2,out_frac);
 	resultFIX += bias_fix;
 

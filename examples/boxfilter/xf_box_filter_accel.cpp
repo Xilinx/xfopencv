@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_box_filter_config.h"
 
-void boxfilter_accel(xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_dst)
+void boxfilter_accel(xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_src,xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_dst)
 {
 	
-	xFboxfilter<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_T,HEIGHT, WIDTH,NPIX>(_src,_dst);
+	xf::boxFilter<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_T,HEIGHT, WIDTH,NPIX>(_src,_dst);
 }

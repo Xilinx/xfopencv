@@ -3,7 +3,7 @@ EXECUTABLE = phase.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFphase<1,2,2,1080, 1920,1>" xf_phase_accel.cpp -files ./include/core/xf_phase.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::phase<1,2,2,1080, 1920,1>" xf_phase_accel.cpp -files ./include/core/xf_phase.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

@@ -35,6 +35,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include "xf_common.h"
 
+
 /**
  * Extract Pixels from a packed word into an array from the index pos.
  * The number of pixels to be extracted is determined by the NPC.

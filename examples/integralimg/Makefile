@@ -3,8 +3,8 @@ EXECUTABLE = integralimg.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFIntegralImage<0,3,1080,1920,1>" xf_integral_image_accel.cpp -files ./include/imgproc/xf_integral_image.hpp -clkid 2 -sds-end -dmclkid 2
-#xFIntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>
+-sds-hw "xf::IntegralImage<0,3,1080,1920,1>" xf_integral_image_accel.cpp -files ./include/imgproc/xf_integral_image.hpp -clkid 2 -sds-end -dmclkid 2
+#xf::IntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>
 
 CC = sds++ ${SDSCC_FLAGS}
 

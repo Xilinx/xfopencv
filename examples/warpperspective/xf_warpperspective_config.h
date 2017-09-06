@@ -39,11 +39,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "imgproc/xf_warpperspective.hpp"
 #include "xf_config_params.h"
 
-#define _XF_SYNTHESIS_		1
-
-
-//#define RO 1
-//#define NO 0
+#define _XF_SYNTHESIS_		0
 
 #if RO
 #define NPIX				XF_NPPC8
@@ -60,5 +56,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define IN_TYPE unsigned long long int
 
-void perspective_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_src,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst,float *transform_matrix);
+void perspective_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst,float *transform_matrix);
 #endif

@@ -40,6 +40,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "core/xf_math.h"
+
+namespace xf{
+
 template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
 void xFStddevkernel(hls::stream<XF_SNAME(WORDWIDTH)>&  _src_mat1,unsigned short* _mean,unsigned short*_dst_stddev,uint16_t height,uint16_t width)
 {
@@ -124,7 +127,7 @@ int p=0;
 	uint32_t t1 = (uint32_t)((Varstddev >> 16) << 16);
 
 
-	_dst_stddev[0] = (unsigned short)xFSqrt(t1);//StdDev;//(StdDev >> 4);		    // STANDARD DEVIATION: Q(I,8) format
+	_dst_stddev[0] = (unsigned short)xf::Sqrt(t1);//StdDev;//(StdDev >> 4);		    // STANDARD DEVIATION: Q(I,8) format
 
 }
 
@@ -147,16 +150,14 @@ void xFMeanStddev(hls::stream< XF_SNAME(WORDWIDTH) >& _src_mat,unsigned short* _
 
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
-
-
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 
 
 
 template<int SRC_T,int ROWS, int COLS,int NPC=1>
-void xFmeanstd(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,unsigned short* _mean,unsigned short* _stddev)
+void meanStdDev(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,unsigned short* _mean,unsigned short* _stddev)
 {
 #pragma HLS inline off
 #pragma HLS dataflow
@@ -177,6 +178,7 @@ void xFmeanstd(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,unsigned short* _mean,unsi
 	}
 
 	xFMeanStddev<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _mean, _stddev, _src.rows, _src.cols);
+}
 }
 
 #endif // _XF_MEAN_STDDEV_HPP_

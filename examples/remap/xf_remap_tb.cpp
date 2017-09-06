@@ -95,23 +95,25 @@ int main(int argc, char** argv)
 	cv::remap (src,ocv_remapped,map_x,map_y,CV_INTER_NN,cv::BORDER_CONSTANT,cv::Scalar(0, 0, 0) );
 
 	//////////////////	HLS Function Call  ////////////////////////
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
-	xF::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxMat(src.rows,src.cols);
-	xF::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
-	xF::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxMat(src.rows,src.cols);
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
 
 	inMat.copyTo(src.data);
 	mapxMat.copyTo((float*)map_x.data);
 	mapyMat.copyTo((float*)map_y.data);
-
+	
 #if __SDSCC__
-		TIME_STAMP_INIT
+		perf_counter hw_ctr;
+		hw_ctr.start();
 #endif
 	remap_accel(inMat,remappedMat,mapxMat,mapyMat,XF_REMAP_INTERPOLATION);
 #if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
-
+	
 	hls_remapped.data = remappedMat.copyFrom();
 
 	/// Save the results

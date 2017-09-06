@@ -37,7 +37,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_cvt_color_utils.hpp"
 #include <assert.h>
 
-
+namespace xf {
 template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC,int TC>
 void write_y(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& src0,hls::stream< XF_SNAME(WORDWIDTH_SRC) >& dst0,uint16_t height,uint16_t width)
 {
@@ -1328,10 +1328,10 @@ void xFRgba2Yuv4(
 		KernRgba2Yuv4<ROWS,COLS,NPC,WORDWIDTH_SRC,WORDWIDTH_DST>(rgba, y_plane, u_plane, v_plane,height,width);
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_u_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_v_image.data":SEQUENTIAL)
@@ -1341,7 +1341,7 @@ void xFRgba2Yuv4(
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 template <int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
-void xFrgba2yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xF::Mat<DST_T, ROWS, COLS, NPC> & _u_image, xF::Mat<DST_T, ROWS, COLS, NPC> & _v_image)
+void rgba2yuv4(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xf::Mat<DST_T, ROWS, COLS, NPC> & _u_image, xf::Mat<DST_T, ROWS, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1411,10 +1411,10 @@ void xFRgba2Iyuv(
 	}
 }
 
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_u_image.data":SEQUENTIAL)
@@ -1424,7 +1424,7 @@ void xFRgba2Iyuv(
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template <int SRC_T, int DST_T, int ROWS, int COLS, int NPC=0>
-void xFrgba2iyuv(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xF::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image, xF::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
+void rgba2iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1514,9 +1514,9 @@ void xFRgba2Nv21(
 
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_uv.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_uv.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_uv.data":SEQUENTIAL)
@@ -1524,7 +1524,7 @@ void xFRgba2Nv21(
 #pragma SDS data copy("_y.data"[0:"_y.size"])
 #pragma SDS data copy("_uv.data"[0:"_uv.size"])
 template <int SRC_T, int Y_T, int UV_T, int ROWS, int COLS, int NPC=1>
-void xFrgba2nv21(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<Y_T, ROWS, COLS, NPC> & _y, xF::Mat<UV_T, ROWS/2, COLS/2, NPC> & _uv)
+void rgba2nv21(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<Y_T, ROWS, COLS, NPC> & _y, xf::Mat<UV_T, ROWS/2, COLS/2, NPC> & _uv)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1573,9 +1573,9 @@ void xFrgba2nv21(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<Y_T, ROWS, COLS
 	}
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_uv.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_uv.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_uv.data":SEQUENTIAL)
@@ -1583,7 +1583,7 @@ void xFrgba2nv21(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<Y_T, ROWS, COLS
 #pragma SDS data copy("_y.data"[0:"_y.size"])
 #pragma SDS data copy("_uv.data"[0:"_uv.size"])
 template <int SRC_T, int Y_T, int UV_T, int ROWS, int COLS, int NPC=1>
-void xFrgba2nv12(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<Y_T, ROWS, COLS, NPC> & _y, xF::Mat<UV_T, ROWS/2, COLS/2, NPC> & _uv)
+void rgba2nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<Y_T, ROWS, COLS, NPC> & _y, xf::Mat<UV_T, ROWS/2, COLS/2, NPC> & _uv)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1669,10 +1669,10 @@ void xFIyuv2Rgba(
 //}
 
 }
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_u.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_v.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst0.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_dst0.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_u.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_v.data":SEQUENTIAL)
@@ -1682,7 +1682,7 @@ void xFIyuv2Rgba(
 #pragma SDS data copy("src_v.data"[0:"src_v.size"])
 #pragma SDS data copy("_dst0.data"[0:"_dst0.size"])
 template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC=1>
-void xFiyuv2rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
+void iyuv2rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1794,12 +1794,12 @@ void xFIyuv2Yuv4(hls::stream<XF_SNAME(WORDWIDTH)>& src0,
 		write_y<ROWS,COLS,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC)),(ROWS>>1)>(src0,dst0,height,width);
 	}
 }
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_u.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_v.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_u.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_v.data":SEQUENTIAL)
@@ -1813,7 +1813,7 @@ void xFIyuv2Yuv4(hls::stream<XF_SNAME(WORDWIDTH)>& src0,
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int ROWS, int COLS, int NPC=1 >
-void xFiyuv2yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image, xF::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xF::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
+void iyuv2yuv4(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image, xf::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -1891,11 +1891,11 @@ void xFiyuv2yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xF::Mat<SRC_T, ROWS/4,
 	}
 }
 
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_u.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_v.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_u.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_v.data":SEQUENTIAL)
@@ -1907,7 +1907,7 @@ void xFiyuv2yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xF::Mat<SRC_T, ROWS/4,
 #pragma SDS data copy("_y_image.data"[0:"_y_image.size"])
 #pragma SDS data copy("_uv_image.data"[0:"_uv_image.size"])
 template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC=1 ,int NPC_UV=1>
-void xFiyuv2nv12(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image, xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
+void iyuv2nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y, xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & src_v,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image, xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2004,12 +2004,12 @@ void xFNv122Iyuv(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 		write_y<ROWS,COLS,NPC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC)),(ROWS>>1)>(src0,dst0,height,width);
 	}
 }
-//auNv122Iyuv
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+//Nv122Iyuv
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
@@ -2021,7 +2021,7 @@ void xFNv122Iyuv(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFnv122iyuv(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & _u_image,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & _v_image)
+void nv122iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2103,9 +2103,9 @@ void xFNv122Rgba(hls::stream<XF_SNAME(WORDWIDTH_Y)>& in_y,hls::stream< XF_SNAME(
 
 }
 //Nv122Rgba
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst1.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_dst1.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst0.data":SEQUENTIAL)
@@ -2114,7 +2114,7 @@ void xFNv122Rgba(hls::stream<XF_SNAME(WORDWIDTH_Y)>& in_y,hls::stream< XF_SNAME(
 #pragma SDS data copy("src_uv.data"[0:"src_uv.size"])
 #pragma SDS data copy("_dst0.data"[0:"_dst0.size"])
 template<int SRC_T,int UV_T,int DST_T,int ROWS,int COLS,int NPC=1>
-void xFnv122rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC> & src_uv,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
+void nv122rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC> & src_uv,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2202,11 +2202,11 @@ void xFNv122Yuv4(hls::stream<XF_SNAME(WORDWIDTH_DST) >& src0,
 }
 //auNv122Yuv4
 
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
@@ -2218,7 +2218,7 @@ void xFNv122Yuv4(hls::stream<XF_SNAME(WORDWIDTH_DST) >& src0,
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFnv122yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xF::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xF::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
+void nv122yuv4(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2332,12 +2332,12 @@ void xFNv212Iyuv(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 
 
 
-//auNv212Iyuv
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+//Nv212Iyuv
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
@@ -2349,7 +2349,7 @@ void xFNv212Iyuv(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFnv212iyuv(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & _u_image,xF::Mat<SRC_T, ROWS/4, COLS, NPC> & _v_image)
+void nv212iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2433,9 +2433,9 @@ void xFNv212Rgba(
 
 }
 //Nv212Rgba
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst1.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_dst1.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst0.data":SEQUENTIAL)
@@ -2444,7 +2444,7 @@ void xFNv212Rgba(
 #pragma SDS data copy("src_uv.data"[0:"src_uv.size"])
 #pragma SDS data copy("_dst0.data"[0:"_dst0.size"])
 template<int SRC_T,int UV_T,int DST_T,int ROWS,int COLS,int NPC=1>
-void xFnv212rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC> & src_uv,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
+void nv212rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC> & src_uv,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst0)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2529,11 +2529,11 @@ void xFNv212Yuv4(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 
 }
 //auNv212Yuv4
-#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
+/*#pragma SDS data data_mover("src_y.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("src_uv.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)*/
 #pragma SDS data access_pattern("src_y.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src_uv.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
@@ -2545,7 +2545,7 @@ void xFNv212Yuv4(hls::stream< XF_SNAME(WORDWIDTH_DST) >& src0,
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFnv212yuv4(xF::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xF::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xF::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xF::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
+void nv212yuv4(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & src_uv,xf::Mat<SRC_T, ROWS, COLS, NPC> & _y_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2655,19 +2655,20 @@ void xFUyvy2Iyuv(
 }
 
 
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_u_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_v_image.data":SEQUENTIAL)
+#pragma SDS data copy("_src.data"[0:"_src.size"])
 #pragma SDS data copy("_y_image.data"[0:"_y_image.size"])
 #pragma SDS data copy("_u_image.data"[0:"_u_image.size"])
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 template<int SRC_T,int DST_T,int ROWS,int COLS,int NPC=1>
-void xFuyvy2iyuv(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<DST_T, ROWS, COLS, NPC> & _y_image,xF::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image,xF::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
+void uyvy2iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC> & _y_image,xf::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image,xf::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2745,9 +2746,9 @@ void xFUyvy2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& uyvy,hls::stream < XF_
 		KernUyvy2Nv12<ROWS,COLS,NPC,WORDWIDTH_SRC,WORDWIDTH_Y,WORDWIDTH_UV,((COLS>>1)>>XF_BITSHIFT(NPC))> (uyvy, y_plane, uv_plane, height, width);
 	}
 }
-	#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-	#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
-	#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)
+//	#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//	#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
+//	#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)
 	#pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 	#pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 	#pragma SDS data access_pattern("_uv_image.data":SEQUENTIAL)
@@ -2755,7 +2756,7 @@ void xFUyvy2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& uyvy,hls::stream < XF_
 	#pragma SDS data copy("_y_image.data"[0:"_y_image.size"])
 	#pragma SDS data copy("_uv_image.data"[0:"_uv_image.size"])
 template<int SRC_T,int Y_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFuyvy2nv12(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<Y_T, ROWS, COLS, NPC> & _y_image,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
+void uyvy2nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<Y_T, ROWS, COLS, NPC> & _y_image,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2818,15 +2819,15 @@ void xFUyvy2Rgba(
 		KernUyvy2Rgba<ROWS,COLS,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,((COLS>>1)>>XF_BITSHIFT(NPC))>(uyvy, rgba, height, width);
 
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
 template<int SRC_T,int DST_T,int ROWS,int COLS,int NPC=1>
-void xFuyvy2rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst)
+void uyvy2rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -2864,14 +2865,14 @@ void xFuyvy2rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<DST_T, ROWS, COL
 
 
 }
-//auYuyv2Iyuv
+//Yuyv2Iyuv
 template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
 void xFYuyv2Iyuv(
 		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& yuyv,hls::stream < XF_SNAME(WORDWIDTH_DST) >& y_plane,
 		hls::stream < XF_SNAME(WORDWIDTH_DST) >& u_plane,
 		hls::stream < XF_SNAME(WORDWIDTH_DST) >& v_plane, uint16_t height, uint16_t width)
 {
-//#pragma HLS license key=IPAUVIZ_CV_BASIC
+
 /*	assert(( (yuyv.cols == (y_plane.cols<<1)) && (yuyv.rows == y_plane.rows))
 			&& "YUYV and Y plane dimensions mismatch");
 	assert(( (yuyv.cols == (u_plane.cols<<1)) && (yuyv.rows == (u_plane.rows<<2)))
@@ -2892,10 +2893,10 @@ void xFYuyv2Iyuv(
 		KernYuyv2Iyuv<ROWS,COLS,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,((COLS>>1)>>XF_BITSHIFT(NPC))>(yuyv, y_plane, u_plane, v_plane, height, width);
 	}
 }
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_u_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_v_image.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_u_image.data":SEQUENTIAL)
@@ -2906,7 +2907,7 @@ void xFYuyv2Iyuv(
 #pragma SDS data copy("_v_image.data"[0:"_v_image.size"])
 
 template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC=1>
-void xFyuyv2iyuv(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src, xF::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xF::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image, xF::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
+void yuyv2iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<DST_T, ROWS, COLS, NPC> & _y_image, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _u_image, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _v_image)
 {
 #pragma HLS INLINE OFF
 	hls::stream<XF_TNAME(SRC_T, NPC)> src;
@@ -2981,9 +2982,9 @@ void xFYuyv2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& yuyv, hls::stream < XF
 	}
 }
 
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_y_image.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_uv_image.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_y_image.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_uv_image.data":SEQUENTIAL)
@@ -2991,7 +2992,7 @@ void xFYuyv2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& yuyv, hls::stream < XF
 #pragma SDS data copy("_y_image.data"[0:"_y_image.size"])
 #pragma SDS data copy("_uv_image.data"[0:"_uv_image.size"])
 template<int SRC_T,int Y_T,int UV_T,int ROWS,int COLS,int NPC=1,int NPC_UV=1>
-void xFyuyv2nv12(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<Y_T, ROWS, COLS, NPC> & _y_image,xF::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
+void yuyv2nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<Y_T, ROWS, COLS, NPC> & _y_image,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv_image)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -3052,8 +3053,8 @@ void xFYuyv2Rgba(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& yuyv,hls::stream < XF_
 
 }
 
-#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
@@ -3061,7 +3062,7 @@ void xFYuyv2Rgba(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& yuyv,hls::stream < XF_
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
 template<int SRC_T,int DST_T,int ROWS,int COLS,int NPC=1>
-void xFyuyv2rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst)
+void yuyv2rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -3100,6 +3101,6 @@ void xFyuyv2rgba(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src,xF::Mat<DST_T, ROWS, COL
 	}
 }
 
-
+}
 
 #endif

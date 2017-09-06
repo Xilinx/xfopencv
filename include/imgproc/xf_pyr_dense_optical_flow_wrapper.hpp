@@ -39,6 +39,8 @@
 	#include "imgproc/xf_optical_flow_pyr_down_kernel.hpp"
 #endif
 
+namespace xf{
+
 	#pragma SDS data mem_attribute("_current_img.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_next_image.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 	#pragma SDS data mem_attribute("_streamFlowin.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 	#pragma SDS data mem_attribute("_streamFlowout.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
@@ -49,18 +51,19 @@
 	#pragma SDS data copy("_next_image.data"[0:"_next_image.size"])
 	#pragma SDS data copy("_streamFlowin.data"[0:"_streamFlowin.size"])
 	#pragma SDS data copy("_streamFlowout.data"[0:"_streamFlowout.size"])
-	#pragma SDS data data_mover("_current_img.data":AXIDMA_SIMPLE)
-	#pragma SDS data data_mover("_next_image.data":AXIDMA_SIMPLE)
-	#pragma SDS data data_mover("_streamFlowin.data":AXIDMA_SIMPLE)
-	#pragma SDS data data_mover("_streamFlowout.data":AXIDMA_SIMPLE)
+	//#pragma SDS data data_mover("_current_img.data":AXIDMA_SIMPLE)
+	//#pragma SDS data data_mover("_next_image.data":AXIDMA_SIMPLE)
+	//#pragma SDS data data_mover("_streamFlowin.data":AXIDMA_SIMPLE)
+	//#pragma SDS data data_mover("_streamFlowout.data":AXIDMA_SIMPLE)
 template<int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, int TYPE, int ROWS, int COLS, int NPC>
-void xFDensePyrOpticalFlow(xF::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _current_img, xF::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _next_image, xF::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowin, xF::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in)
+void DensePyrOpticalFlow(xf::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _current_img, xf::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _next_image, xf::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowin, xf::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in, ap_uint<1> init_flag)
 {
 	#pragma HLS INLINE OFF
 	#ifdef __SDSVHLS_SYNTHESIS__
 		#include "imgproc/xf_pyr_dense_optical_flow_wrapper_body.inc"
 	#endif
 }
+
 
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
@@ -69,12 +72,13 @@ void xFDensePyrOpticalFlow(xF::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _current_img, x
 #pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int TYPE, int ROWS, int COLS, int NPC> 
-void xFPyrDown (xF::Mat<TYPE, ROWS, COLS, NPC> & _src, xF::Mat<TYPE, ROWS, COLS, NPC> & _dst)
+void PyrDown (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 
 	#ifdef __SDSVHLS_SYNTHESIS__
 		#include "imgproc/xf_optical_flow_pyr_down_body.inc"
 	#endif
+}
 }	
 #endif

@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_warp_transform_config.h"
 
-void warp_transform_accel(xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_src, xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_dst, float *R)
+void warp_transform_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_src, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> &_dst, float *R)
 {	
-	xFWarpTransform<NUM_STORE_ROWS, START_PROC, TRANSFORM_TYPE, INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_src, _dst, R);
+	xf::warpTransform<NUM_STORE_ROWS, START_PROC, TRANSFORM_TYPE, INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_src, _dst, R);
 }

@@ -43,6 +43,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPC1 XF_NPPC1
 #endif
 
-void resize_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xF::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst);
+void resize_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst);
 
 #endif

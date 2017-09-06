@@ -42,7 +42,7 @@ typedef unsigned short  uint16_t;
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
-//namespace xF{
+namespace xf{
 
 
 
@@ -295,11 +295,11 @@ void xFDilation(
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 
 template<int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
-void xFdilate(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
+void dilate(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
 
@@ -336,5 +336,5 @@ void xFdilate(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<SRC_T, ROWS, CO
 		}
 	}
 }
-//}
+}
 #endif //_XF_DILATION_HPP_

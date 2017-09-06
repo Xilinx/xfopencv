@@ -32,7 +32,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_lut_config.h"
 
 
-void lut_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput,unsigned char *lut_ptr)
+void lut_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput,unsigned char *lut_ptr)
 {
-	xFLUT< XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput,imgOutput,lut_ptr);
+	xf::LUT< XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput,imgOutput,lut_ptr);
 }

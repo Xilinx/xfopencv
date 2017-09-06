@@ -36,6 +36,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
+namespace xf{
+
 /*****************************************************************************
  * 	xFChannelExtract: Extracts one channel from a multiple _channel image
  *
@@ -129,15 +131,15 @@ void xfChannelExtract(
 	}
 }
 
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"])
 #pragma SDS data copy("_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
-void xFextractChannel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat, uint16_t _channel)
+void extractChannel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat, uint16_t _channel)
 {
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
 	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
@@ -171,6 +173,7 @@ void xFextractChannel(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xF::Mat<DST_T,
 			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = outpix;
 		}
 	}
+}
 }
 
 #endif//_XF_CHANNEL_EXTRACT_HPP_

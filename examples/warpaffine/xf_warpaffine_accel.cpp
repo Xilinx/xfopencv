@@ -32,13 +32,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_warpaffine_config.h"
 
 
-void warpaffine_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgInput,xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgOutput,float *transform_matrix)
+void warpaffine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgInput,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &imgOutput,float *transform_matrix)
 {
 	#if NO
-	xFwarpAffine<INTER_POLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, transform_matrix);
+	xf::warpAffine<INTER_POLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(imgInput, imgOutput, transform_matrix);
 	#endif
 	#if RO
-	xFwarpAffine<INTER_POLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, imgOutput, transform_matrix);
+	xf::warpAffine<INTER_POLATION, XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(imgInput, imgOutput, transform_matrix);
 	#endif
 }
 

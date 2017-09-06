@@ -85,36 +85,42 @@ int main(int argc,char **argv)
 	list = (unsigned int *)malloc((MAXCORNERS)*sizeof( unsigned int));
 #endif
 
+	
 
 #if NO
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
 
 	imgInput.copyTo(img_gray.data);
 #ifdef __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 #endif
 	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
 #ifdef __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 #endif
 
 #if RO
 
-	xF::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
 
 	imgInput.copyTo(img_gray.data);
 #ifdef __SDSCC__
-	TIME_STAMP_INIT
+	perf_counter hw_ctr;
+	hw_ctr.start();
 #endif
 	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
 #ifdef __SDSCC__
-	TIME_STAMP
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 #endif
 
+	
 
 	unsigned int val;
 	unsigned short int row, col;

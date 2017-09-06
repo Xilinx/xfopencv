@@ -42,7 +42,7 @@ typedef unsigned short  uint16_t;
 #include "common/xf_utility.h"
 
 
-
+namespace xf{
 
 /********************************************************************
  * xFGradientX : X-Gradient Computation
@@ -373,16 +373,16 @@ void xFScharrFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)>&   _src,
 #pragma SDS data mem_attribute("_dst_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_matx.data":SEQUENTIAL,"_dst_maty.data":SEQUENTIAL)
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_matx.data":AXIDMA_SIMPLE)
-#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_matx.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
 #pragma SDS data sys_port("_src_mat.data":HP)
 #pragma SDS data sys_port("_dst_matx.data":HP)
 #pragma SDS data sys_port("_dst_maty.data":HP)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_matx.data"[0:"_dst_matx.size"],"_dst_maty.data"[0:"_dst_maty.size"])
 
 template<int BORDER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void xFScharr(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xF::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
+void Scharr(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
 {
 	
 
@@ -422,5 +422,6 @@ void xFScharr(xF::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xF::Mat<DST_T, ROWS, CO
 	}
 
 
+}
 }
 #endif  // _XF_SCHARR_HPP_

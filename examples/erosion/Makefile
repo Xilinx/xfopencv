@@ -3,7 +3,7 @@ EXECUTABLE = erosion.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xFerode<0,0,1080, 1920,1>" xf_erosion_accel.cpp -files ./include/imgproc/xf_erosion.hpp -clkid 1 -sds-end -dmclkid 1
+-sds-hw "xf::erode<0,0,1080, 1920,1>" xf_erosion_accel.cpp -files ./include/imgproc/xf_erosion.hpp -clkid 1 -sds-end -dmclkid 1
 
 
 CC = sds++ ${SDSCC_FLAGS}

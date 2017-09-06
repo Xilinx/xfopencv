@@ -42,7 +42,7 @@ typedef unsigned short  uint16_t;
 
 #define NPC1 XF_NPPC1
 
-void integral_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xF::Mat<XF_32UC1, HEIGHT, WIDTH, NPC1> &_dst);
+void integral_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_32UC1, HEIGHT, WIDTH, NPC1> &_dst);
 #endif
 
 // _XF_INTEGRAL_IMAGE_CONFIG_H_

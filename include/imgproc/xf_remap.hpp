@@ -42,6 +42,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HLS_INTER_TAB_SIZE 32
 #define HLS_INTER_BITS     5
 
+namespace xf{
+
 template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapNNI(
 		hls::stream< SRC_T >   &src,
@@ -178,8 +180,8 @@ void xFRemapLI(
 				//                     ya0 = (y%WIN_ROW)/2;
 				//                     ya1 = (ynext%WIN_ROW)/2;
 				//                 }
-				// Both cases reduce to this, if WIN_ROW is a power of two.
-				assert(((WIN_ROW & (WIN_ROW-1)) == 0) && "WIN_ROW must be a power of two");
+				// Both cases reduce to this, if WIN_ROW is a multiple of two.
+				assert(((WIN_ROW & 1) == 0) && "WIN_ROW must be a multiple of two");
 				xa0 = x/2 + x%2;
 				xa1 = x/2;
 				ya0 = (y/2 + y%2)%(WIN_ROW/2);
@@ -235,13 +237,13 @@ void xFRemapKernel(
 	}
 }
 
-#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE,"_remapped_mat.data":AXIDMA_SIMPLE,"_mapx_mat.data":AXIDMA_SIMPLE,"_mapy_mat.data":AXIDMA_SIMPLE)
+//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE,"_remapped_mat.data":AXIDMA_SIMPLE,"_mapx_mat.data":AXIDMA_SIMPLE,"_mapy_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_remapped_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapx_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapy_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_remapped_mat.data":SEQUENTIAL,"_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.rows*_src_mat.cols"], "_remapped_mat.data"[0:"_remapped_mat.size"],"_mapx_mat.data"[0:"_mapx_mat.size"],"_mapy_mat.data"[0:"_mapy_mat.size"])
 template<int WIN_ROWS, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
-void xFRemap (xF::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xF::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xF::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
-		xF::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat, int interpolation=XF_INTERPOLATION_NN)
+void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat, int interpolation=XF_INTERPOLATION_NN)
 {
 #pragma HLS inline off
 #pragma HLS dataflow
@@ -296,6 +298,7 @@ void xFRemap (xF::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xF::Mat<DST_T, ROWS, CO
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 		_remapped_mat.data[i] = _remapped.read();
 	}
+}
 }
 
 #endif//_XF_REMAP_HPP_

@@ -2,7 +2,7 @@ APPSOURCES =xf_pyr_down_tb.cpp xf_pyr_down_accel.cpp
 EXECUTABLE = pyrdown.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xFPyrDown <0, 1080, 1920, 1>" xf_pyr_down_accel.cpp -files ./include/imgproc/xf_pyr_down.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xf::PyrDown <0, 1080, 1920, 1>" xf_pyr_down_accel.cpp -files ./include/imgproc/xf_pyr_down.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 

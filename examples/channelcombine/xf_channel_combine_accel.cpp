@@ -30,7 +30,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_channel_combine_config.h"
 
-void channel_combine_accel(xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3, xF::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xF::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput)
+void channel_combine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput)
 {
-		xFmerge<XF_8UC1, XF_8UC4, HEIGHT, WIDTH, XF_NPPC1>(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
+		xf::merge<XF_8UC1, XF_8UC4, HEIGHT, WIDTH, XF_NPPC1>(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
 }

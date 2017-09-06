@@ -3,7 +3,7 @@ EXECUTABLE = mean_shift.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xFMeanShift<1080,1920,250,250,10,4,7,1>" xf_mean_shift_accel.cpp -files ./include/imgproc/xf_mean_shift.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::MeanShift<1080,1920,250,250,10,4,7,1>" xf_mean_shift_accel.cpp -files ./include/imgproc/xf_mean_shift.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}

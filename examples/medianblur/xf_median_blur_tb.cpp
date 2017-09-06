@@ -59,21 +59,24 @@ int main(int argc, char** argv)
 	in_width = in_gray.cols;
 	in_height = in_gray.rows;
 	
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
-	xF::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
 	imgInput.copyTo(in_gray.data);
+	
 
 	#if __SDSCC__
-		TIME_STAMP_INIT
+	perf_counter hw_ctr;		
+	hw_ctr.start();
 	#endif
 	
 	median_blur_accel(imgInput, imgOutput);
 	
 	#if __SDSCC__
-		TIME_STAMP
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	out_img.data = imgOutput.copyFrom();
-
+	
 	/////////////////    OpenCV reference  /////////////////
 	cv::medianBlur(in_gray,ocv_ref,WINDOW_SIZE);
 

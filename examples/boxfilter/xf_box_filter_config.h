@@ -64,6 +64,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-void boxfilter_accel(xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_src,xF::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_dst);
+void boxfilter_accel(xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_src,xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> &_dst);
 
 #endif  // end of _XF_BOX_FILTER_CONFIG_H_
