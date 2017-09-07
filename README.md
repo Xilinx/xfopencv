@@ -52,6 +52,15 @@ This library is written by developers at
 Date      | Readme Version | Release Notes
 --------  |----------------|-------------------------
 June2017  | 1.0            | Initial Xilinx release <br> -Windows OS support is in Beta.
+September2017  | 2.0            | 2017.2 Xilinx release <br> 
+
+## Changelog:
+
+1.	Library within xf namespace – All functions in the library are now part of xf namespace.
+2.	Dataflow enabled between functions – When multiple functions in the library are called in sequence, as part of a pipeline, dataflow is automatically inferred between the functions. Updated example for stereo pipeline provided.
+3. Updated latency profiling.
+4.	Minor bug fixes
+
  #### Known Issues:
 1. Hardware kernels using 128-bit streaming interfaces will experience twice the expected latency. This will be resolved in a coming update. 
 2. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
