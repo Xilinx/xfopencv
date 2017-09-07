@@ -1,13 +1,14 @@
 # xfOpenCV/examples
 Each of the folders inside examples folder aims to evaluate at least one of the xfOpenCV kernels.
 
-Each example folder consists of an include folder and a data folder, which contain the xfOpenCV header files and the test images respectively. Additionally, each example contains the following files -
+Each example folder consists of a data folder, which contains the corresponding test images. Additionally, each example contains the following files -
 
 | File Name | Description |
 | :------------- | :------------- |
 | xf_headers.h | Contains the headers required for host code (the code that runs on ARM) |
 | xf_<example_name>_config.h, xf_config_params.h | Contains the hardware kernel configuration information and includes the kernel headers |
 | xf_<example_name>_tb.cpp | Contains the main() function and evaluation code for each of the xfOpenCV kernels |
+| xf_<example_name>_accel.cpp | Contains the function call for the specific xfOpenCV kernel |
 | description.json | Contains the project configuration information for the SDx GUI |
 | Makefile | Makefile to build the example in commandline |
 
@@ -16,47 +17,47 @@ The following table lists which xfOpenCV kernel(s) each example aims to evaluate
 
 | Example | Function Name |
 | :------------- | :------------- |
-| accumulate | xFaccumulate |
-| accumulatesquared | xFaccumulateSquare |
-| accumulateweighted | xFaccumulateWeighted |
-| arithm | xFabsdiff, xFadd, xFsubtract, xFbitwise_and, xFbitwise_or, xFbitwise_not, xFbitwise_xor |
-| bilateralfilter | xFBilateralFilter |
-| boxfilter | xFboxfilter |
-| canny | xFcanny |
-| channelcombine | xFmerge |
-| channelextract | xFextractChannel |
-| convertbitdepth | xFconvertTo |
-| customconv | xFfilter2D |
-| cvtcolor | xFiyuv2nv12, xFiyuv2rgba, xFiyuv2yuv4, xFnv122iyuv, xFnv122rgba, xFnv122yuv4, xFnv212iyuv, xFnv212rgba, xFnv212yuv4, xFrgba2yuv4, xFrgba2iyuv, xFrgba2nv12, xFrgba2nv21, xFuyvy2iyuv, xFuyvy2nv12, xFuyvy2rgba, xFyuyv2iyuv, xFyuyv2nv12, xFyuyv2rgba |
-| dilation | xFdilate |
-| erosion | xFerode |
-| fast | xFFAST |
-| gaussianfilter | xFGaussianBlur |
-| harris | xFCornerHarris |
-| histogram | xFcalcHist |
-| histequialize | xFequalizeHist |
-| hog | xFHOGDescriptor |
-| integralimg | xFIntegralImage |
-| lkdensepyrof | xFDensePyrOpticalFlow |
-| lknpyroflow | xFDenseNonPyrLKOpticalFlow |
-| lut | xFLUT |
-| magnitude | xFmagnitude |
-| meanshifttracking | xFMeanShift |
-| meanstddev | xFmeanstd |
-| medianblur | xFMedianBlur |
-| minmaxloc | xFminMaxLoc |
-| otsuthreshold | xFOtsuThreshold |
-| phase | xFphase |
-| pyrdown | xFPyrDown |
-| pyrup | xFPyrUp |
-| remap | xFRemap |
-| resize | xFResize |
-| scharrfilter | xFScharr |
-| sobelfilter | xFSobel |
-| stereopipeline | xFStereoPipeline |
-| stereolbm | xFStereoBM |
-| svm | xFSVM |
-| threshold | xFThreshold |
-| warpaffine | xFwarpAffine |
-| warpperspective | xFperspective |
-| warptransform | xFWarpTransform |
+| accumulate | accumulate |
+| accumulatesquared | accumulateSquare |
+| accumulateweighted | accumulateWeighted |
+| arithm | absdiff, add, subtract, bitwise_and, bitwise_or, bitwise_not, bitwise_xor |
+| bilateralfilter | bilateralFilter |
+| boxfilter | boxFilter |
+| canny | Canny, EdgeTracing |
+| channelcombine | merge |
+| channelextract | extractChannel |
+| convertbitdepth | convertTo |
+| customconv | filter2D |
+| cvtcolor | iyuv2nv12, iyuv2rgba, iyuv2yuv4, nv122iyuv, nv122rgba, nv122yuv4, nv212iyuv, nv212rgba, nv212yuv4, rgba2yuv4, rgba2iyuv, rgba2nv12, rgba2nv21, uyvy2iyuv, uyvy2nv12, uyvy2rgba, yuyv2iyuv, yuyv2nv12, yuyv2rgba |
+| dilation | dilate |
+| erosion | erode |
+| fast | fast |
+| gaussianfilter | GaussianBlur |
+| harris | cornerHarris |
+| histogram | calcHist |
+| histequialize | equalizeHist |
+| hog | HOGDescriptor |
+| integralimg | integral |
+| lkdensepyrof | DensePyrOpticalFlow |
+| lknpyroflow | DenseNonPyrLKOpticalFlow |
+| lut | LUT |
+| magnitude | magnitude |
+| meanshifttracking | MeanShift |
+| meanstddev | meanStdDev |
+| medianblur | medianBlur |
+| minmaxloc | minMaxLoc |
+| otsuthreshold | OtsuThreshold |
+| phase | phase |
+| pyrdown | pyrDown |
+| pyrup | pyrUp |
+| remap | remap |
+| resize | resize |
+| scharrfilter | Scharr |
+| sobelfilter | Sobel |
+| stereopipeline | InitUndistortRectifyMapInverse, remap, StereoBM |
+| stereolbm | StereoBM |
+| svm | SVM |
+| threshold | Threshold |
+| warpaffine | warpAffine |
+| warpperspective | warpPerspective |
+| warptransform | warpTransform |
