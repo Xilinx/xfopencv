@@ -43,11 +43,11 @@ The source for this project is licensed under the [3-Clause BSD License][]
 
 To contribute to this project, follow the guidelines in the [Repository Contribution README][]
 
-## 9. ACKNOWLEDGEMENTS
+## ACKNOWLEDGEMENTS
 This library is written by developers at
 - [Xilinx](http://www.xilinx.com)
 
-## 6. REVISION HISTORY
+## REVISION HISTORY
 
 Date      | Readme Version | Release Notes
 --------  |----------------|-------------------------
