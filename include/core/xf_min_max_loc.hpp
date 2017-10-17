@@ -287,7 +287,7 @@ void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 template<int SRC_T,int ROWS,int COLS,int NPC=0>
-void minMaxLoc(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *max_value, int32_t *min_value,uint16_t *_minlocx, uint16_t *_minlocy, uint16_t *_maxlocx, uint16_t *_maxlocy )
+void minMaxLoc(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *min_value, int32_t *max_value,uint16_t *_minlocx, uint16_t *_minlocy, uint16_t *_maxlocx, uint16_t *_maxlocy )
 {
 
 
