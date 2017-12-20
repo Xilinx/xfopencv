@@ -44,25 +44,25 @@ int main(int argc, char** argv)
 	}	
 
 	// Read input image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 	if (in_img.data == NULL)
 	{
 		//cout << "Can't open image !!" << endl;
 		return -1;
 	}
 
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
-	imwrite("input.jpg", in_gray);
+	//cvtColor(in_img,in_gray,CV_BGR2GRAY);
+//	imwrite("input.jpg", in_img);
 
 	// create memory for output images
-	ocv_ref.create(in_gray.rows,in_gray.cols,CV_32S);
-	ocv_ref1.create(in_gray.rows,in_gray.cols,CV_32S);
+	ocv_ref.create(in_img.rows,in_img.cols,CV_32S);
+	ocv_ref1.create(in_img.rows,in_img.cols,CV_32S);
 
-	cv::integral(in_gray, ocv_ref, -1);
+	cv::integral(in_img, ocv_ref, -1);
 
-	for(int i = 0; i < in_gray.rows; i++)
+	for(int i = 0; i < in_img.rows; i++)
 	{
-		for(int j=0; j<in_gray.cols; j++)
+		for(int j=0; j<in_img.cols; j++)
 		{
 			ocv_ref1.at<unsigned int>(i,j) =  ocv_ref.at<unsigned int>(i+1, j+1);
 		}
@@ -72,16 +72,18 @@ int main(int argc, char** argv)
 
 
 	// create memory for output image
-	out_img.create(in_gray.rows,in_gray.cols,CV_32S); 
+	diff.create(in_img.rows,in_img.cols,CV_32S);
+	out_img.create(in_img.rows,in_img.cols,CV_32S);
 
 	// image height and width
-	uint16_t height = in_gray.rows;
-	uint16_t width = in_gray.cols;
+	uint16_t height = in_img.rows;
+	uint16_t width = in_img.cols;
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_32UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_32UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
+	//imgInput.copyTo(in_img.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
 	
 
 	#if __SDSCC__
@@ -97,11 +99,14 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = (unsigned char*) imgOutput.copyFrom();
+	out_img.data = imgOutput.copyFrom();
 
-	imwrite("out_hls.jpg", out_img);
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
+	//imwrite("out_hls.jpg", out_img);
 	// Compute absolute difference image
-	absdiff(ocv_ref1, out_img, diff);
+	//absdiff(ocv_ref1, out_img, diff);
+	xf::absDiff(ocv_ref1, imgOutput, diff);
 	// Save the difference image 
 	imwrite("diff.png", diff); 
 
@@ -127,7 +132,7 @@ int main(int argc, char** argv)
 			"Maximum error in intensity = %f\n"
 			"Percentage of pixels above error threshold = %f\n",
 			minval, maxval, err_per);
-	if(err_per > 0.0f)
+	if(err_per > 1.0f)
 		return 1;
 	return 0;
 }

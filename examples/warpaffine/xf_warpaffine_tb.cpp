@@ -56,7 +56,7 @@ int main(int argc,char **argv)
 		return -1;
 	}
 
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 
 	if(!in_img.data)
 	{
@@ -64,12 +64,12 @@ int main(int argc,char **argv)
 		return -1;
 	}
 
-	cvtColor(in_img,img_gray,CV_BGR2GRAY);
+	//cvtColor(in_img,img_gray,CV_BGR2GRAY);
 
 
-	hls_out_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
-	ocv_out_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
-	diff_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
+	hls_out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	ocv_out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	diff_img.create(in_img.rows,in_img.cols,in_img.depth());
 
 
 	x_rot   = y_rot = ANGLE;
@@ -95,13 +95,13 @@ int main(int argc,char **argv)
 #endif
 	find_transform_matrix_tb(x_rot, y_rot, x_expan, y_expan, x_move, y_move, x_offset, y_offset, transform_matrix);
 
-	warpaffine_cref(img_gray, ocv_out_img,transform_matrix,interpolation);
+	warpaffine_cref(in_img, ocv_out_img,transform_matrix,interpolation);
 
-		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
-		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
+		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgInput(in_img.rows,in_img.cols);
+		xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> imgOutput(in_img.rows,in_img.cols);
 
-		imgInput.copyTo(img_gray.data);
-		
+		//imgInput.copyTo(img_gray.data);
+		imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(argv[1], 0);	
 
 #if __SDSCC__
 		perf_counter hw_ctr;
@@ -116,16 +116,18 @@ uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 	
-		hls_out_img.data = imgOutput.copyFrom();
+		//hls_out_img.data = imgOutput.copyFrom();
+		// Write output image
+		xf::imwrite("hls_out.jpg",imgOutput);
 
 
 
-
-		imwrite("testcase_hls.png", hls_out_img);
+		//imwrite("testcase_hls.png", hls_out_img);
 		imwrite("testcase_ocv.png", ocv_out_img);
-		imwrite("testcase_diff.png", diff_img);
+		
 
-		uchar* out_ptrcmp = (uchar *)hls_out_img.data;
+		//uchar* out_ptrcmp = (uchar *)hls_out_img.data;
+		uchar* out_ptrcmp = (uchar *)imgOutput.data;
 		uchar* ocv_ref_ptrcmp = (uchar *)ocv_out_img.data;
 		uchar* diff_ptrcmp= (uchar *)diff_img.data;
 		uchar diff1;
@@ -135,8 +137,8 @@ uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 
 		uchar max_error = 0,min_error = 255;
 
-		for( int j = 0; j < img_gray.rows ; j++ ){
-			for( int i = 0; i < img_gray.cols; i++ ){
+		for( int j = 0; j < in_img.rows ; j++ ){
+			for( int i = 0; i < in_img.cols; i++ ){
 
 				diff1 = abs(*out_ptrcmp++ - *ocv_ref_ptrcmp++);
 
@@ -157,17 +159,13 @@ uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 				}
 			}
 		}
-		per_error = 100*(float)pix_cnt/(img_gray.rows*img_gray.cols);
+
+		imwrite("testcase_diff.png", diff_img);
+		per_error = 100*(float)pix_cnt/(in_img.rows*in_img.cols);
 		printf("Min Error = %d Max Error = %d\n",min_error,max_error);
 		printf("Percentage of pixels above error threshold = %f pixels:%d\n",per_error,pix_cnt);
 
 
-
-	in_img.release();
-	img_gray.release();
-	hls_out_img.release();
-	ocv_out_img.release();
-	diff_img.release();
 
 	if(per_error > 1){
 		printf("Test Failed.../n");

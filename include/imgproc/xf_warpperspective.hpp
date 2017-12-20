@@ -734,7 +734,7 @@ void xFReadInputPatchBlocks_pingpong_perspective(unsigned long long int *gmem, X
 
 
 
-static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int16_t pix1,int16_t pix2,int16_t pix3,ap_uint8_t pixel1,ap_uint8_t pixel2,ap_uint8_t pixel3,ap_uint8_t pixel4,ap_int<64> P1,ap_int<64> P2,ap_int<64> P3,ap_int<64> P4,ap_uint8_t &pixel)
+static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int16_t pix1,int16_t pix2,int16_t pix3,ap_uint8_t pixel1,ap_uint8_t pixel2,ap_uint8_t pixel3,ap_uint8_t pixel4,int64_t P1,int64_t P2,int64_t P3,int64_t P4,ap_uint8_t &pixel)
 {
 #pragma HLS INLINE OFF
 	xy_frac = ((uint64_t)x_frac*y_frac) >> 32;
@@ -743,11 +743,11 @@ static void Pixel_Compute(uint32_t x_frac, uint32_t y_frac, uint32_t xy_frac,int
 	pix2 = pixel3 - pixel1;
 	pix3 = (pixel4 - pixel3)-pix1;
 
-	P1 = ((ap_int<64>)pix3*xy_frac);
-	P2 = ((ap_int<64>)pix1*x_frac);
-	P3 = ((ap_int<64>)pix2*y_frac);
-	P4 = ((ap_int<64>)pixel1<<32);
-	pixel = (uchar_t)((P1 + P2 + P3 + P4)>>32);
+	P1 = ((int64_t)pix3*xy_frac);
+	P2 = ((int64_t)pix1*x_frac);
+	P3 = ((int64_t)pix2*y_frac);
+	P4 = ((int64_t)pixel1<<32);
+	pixel = (uchar_t)((int64_t)(P1 + P2 + P3 + P4)>>32);
 }
 
 /*
@@ -768,7 +768,7 @@ void xFPerspectiveProcessBlock(XF_PTNAME(WORDWIDTH_T) *transform_matrix,int16_t 
 	ap_uint8_t pixel,pixel1,pixel2,pixel3,pixel4;
 	XF_SNAME(WORDWIDTH_DST) PackedPixel,PackedPixel2,PackedPixel3,PackedPixel4;
 
-	ap_int<64> P1, P2, P3, P4;
+	int64_t P1, P2, P3, P4;
 	int16_t pix1, pix2, pix3;
 	int16_t max_block_range = (max_output_range>>1);
 	ap_int<64> x_fixed,y_fixed;
@@ -1089,17 +1089,11 @@ template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDT
 void xFWarpPerspective(unsigned long long int *source, unsigned long long int *dst, unsigned short int img_height, unsigned short int img_width, ap_uint<1> interpolation, float *transformation_matrix)
 {
 
-	
-	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
-			&& "Interpolation supported are XF_INTERPOLATION_NN and XF_INTERPOLATION_BILINEAR");
-	
-	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
-#if _WIN32
-
-		assert(((interpolation != XF_INTERPOLATION_BILINEAR))
-			&& "XF_INTERPOLATION_BILINEAR is not supported in windows");
-
-#endif
+	//#pragma HLS license key=IPAUVIZ_WarpPerspective
+	//	assert(((interpolation == XF_INTERPOLATION_NN) || (interpolation == XF_INTERPOLATION_BILINEAR))
+	//			&& "Interpolation supported are AU_INTERPOLATION_NN and AU_INTERPOLATION_BILINEAR");
+	//
+	//	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out1[4][BUFSIZE];
 	XF_SNAME(WORDWIDTH_SRC) lbuf_out2[4][BUFSIZE];
@@ -1153,7 +1147,6 @@ void xFWarpPerspective(unsigned long long int *source, unsigned long long int *d
 
 	max_output_range = xFPerspectiveFindMaxOutSize<XF_48SP>(transform_matrix, x_offset, y_offset,img_height,img_width);
 
-
 	assert(( max_output_range >= 32 )
 			&& "Scaling factor in the transformation matrix should be greater than 0.25");
 
@@ -1186,6 +1179,8 @@ void xFWarpPerspective(unsigned long long int *source, unsigned long long int *d
 
 	x_patchmin = y_patchmin = 0;
 	ap_uint<1> flag_X;
+
+
 	ROWLOOP:
 	for (processed_blocks_row = 0; processed_blocks_row < max_out_blocks_row; processed_blocks_row++)
 	{
@@ -1304,7 +1299,7 @@ void xFWarpPerspective(unsigned long long int *source, unsigned long long int *d
 			}
 		} // End of Column Loop
 		y_index += max_output_range;
-	} // End of Row Loop
+	} // End of Row Loop*/
 }
 
 #pragma SDS data zero_copy("_src_mat.data"[0:"_src_mat.size"])

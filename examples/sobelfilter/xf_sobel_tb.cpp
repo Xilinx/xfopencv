@@ -46,72 +46,67 @@ int main(int argc, char** argv)
 	char in[100], in1[100], out_hlsx[100], out_ocvx[100];
 	char out_errorx[100], out_hlsy[100], out_ocvy[100], out_errory[100];
 
-	cv::Mat in_img, in_gray, diff, hlsx_32F, hlsy_32F;
-	cv::Mat c_grad_x, c_grad_y;
+	cv::Mat in_img, in_gray, diff;
 	cv::Mat c_grad_x_1, c_grad_y_1;
+	cv::Mat c_grad_x, c_grad_y;
 	cv::Mat hls_grad_x, hls_grad_y;
 	cv::Mat diff_grad_x, diff_grad_y;
 
 	// reading in the color image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 
 	if(in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n", in);
 		return 0;
 	}
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+//	cvtColor(in_img, in_gray, CV_BGR2GRAY);
 
 	///////////////// 	Opencv  Reference  ////////////////////////
 	int scale = 1;
 	int delta = 0;
 
+
+
 #if (FILTER_WIDTH != 7)
-	// create memory for output images
-	hls_grad_x.create(in_gray.rows,in_gray.cols,CV_16S);
-	hls_grad_y.create(in_gray.rows,in_gray.cols,CV_16S);
-	diff_grad_x.create(in_gray.rows,in_gray.cols,CV_16S);
-	diff_grad_y.create(in_gray.rows,in_gray.cols,CV_16S);
-	int ddepth = CV_16S;
-	typedef int16_t TYPE;
+
+	int ddepth = CV_8U;
+	typedef unsigned char TYPE; // Should be short int when ddepth is CV_16S
+	#define PTYPE CV_8U			// Should be CV_16S when ddepth is CV_16S
 #endif
 
 #if (FILTER_WIDTH == 7)
-	// create memory for output images
-	hls_grad_x.create(in_gray.rows,in_gray.cols,CV_32S);
-	hls_grad_y.create(in_gray.rows,in_gray.cols,CV_32S);
-	diff_grad_x.create(in_gray.rows,in_gray.cols,CV_32S);
-	diff_grad_y.create(in_gray.rows,in_gray.cols,CV_32S);
-	int ddepth = CV_32F;
-	typedef  int TYPE;
+
+	int ddepth = -1;//CV_32F;	//Should be CV_32F if the output pixel type is XF_32UC1
+	typedef unsigned char TYPE; // Should be int when ddepth is CV_32F
+	#define PTYPE CV_8U		// Should be CV_32S when ddepth is CV_32F
+
 #endif
 
-	cv::Sobel( in_gray, c_grad_x_1, ddepth, 1, 0, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
-	cv::Sobel( in_gray, c_grad_y_1, ddepth, 0, 1, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
+	// create memory for output images
+	hls_grad_x.create(in_img.rows,in_img.cols,PTYPE);
+	hls_grad_y.create(in_img.rows,in_img.cols,PTYPE);
+	diff_grad_x.create(in_img.rows,in_img.cols,PTYPE);
+	diff_grad_y.create(in_img.rows,in_img.cols,PTYPE);
+
+
+	cv::Sobel( in_img, c_grad_x_1, ddepth, 1, 0, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
+	cv::Sobel( in_img, c_grad_y_1, ddepth, 0, 1, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
 
 	imwrite("out_ocvx.jpg", c_grad_x_1);
 	imwrite("out_ocvy.jpg", c_grad_y_1);
 
-	//////////////////	HLS TOP Function Call  ////////////////////////
-#if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
-	ap_uint<8> *src_ptr = (ap_uint<8> *)in_gray.data;
-	ap_uint<16> *dst_ptrx = (ap_uint<16> *)hls_grad_x.data;
-	ap_uint<16>  *dst_ptry = (ap_uint<16>  *)hls_grad_y.data;
-#elif (FILTER_WIDTH == 7)
-	ap_uint<8> *src_ptr = (ap_uint<8> *)in_gray.data;
-	ap_uint<32> *dst_ptrx = (ap_uint<32> *)hls_grad_x.data;
-	ap_uint<32>  *dst_ptry = (ap_uint<32>  *)hls_grad_y.data;
-#endif
-	unsigned short height = in_gray.rows;
-	unsigned short width = in_gray.cols;
+
+	unsigned short height = in_img.rows;
+	unsigned short width = in_img.cols;
 
 
-	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
+	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
-
+	//imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
@@ -124,26 +119,38 @@ int main(int argc, char** argv)
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	hls_grad_x.data = (unsigned char *)imgOutputx.copyFrom();
+	// Write output image
+	xf::imwrite("hls_out_x.jpg",imgOutputx);
+	xf::imwrite("hls_out_y.jpg",imgOutputy);
+
+/*	hls_grad_x.data = (unsigned char *)imgOutputx.copyFrom();
 	hls_grad_y.data = (unsigned char *)imgOutputy.copyFrom();
-
-
 
 	imwrite("out_hlsx.jpg", hls_grad_x);
 	imwrite("out_hlsy.jpg", hls_grad_y);
-
+*/
 
 	//////////////////  Compute Absolute Difference ////////////////////
 #if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
-	absdiff(c_grad_x_1, hls_grad_x, diff_grad_x);
-	absdiff(c_grad_y_1, hls_grad_y, diff_grad_y);
+	xf::absDiff(c_grad_x_1, imgOutputx, diff_grad_x);
+	xf::absDiff(c_grad_y_1, imgOutputy, diff_grad_y);
 #endif
 
 #if (FILTER_WIDTH == 7)
+	if(OUT_TYPE == XF_8UC1){
+//	absdiff(c_grad_x_1, hls_grad_x, diff_grad_x);
+//	absdiff(c_grad_y_1, hls_grad_y, diff_grad_y);
+	xf::absDiff(c_grad_x_1, imgOutputx, diff_grad_x);
+	xf::absDiff(c_grad_y_1, imgOutputy, diff_grad_y);
+	}
+	else if (OUT_TYPE == XF_32UC1){
 	c_grad_x_1.convertTo(c_grad_x, CV_32S);
 	c_grad_y_1.convertTo(c_grad_y, CV_32S);
-	absdiff(c_grad_x, hls_grad_x, diff_grad_x);
-	absdiff(c_grad_y, hls_grad_y, diff_grad_y);
+	xf::absDiff(c_grad_x, imgOutputx, diff_grad_x);
+	xf::absDiff(c_grad_y, imgOutputy, diff_grad_y);
+//	absdiff(c_grad_x, hls_grad_x, diff_grad_x);
+//	absdiff(c_grad_y, hls_grad_y, diff_grad_y);
+	}
 #endif
 
 	imwrite("out_errorx.jpg", diff_grad_x);
@@ -154,6 +161,24 @@ int main(int argc, char** argv)
 	double minval1=256,maxval1=0;
 	int cnt = 0, cnt1 =0;
 
+/*	FILE *fp, *fp1;
+	fp =fopen("c_y.txt","w");
+	fp1 =fopen("hls_y.txt","w");
+
+	for(int i=0;i<in_img.rows;i++)
+	{
+		for(int j=0;j<in_img.cols;j++)
+		{
+			fprintf(fp, "%d ",c_grad_y_1.at<TYPE>(i,j));
+			fprintf(fp1, "%d ",(int)imgOutputy.data[i*in_img.cols + j]);
+		}
+		fprintf(fp, "\n");
+		fprintf(fp1, "\n");
+	}
+
+	fclose(fp);
+	fclose(fp1);
+*/
 	for(int i=0;i<in_img.rows;i++)
 	{
 		for(int j=0;j<in_img.cols;j++)
@@ -180,14 +205,7 @@ int main(int argc, char** argv)
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval1,maxval1,err_per1);
 
-	in_img.~Mat();
-	in_gray.~Mat();
-	c_grad_x.~Mat();
-	c_grad_y.~Mat();;
-	hls_grad_x.~Mat();
-	hls_grad_y.~Mat();
-	diff_grad_x.~Mat();
-	diff_grad_y.~Mat();
+
 	int ret=0;
 	if(err_per > 0.0f)
 	{

@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	int filter_size = 3;
 
 	/*  reading in the color image  */
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 
 	if (in_img.data == NULL)
 	{
@@ -85,24 +85,24 @@ int main(int argc, char** argv)
 	}
 
 	/*  convert to gray  */
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
+//	cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
-	cv::Sobel( in_gray, c_grad_x, CV_16S, 1, 0, filter_size, scale,delta, cv::BORDER_CONSTANT );
-	cv::Sobel( in_gray, c_grad_y, CV_16S, 0, 1, filter_size, scale,delta, cv::BORDER_CONSTANT );
+	cv::Sobel( in_img, c_grad_x, CV_16S, 1, 0, filter_size, scale,delta, cv::BORDER_CONSTANT );
+	cv::Sobel( in_img, c_grad_y, CV_16S, 0, 1, filter_size, scale,delta, cv::BORDER_CONSTANT );
 
-	ocv_ref1.create(in_gray.rows,in_gray.cols,CV_16S);
-	out_img.create(in_gray.rows,in_gray.cols,CV_16S);
-	diff.create(in_gray.rows,in_gray.cols,CV_16S);
+	ocv_ref1.create(in_img.rows,in_img.cols,CV_16S);
+	out_img.create(in_img.rows,in_img.cols,CV_16S);
+	diff.create(in_img.rows,in_img.cols,CV_16S);
 
-	uint16_t width = in_gray.cols;
-	uint16_t height = in_gray.rows;
-
-
+	uint16_t width = in_img.cols;
+	uint16_t height = in_img.rows;
 
 
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_gray.rows,in_gray.cols);
+
+
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_img.rows,in_img.cols);
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_img.rows,in_img.cols);
+	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
 
 	imgInputx.copyTo(( short int*)c_grad_x.data);
 	imgInputy.copyTo(( short int*)c_grad_y.data);
@@ -121,39 +121,38 @@ int main(int argc, char** argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = (unsigned char *)imgOutput.copyFrom();
+	//out_img.data = (unsigned char *)imgOutput.copyFrom();
 
 
-
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	/////////////////    OpenCV reference  /////////////////
 #if L1NORM
 	ComputeMagnitude(c_grad_x, c_grad_y, ocv_ref1);
 #elif L2NORM
-	cv::Sobel( in_gray, c_grad_x1, CV_32FC1, 1, 0, filter_size,scale, delta, cv::BORDER_CONSTANT );
-	Sobel( in_gray, c_grad_y1, CV_32FC1, 0, 1, filter_size,scale, delta, cv::BORDER_CONSTANT );
+	cv::Sobel( in_img, c_grad_x1, CV_32FC1, 1, 0, filter_size,scale, delta, cv::BORDER_CONSTANT );
+	Sobel( in_img, c_grad_y1, CV_32FC1, 0, 1, filter_size,scale, delta, cv::BORDER_CONSTANT );
 	magnitude(c_grad_x1, c_grad_y1, ocv_ref2);
 #endif
 
 
-	imwrite("out_img.jpg", out_img);  // save the output image
+	//imwrite("out_img.jpg", out_img);  // save the output image
 
 
 #if L1NORM
 	imwrite("ref_img.jpg",ocv_ref1);          // save the reference image
-	absdiff(out_img,ocv_ref1,diff);    // Compute absolute difference image
+	xf::absDiff(ocv_ref1,imgOutput,diff);    // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 #elif L2NORM
 	ocv_ref2.convertTo(ocv_res,CV_16S);  //  convert from 32F type to 16S type for finding the AbsDiff
 	imwrite("ref_img.jpg",ocv_res);          // save the reference image
-	absdiff(out_img,ocv_res,diff);      // Compute absolute difference image
+	xf::absDiff(ocv_res,imgOutput,diff);    // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 #endif
 
 	// Find minimum and maximum differences
 
-	FILE *fp = fopen("ref.txt","w");
-	FILE *fp1 = fopen("out.txt","w");
 	double minval=256,maxval=0;
 	int cnt = 0;
 	for (int i = 0; i < in_img.rows; i++)
@@ -162,8 +161,6 @@ int main(int argc, char** argv)
 		{
 			uchar v = diff.at<uchar>(i,j);
 
-			fprintf(fp,"%d ",ocv_ref1.at<unsigned short int>(i,j));
-			fprintf(fp1,"%d ",out_img.at<unsigned short int>(i,j));
 			if (v > 1)
 				cnt++;
 			if (minval > v )
@@ -172,26 +169,10 @@ int main(int argc, char** argv)
 				maxval = v;
 		}
 
-		fprintf(fp,"\n");
-		fprintf(fp1,"\n");
 	}
 
-	fclose(fp);
-	fclose(fp1);
 	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
-
-	in_img.~Mat();
-	in_gray.~Mat();
-	c_grad_x.~Mat();
-	c_grad_y.~Mat();
-	c_grad_x1.~Mat();
-	c_grad_y1.~Mat();
-	ocv_ref1.~Mat();
-	ocv_ref2.~Mat();
-	ocv_res.~Mat();
-	out_img.~Mat();
-	diff.~Mat();
 
 	if(err_per > 0.0f)
 	{

@@ -3,12 +3,12 @@ EXECUTABLE = canny.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xf::canny<3,0,0,8,1080, 1920,1,4>" xf_canny_accel.cpp -files ./include/imgproc/xf_canny.hpp -clkid 2 -sds-end -dmclkid 2\
--sds-hw "xf::EdgeTracing<8,0,1080, 1920,32,8>" xf_canny_accel.cpp -files ./include/imgproc/xf_edge_tracing.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::Canny<3,0,0,8,1080, 1920,1,4>" xf_canny_accel.cpp -files ../../include/imgproc/xf_canny.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::EdgeTracing<8,0,1080, 1920,32,8>" xf_canny_accel.cpp -files ../../include/imgproc/xf_edge_tracing.hpp -clkid 2 -sds-end -dmclkid 2
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

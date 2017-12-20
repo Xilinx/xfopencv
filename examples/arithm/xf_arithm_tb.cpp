@@ -44,29 +44,27 @@ int main(int argc, char** argv)
 	cv::Mat in_img1, in_img2, in_gray1, in_gray2, in_gray1_16, in_gray2_16,out_img, ocv_ref, diff;
 
 	/*  reading in the color image  */
-	in_img1 = cv::imread(argv[1],1);
-	in_img2 = cv::imread(argv[2],1);
+	in_gray1 = cv::imread(argv[1],0);
+	in_gray2 = cv::imread(argv[2],0);
 
-	if (in_img1.data == NULL)
+	if (in_gray1.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
 		return 0;
 	}
 
-	if (in_img2.data == NULL)
+	if (in_gray2.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[2]);
 		return 0;
 	}
 
-	/*  convert to gray  */
-	cvtColor(in_img1,in_gray1,CV_BGR2GRAY);
-	cvtColor(in_img2,in_gray2,CV_BGR2GRAY);
-
 	/*  convert to 16S type  */
 	in_gray1.convertTo(in_gray1_16,CV_16SC1);
 	in_gray2.convertTo(in_gray2_16,CV_16SC1);
 
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
 #if T_8U
 
@@ -74,17 +72,16 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
 	
-	perf_counter hw_ctr;
+
 
 	#if __SDSCC__
+	perf_counter hw_ctr;
 	 hw_ctr.start();
 	#endif
 	
@@ -92,9 +89,10 @@ int main(int argc, char** argv)
 
 	#if __SDSCC__
 	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+
 	out_img.data = imgOutput.copyFrom();
 
 	///////////// OpenCV reference  /////////////
@@ -115,30 +113,32 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 	diff.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 
-	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+
+
+	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1_16(in_gray1.rows,in_gray1.cols);
+	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2_16(in_gray1.rows,in_gray1.cols);
 
 	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
-	imgInput1.copyTo((short int*)in_gray1_16.data);
-	imgInput2.copyTo((short int*)in_gray2_16.data);
+	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[2], 0);
 
-	
+	imgInput1.convertTo(imgInput1_16, XF_CONVERT_8U_TO_16S);
+	imgInput2.convertTo(imgInput2_16, XF_CONVERT_8U_TO_16S);
+
 	
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	 hw_ctr.start();
 	#endif
 
-	arithm_accel(imgInput1,imgInput2,imgOutput);
+	arithm_accel(imgInput1_16,imgInput2_16,imgOutput);
 
 	#if __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
-	out_img.data = (unsigned char*)imgOutput.copyFrom();
-
 	///////////// OpenCV reference  /////////////
 	//cv::add(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
 	//cv::subtract(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
@@ -146,20 +146,19 @@ int main(int argc, char** argv)
 #endif
 
 
-
-	imwrite("out_img.jpg", out_img);  // save the output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 	imwrite("ref_img.jpg",ocv_ref);   // save the reference image
 
-	absdiff(ocv_ref,out_img,diff);	  // Compute absolute difference image
+	xf::absDiff(ocv_ref,imgOutput,diff);	  // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 
 
 	// Find minimum and maximum differences.
 	double minval=256,maxval=0;
 	int cnt = 0;
-	for (int i=0;i<in_img1.rows;i++)
+	for (int i=0;i<in_gray1.rows;i++)
 	{
-		for(int j=0;j<in_img1.cols;j++)
+		for(int j=0;j<in_gray1.cols;j++)
 		{
 			uchar v = diff.at<uchar>(i,j);
 			if (v>1)
@@ -170,7 +169,7 @@ int main(int argc, char** argv)
 				maxval = v;
 		}
 	}
-	float err_per = 100.0*(float)cnt/(in_img1.rows*in_img1.cols);
+	float err_per = 100.0*(float)cnt/(in_gray1.rows*in_gray1.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
 	in_img1.~Mat();

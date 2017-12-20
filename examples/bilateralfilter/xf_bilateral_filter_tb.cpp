@@ -44,17 +44,16 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	in_img = cv::imread(argv[1], 1); // reading in the color image
-	if(!in_img.data)
+	in_gray = cv::imread(argv[1], 0); // reading in the color image
+	if(!in_gray.data)
 	{
 		printf("Failed to load the image ... !!!");
 		return -1;
 	}
-	//cvtColor(in_img,in_gray,CV_BGR2GRAY);
-	cv::extractChannel(in_img, in_gray,1);
 
 	// create memory for output image
 	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
+	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	
 	float sigma_color = rng.uniform(0.0,1.0)*255;
 	float sigma_space = rng.uniform(0.0,1.0);
@@ -74,31 +73,32 @@ int main(int argc, char **argv)
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _src(height,width);
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _dst(height,width);
 	
-	_src.copyTo(in_gray.data);
+	_src = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
 	#endif
 	
-	bilateral_filter_accel(_src,_dst, sigma_space, sigma_color);
+	bilateral_filter_accel(_src,_dst, sigma_color, sigma_space);
 	
 	#if __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
-	out_img.data = _dst.copyFrom();
-	imwrite("output_hls.png", out_img);
+	// Write output image
+	xf::imwrite("hls_out.jpg",_dst);
 
-	absdiff(ocv_ref, out_img, diff); // Compute absolute difference image
+	// Compute absolute difference image
+	xf::absDiff(ocv_ref, _dst, diff);
 
 	// 	Find minimum and maximum differences.
 
 	double minval=256,maxval=0;
 	int cnt = 0;
-	for (int i = 0; i < in_img.rows; i++)
+	for (int i = 0; i < in_gray.rows; i++)
 	{
-		for(int j = 0; j < in_img.cols; j++)
+		for(int j = 0; j < in_gray.cols; j++)
 		{
 			uchar v = diff.at<uchar>(i,j);
 			if (v>ERROR_THRESHOLD)
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 		}
 	}
 	imwrite("error.png", diff); // Save the difference image for debugging purpose
-	float err_per = 100.0*(float)cnt/(in_img.rows * in_img.cols);
+	float err_per = 100.0*(float)cnt/(in_gray.rows * in_gray.cols);
 	std::cout << "Minimum error in intensity = " << minval << std::endl;
 	std::cout << "Maximum error in intensity = " << maxval << std::endl;
 	std::cout << "Percentage of pixels above error threshold = " << err_per  << " Count: " << cnt << std::endl;

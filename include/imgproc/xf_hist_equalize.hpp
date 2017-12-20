@@ -62,13 +62,13 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 	// Array which holds histogram of the image
 
 	/*	Normalization	*/
-	ap_uint32_t temp_val =(ap_uint32_t) (img_height * (img_width << XF_BITSHIFT(NPC)));
-	ap_uint32_t init_val = (ap_uint32_t)(temp_val - hist_stream[0]);
-	ap_uint32_t scale;
+	uint32_t temp_val =(uint32_t) (img_height * (img_width << XF_BITSHIFT(NPC)));
+	uint32_t init_val = (uint32_t)(temp_val - hist_stream[0]);
+	uint32_t scale;
 	if (init_val == 0) {
 		scale = 0;
 	} else {
-		scale = (ap_uint32_t)(((1 << 31)) / init_val);
+		scale = (uint32_t)(((1 << 31)) / init_val);
 	}
 
 	ap_uint<40> scale1 = (ap_uint<40>) ((ap_uint<40>)255 * (ap_uint<40>)scale);
@@ -79,9 +79,9 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 	{
 #pragma HLS LOOP_TRIPCOUNT min=256 max=256
 #pragma HLS PIPELINE
-		temp_sum = (ap_uint32_t)temp_sum + (ap_uint32_t)hist_stream[i];
-		ap_uint64_t sum = (ap_uint64_t)((ap_uint64_t)temp_sum * (ap_uint64_t)scale1);
-		sum = (ap_uint64_t)(sum + 0x40000000);
+		temp_sum = (uint32_t)temp_sum + (uint32_t)hist_stream[i];
+		uint64_t sum = (uint64_t)((uint64_t)temp_sum * (uint64_t)scale1);
+		sum = (uint64_t)(sum + 0x40000000);
 		cum_hist[i] = sum >> 31;
 	}
 

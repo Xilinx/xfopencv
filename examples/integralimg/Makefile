@@ -3,12 +3,12 @@ EXECUTABLE = integralimg.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xf::IntegralImage<0,3,1080,1920,1>" xf_integral_image_accel.cpp -files ./include/imgproc/xf_integral_image.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::IntegralImage<0,3,1080,1920,1>" xf_integral_image_accel.cpp -files ../../include/imgproc/xf_integral_image.hpp -clkid 2 -sds-end -dmclkid 2
 #xf::IntegralImage<XF_8UC1,XF_32UC1,HEIGHT, WIDTH,XF_NPPC1>
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img, in_gray, in_conv_img, out_img, ocv_ref, diff;
 
-	in_img = cv::imread(argv[1],1); // reading in the color image
+	in_img = cv::imread(argv[1],0); // reading in the color image
 
 	if (in_img.data == NULL)
 	{
@@ -53,20 +53,18 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	/*  convert to gray  */
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
 	/*  convert to specific types  */
 #if T_8U
-	in_gray.convertTo(in_conv_img,CV_8U);			//Size conversion
+	in_img.convertTo(in_conv_img,CV_8U);			//Size conversion
 #elif T_16U
-	in_gray.convertTo(in_conv_img,CV_16U);			//Size conversion
+	in_img.convertTo(in_conv_img,CV_16U);			//Size conversion
 #elif T_16S
-	in_gray.convertTo(in_conv_img,CV_16S);			//Size conversion
+	in_img.convertTo(in_conv_img,CV_16S);			//Size conversion
 #endif
 
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_conv_img.depth()); // create memory for output image
-	out_img.create(in_gray.rows,in_gray.cols,in_conv_img.depth()); // create memory for output image
+	ocv_ref.create(in_img.rows,in_img.cols,in_conv_img.depth()); // create memory for output image
+	diff.create(in_img.rows,in_img.cols,in_conv_img.depth()); // create memory for output image
 
 	/////////////////    OpenCV reference  /////////////////
 #if FILTER_SIZE_3
@@ -77,19 +75,22 @@ int main(int argc, char** argv)
 	cv::boxFilter(in_conv_img,ocv_ref,-1,cv::Size(7,7),cv::Point(-1,-1),true,cv::BORDER_CONSTANT);
 #endif
 
-	unsigned short height  = in_gray.rows;
-	unsigned short width  = in_gray.cols;
+	unsigned short height  = in_img.rows;
+	unsigned short width  = in_img.cols;
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	#endif
-	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> in_8bit(in_img.rows,in_img.cols);
+
+	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPIX>(argv[1], 0);
 #if T_8U
-	imgInput.copyTo((IN_TYPE *)in_gray.data);
+	imgInput = in_8bit;
 #elif T_16U
-	imgInput.copyTo((unsigned short int*)in_conv_img.data);
+	in_8bit.convertTo(imgInput, XF_CONVERT_8U_TO_16U);
 #else
-	imgInput.copyTo((short int*)in_conv_img.data);
+	in_8bit.convertTo(imgInput, XF_CONVERT_8U_TO_16S);
 #endif
 	#if __SDSCC__
 	hw_ctr.start();
@@ -104,13 +105,13 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = (unsigned char *)imgOutput.copyFrom();
+	//out_img.data = (unsigned char *)imgOutput.copyFrom();
 
 
 
-	imwrite("out_img.jpg", out_img);
+	xf::imwrite("hls_out.jpg", imgOutput);
 	imwrite("ref_img.jpg", ocv_ref);  // reference image
-	absdiff(ocv_ref,out_img,diff);    // Compute absolute difference image
+	xf::absDiff(ocv_ref,imgOutput, diff);    // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);     // Save the difference image for debugging purpose
 
 	// Find minimum and maximum differences.
@@ -132,13 +133,6 @@ int main(int argc, char** argv)
 	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
-	in_img.~Mat();
-	in_gray.~Mat();
-	in_conv_img.~Mat();
-	out_img.~Mat();
-	ocv_ref.~Mat();
-	diff.~Mat();
-
 	if(err_per > 0.0f)
 	{
 		return 1;
@@ -146,4 +140,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-

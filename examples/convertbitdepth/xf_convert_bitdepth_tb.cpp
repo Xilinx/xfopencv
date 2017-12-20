@@ -40,11 +40,11 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img, diff;
-	cv::Mat in_gray, input_img, ocv_ref;
+	cv::Mat in_img;
+	cv::Mat in_gray, input_img;//, ocv_ref;
 
 	// reading in the color image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 
 	if (in_img.data == NULL)
 	{
@@ -52,16 +52,17 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
+	//cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
 #if !(XF_CONVERT8UTO16S || XF_CONVERT8UTO16U || XF_CONVERT8UTO32S)
-	in_gray.convertTo(input_img, OCV_INTYPE);
+	in_img.convertTo(input_img, OCV_INTYPE);
 #endif
 
 	// create memory for output image
-	cv::Mat out_img(in_gray.rows,in_gray.cols, OCV_OUTTYPE);
-	unsigned short int height=in_gray.rows;
-	unsigned short int width=in_gray.cols;
+	cv::Mat ocv_ref(in_img.rows,in_img.cols, OCV_OUTTYPE);
+	cv::Mat diff(in_img.rows,in_img.cols, OCV_OUTTYPE);
+	unsigned short int height=in_img.rows;
+	unsigned short int width=in_img.cols;
 
 	///////////////// 	Opencv  Reference  ////////////////////////
 #if !(XF_CONVERT8UTO16S || XF_CONVERT8UTO16U || XF_CONVERT8UTO32S)
@@ -69,9 +70,9 @@ int main(int argc, char** argv)
 
 
 #else
-	in_gray.convertTo(ocv_ref,OCV_OUTTYPE);
+	in_img.convertTo(ocv_ref,OCV_OUTTYPE);
 #endif
-	cv::imwrite("out_ocv.png", ocv_ref);
+	cv::imwrite("out_ocv.jpg", ocv_ref);
 	//////////////////////////////////////////////////////////////
 
 	ap_int<4> _convert_type = CONVERT_TYPE;
@@ -80,14 +81,22 @@ int main(int argc, char** argv)
 	#endif
 	int shift = 0;
 
-	xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPC> in_8bit(in_img.rows,in_img.cols);
 
+	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPC>(argv[1], 0);
 
-#if !(XF_CONVERT8UTO16S || XF_CONVERT8UTO16U || XF_CONVERT8UTO32S)
-	imgInput.copyTo((IN_TYPE *)input_img.data);
+#if (XF_CONVERT16STO8U)
+	//imgInput.copyTo((IN_TYPE *) input_img.data);
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_16S);
+#elif(XF_CONVERT16UTO8U || XF_CONVERT16UTO32S || XF_CONVERT16STO32S)
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_16U);
+#elif (XF_CONVERT32STO8U || XF_CONVERT32STO16U || XF_CONVERT32STO16S)
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_32S);
 #else
-	imgInput.copyTo((IN_TYPE *)in_gray.data);
+	//imgInput.copyTo((IN_TYPE *)in_img.data);
+	imgInput=in_8bit;
 #endif
 
 #if __SDSCC__
@@ -97,16 +106,18 @@ hw_ctr.start();
 #if __SDSCC__
 hw_ctr.stop();
 #endif
-	out_img.data = (unsigned char *)imgOutput.copyFrom();
+//	out_img.data = (unsigned char *)imgOutput.copyFrom();
+
+	xf::imwrite("hls_out.png",imgOutput);
 	#if __SDSCC__
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	imwrite("out_hls.png", out_img);
+//	imwrite("out_hls.png", out_img);
 
 	//////////////////  Compute Absolute Difference ////////////////////
-	absdiff(ocv_ref,out_img,diff);
-	imwrite("out_err.jpg", diff);
+	xf::absDiff(ocv_ref,imgOutput,diff);
+	imwrite("out_err.png", diff);
 
 	// Find minimum and maximum differences.
 	double minval=256,maxval=0;

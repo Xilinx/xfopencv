@@ -46,15 +46,15 @@ int main(int argc, char **argv) {
 	cv::Mat in_img, out_img, ocv_ref, in_img_gau;
 	cv::Mat in_gray, in_gray1, diff;
 
-	in_img = cv::imread(argv[1], 1); // reading in the color image
+	in_img = cv::imread(argv[1], 0); // reading in the color image
 	if (!in_img.data) {
 		printf("Failed to load the image ... !!!");
 		return -1;
 	}
 
-	extractChannel(in_img, in_gray, 1);
-
-	ocv_ref.create(in_gray.rows, in_gray.cols, in_gray.depth()); // create memory for output image
+	//extractChannel(in_img, in_gray, 1);
+	diff.create(in_img.rows, in_img.cols, in_img.depth()); // create memory for diff image
+	ocv_ref.create(in_img.rows, in_img.cols, in_img.depth()); // create memory for OCV output image
 #if FILTER_WIDTH==3
 	float sigma = 0.5f;
 #endif
@@ -67,18 +67,16 @@ int main(int argc, char **argv) {
 
 
 	// OpenCV Gaussian filter function
-	cv::GaussianBlur(in_gray, ocv_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH),FILTER_WIDTH / 6.0, FILTER_WIDTH / 6.0, cv::BORDER_CONSTANT);
+	cv::GaussianBlur(in_img, ocv_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH),FILTER_WIDTH / 6.0, FILTER_WIDTH / 6.0, cv::BORDER_CONSTANT);
 
 	imwrite("output_ocv.png", ocv_ref);
 
-	out_img.create(in_gray.rows, in_gray.cols, in_gray.depth()); // create memory for output image
 
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
-
-	imgInput.copyTo(in_gray.data);
-	
+	//imgInput.copyTo(in_img.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -92,12 +90,11 @@ int main(int argc, char **argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	out_img.data = imgOutput.copyFrom();
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
-
-
-	imwrite("output_hls.png", out_img);
-	absdiff(ocv_ref, out_img, diff); // Compute absolute difference image
+	//imwrite("output_hls.png", out_img);
+	xf::absDiff(ocv_ref, imgOutput, diff); // Compute absolute difference image
 	imwrite("error.png", diff); // Save the difference image for debugging purpose
 
 	// 	Find minimum and maximum differences.

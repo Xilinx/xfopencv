@@ -58,6 +58,8 @@ typedef unsigned int uint32_t;
 #define WIDTH 	1920
 #define HEIGHT	1080
 
+//#define DDEPTH XF_8UC1
+
 #if FILTER_SIZE_3
 #define FILTER_WIDTH   3
 #elif FILTER_SIZE_5
@@ -69,12 +71,12 @@ typedef unsigned int uint32_t;
 #if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
 #if RO
 #define IN_TYPE      XF_8UC1
-#define OUT_TYPE     XF_16UC1
+#define OUT_TYPE     XF_8UC1
 #define NPC1 XF_NPPC8
 #endif
 #if NO
 #define IN_TYPE      XF_8UC1
-#define OUT_TYPE	XF_16UC1
+#define OUT_TYPE	XF_8UC1
 #define NPC1 XF_NPPC1
 #endif
 #endif
@@ -82,7 +84,7 @@ typedef unsigned int uint32_t;
 #if (FILTER_WIDTH == 7)
 #if NO
 #define IN_TYPE      XF_8UC1
-#define OUT_TYPE     XF_32UC1
+#define OUT_TYPE     XF_8UC1
 #define NPC1 XF_NPPC1
 #endif
 #endif

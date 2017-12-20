@@ -30,8 +30,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_fast_config.h"
 
-void fast_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,ap_uint<32>* list,uchar_t threshold,unsigned int *nCorners)
+void fast_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst,uchar_t threshold)
 {
 	
-	xf::fast<NMS,MAXCORNERS,XF_8UC1,HEIGHT,WIDTH,NPC1>(_src,list,threshold,nCorners);
+	xf::fast<NMS,XF_8UC1,HEIGHT,WIDTH,NPC1>(_src,_dst,threshold);
 }

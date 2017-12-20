@@ -33,7 +33,7 @@ void mean_shift_accel(xf::Mat<XF_8UC4, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, ui
 		uint16_t* obj_height, uint16_t* obj_width, uint16_t* dx, uint16_t* dy, uint16_t* track,
 		uint8_t frame_status, uint8_t no_objects, uint8_t max_obj, uint8_t no_of_iterations)
 {	
-	xf::MeanShift<XF_HEIGHT,XF_WIDTH,XF_MAX_OBJ_HEIGHT,XF_MAX_OBJ_WIDTH,XF_MAX_OBJECTS,XF_MAX_ITERS,XF_8UC4,XF_NPPC1>
+	xf::MeanShift<XF_MAX_OBJECTS,XF_MAX_ITERS,XF_MAX_OBJ_HEIGHT,XF_MAX_OBJ_WIDTH,XF_8UC4,XF_HEIGHT,XF_WIDTH,XF_NPPC1>
 		(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,max_obj,no_of_iterations);
 }
 

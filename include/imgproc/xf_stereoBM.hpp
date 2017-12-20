@@ -549,8 +549,6 @@ void xFReadOutStream(
 template <int ROWS, int COLS, int SRC_T, int FILTER_T, int DST_T>
 void xFStereoPreProcess(hls::stream<XF_TNAME(SRC_T,1)> &in_strm, hls::stream<XF_TNAME(DST_T,1)>& clipped_strm, int preFilterType,int preFilterCap, short int height, short int width)
 {
-	if (preFilterType == XF_STEREO_PREFILTER_SOBEL_TYPE)
-	{
 #pragma HLS INLINE
 		hls::stream<XF_TNAME(FILTER_T,1)> in_sobel_x("in_sobel_x");
 		hls::stream<XF_TNAME(FILTER_T,1)> in_sobel_y("in_sobel_y");
@@ -558,7 +556,6 @@ void xFStereoPreProcess(hls::stream<XF_TNAME(SRC_T,1)> &in_strm, hls::stream<XF_
 		xFSobelFilter<ROWS,COLS,XF_8UP,XF_16SP,XF_NPPC1,SRC_T,FILTER_T>(in_strm ,in_sobel_x ,in_sobel_y ,3,XF_BORDER_CONSTANT,height,width);
 		xFImageClip<ROWS,COLS,XF_NPPC1,XF_16SP,XF_8UP,FILTER_T,DST_T,COLS>(in_sobel_x,clipped_strm,preFilterCap,height,width);
 		xFReadOutStream<ROWS,COLS,XF_NPPC1,XF_16SP,XF_8UP,FILTER_T,COLS>(in_sobel_y,height,width);
-	}
 }
 
 
@@ -695,8 +692,7 @@ void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
 #pragma SDS data copy("_left_mat.data"[0:"_left_mat.size"])
 #pragma SDS data copy("_right_mat.data"[0:"_right_mat.size"])
 #pragma SDS data copy("_disp_mat.data"[0:"_disp_mat.size"])
-template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC = XF_NPPC1,
-		int WSIZE, int NDISP, int NDISP_UNIT>
+template <int WSIZE, int NDISP, int NDISP_UNIT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
 void StereoBM(xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
 		xf::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
 		xf::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,

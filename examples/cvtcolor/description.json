@@ -1,902 +1,458 @@
 [
 	{
-	    "example" : "cvtcolor-IYUV2NV12 - File I/O",
-	    "overview" : "cvtcolor-IYUV2NV12",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "iyuv2nv12",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-IYUV2NV12 - File I/O",
+		"overview" : "cvtcolor-IYUV2NV12",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "iyuv2nv12",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-IYUV2RGBA - File I/O",
-	    "overview" : "cvtcolor-IYUV2RGBA",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "iyuv2rgba",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-IYUV2RGBA - File I/O",
+		"overview" : "cvtcolor-IYUV2RGBA",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "iyuv2rgba",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-IYUV2YUV4 - File I/O",
-	    "overview" : "cvtcolor-IYUV2YUV4",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "iyuv2yuv4",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-IYUV2YUV4 - File I/O",
+		"overview" : "cvtcolor-IYUV2YUV4",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "iyuv2yuv4",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-NV122IYUV - File I/O",
-	    "overview" : "cvtcolor-NV122IYUV",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "nv122iyuv",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV122IYUV - File I/O",
+		"overview" : "cvtcolor-NV122IYUV",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv122iyuv",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-NV122RGBA - File I/O",
-	    "overview" : "cvtcolor-NV122RGBA",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "nv122rgba",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV122RGBA - File I/O",
+		"overview" : "cvtcolor-NV122RGBA",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv122rgba",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-NV122YUV4 - File I/O",
-	    "overview" : "cvtcolor-NV122YUV4",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "nv122yuv4",
-		    "location" : "<PLATFORM>/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV122YUV4 - File I/O",
+		"overview" : "cvtcolor-NV122YUV4",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv122yuv4",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-NV212IYUV - File I/O",
-	    "overview" : "cvtcolor-NV212IYUV",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "nv212iyuv",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV212IYUV - File I/O",
+		"overview" : "cvtcolor-NV212IYUV",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv212iyuv",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-NV212RGBA - File I/O",
-	    "overview" : "cvtcolor-NV212RGBA",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "nv212rgba",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV212RGBA - File I/O",
+		"overview" : "cvtcolor-NV212RGBA",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv212rgba",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-RGBA2IYUV - File I/O",
-	    "overview" : "cvtcolor-RGBA2IYUV",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "rgba2iyuv",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-NV212YUV4 - File I/O",
+		"overview" : "cvtcolor-NV212YUV4",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "nv212yuv4",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-RGBA2NV12 - File I/O",
-	    "overview" : "cvtcolor-RGBA2NV12",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "rgba2nv12",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-RGBA2IYUV - File I/O",
+		"overview" : "cvtcolor-RGBA2IYUV",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "rgba2iyuv",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-RGBA2NV21 - File I/O",
-	    "overview" : "cvtcolor-RGBA2NV21",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "rgba2nv21",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-RGBA2NV12 - File I/O",
+		"overview" : "cvtcolor-RGBA2NV12",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "rgba2nv12",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-RGBA2YUV4 - File I/O",
-	    "overview" : "cvtcolor-RGBA2YUV4",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "rgba2yuv4",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-RGBA2NV21 - File I/O",
+		"overview" : "cvtcolor-RGBA2NV21",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "rgba2nv21",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-UYVY2IYUV - File I/O",
-	    "overview" : "cvtcolor-UYVY2IYUV",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "uyvy2iyuv",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-RGBA2YUV4 - File I/O",
+		"overview" : "cvtcolor-RGBA2YUV4",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "rgba2yuv4",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-UYVY2NV12 - File I/O",
-	    "overview" : "cvtcolor-UYVY2NV12",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "uyvy2nv12",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-UYVY2IYUV - File I/O",
+		"overview" : "cvtcolor-UYVY2IYUV",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "uyvy2iyuv",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-UYVY2RGBA - File I/O",
-	    "overview" : "cvtcolor-UYVY2RGBA",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "uyvy2rgba",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-UYVY2NV12 - File I/O",
+		"overview" : "cvtcolor-UYVY2NV12",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "uyvy2nv12",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-YUYV2IYUV - File I/O",
-	    "overview" : "cvtcolor-YUYV2IYUV",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "yuyv2iyuv",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-UYVY2RGBA - File I/O",
+		"overview" : "cvtcolor-UYVY2RGBA",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "uyvy2rgba",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-YUYV2NV12 - File I/O",
-	    "overview" : "cvtcolor-YUYV2NV12",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "yuyv2nv12",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-YUYV2RGBA - File I/O",
+		"overview" : "cvtcolor-YUYV2RGBA",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "yuyv2rgba",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "cvtcolor-YUYV2RGBA - File I/O",
-	    "overview" : "cvtcolor-YUYV2RGBA",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "yuyv2rgba",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_cvt_color.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "cvtcolor-YUYV2IYUV - File I/O",
+		"overview" : "cvtcolor-YUYV2IYUV",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "yuyv2iyuv",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
 			}
+		]
+	},
+	{
+		"example" : "cvtcolor-YUYV2NV12 - File I/O",
+		"overview" : "cvtcolor-YUYV2NV12",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
+		],
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "yuyv2nv12",
+				"location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
+				"clkid" : "2"
+			}
+		]
 	}
 ]

@@ -125,6 +125,7 @@ enum _pixel_type
 	XF_2UP = 12,
 	XF_9SP = 13,
 	XF_9UP = 14,
+	XF_24UP = 15,
 };
 typedef _pixel_type XF_pixel_type_e;
 
@@ -155,7 +156,9 @@ enum _word_width
 	XF_144UW = 21,
 	XF_576UW = 22,
 	XF_32FW = 23,
-	XF_2UW = 24
+	XF_2UW = 24,
+	XF_48UW = 25,
+	XF_24UW = 26
 };
 typedef _word_width XF_word_width_e;
 
@@ -295,7 +298,9 @@ enum _pixeltype
 	XF_32SC1 = 5,
 	XF_8UC2  = 6,
 	XF_8UC4  = 7,
-	XF_2UC1  = 8
+	XF_2UC1  = 8,
+	XF_8UC3  = 9,
+	XF_16UC3  = 10,
 };
 typedef _pixeltype XF_npt_e;
 

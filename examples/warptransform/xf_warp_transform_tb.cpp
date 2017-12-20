@@ -122,7 +122,8 @@ cv::RNG rng;
 	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _src(image_input.rows,image_input.cols);
 	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _dst(image_input.rows,image_input.cols);
 
-	_src.copyTo(image_input.data);
+	_src = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+
 	#if __SDSCC__
 	perf_counter hw_ctr;
 		hw_ctr.start();
@@ -132,9 +133,8 @@ cv::RNG rng;
 		hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	image_output.data = _dst.copyFrom();
 
-	cv::imwrite("output.png",image_output);
+	xf::imwrite("hls_out.jpg",_dst);
 								
 	cv::Mat opencv_image;
 	opencv_image.create(HEIGHT,WIDTH,image_input.depth());
@@ -171,19 +171,20 @@ cv::RNG rng;
 	{
 		for(j=0;j<image_output.cols; j++)
 		{
-			if(image_output.at<ap_uint8_t>(i,j) == opencv_image.at<ap_uint8_t>(i,j))
+			if(_dst.data[i*image_output.cols +j] == opencv_image.at<ap_uint8_t>(i,j))
 			{
 				diff_img.at<ap_uint8_t>(i,j) = 0;
 			}
 			else
 			{
-				if(image_output.at<ap_uint8_t>(i,j) > opencv_image.at<ap_uint8_t>(i,j))
+				if(_dst.data[i*image_output.cols +j] > opencv_image.at<ap_uint8_t>(i,j))
 				{
-					diff_img.at<ap_uint8_t>(i,j) = image_output.at<ap_uint8_t>(i,j) - opencv_image.at<ap_uint8_t>(i,j);
+					diff_img.at<ap_uint8_t>(i,j) = _dst.data[i*image_output.cols +j] - opencv_image.at<ap_uint8_t>(i,j);
 				}
 				else
 				{
-					diff_img.at<ap_uint8_t>(i,j) = -image_output.at<ap_uint8_t>(i,j) + opencv_image.at<ap_uint8_t>(i,j);
+					diff_img.at<ap_uint8_t>(i,j) = -_dst.data[i*image_output.cols +j] + opencv_image.at<ap_uint8_t>(i,j);
+					//diff_img.at<ap_uint8_t>(i,j) = -_dst.data[i*image_output.cols +j] + opencv_image.at<ap_uint8_t>(i,j);
 				}
 				num_errs = num_errs+1;
 				if(max_err < diff_img.at<ap_uint8_t>(i,j))
@@ -207,7 +208,7 @@ cv::RNG rng;
 	std::cout << "\nMax_err: " << max_err << " Min_err: " << min_err << " Num_errs: " << num_errs <<  " Num_errs > 1: " << num_errs1 << std::endl;
 	cv::imwrite("diff_image.png",diff_img);
 	char output_image_name[]= "output.png";
-	cv::imwrite(output_image_name,image_output);
+	//cv::imwrite(output_image_name,image_output);
 	
 	if(num_errs > 5000)
 	{

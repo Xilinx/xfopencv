@@ -520,7 +520,7 @@ static void xFbilateralFilterKernel(
 
 
 template<int WINDOW_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC>
-void bilateralFilter(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst_mat, float sigma_space, float sigma_color)
+void bilateralFilter(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst_mat, float sigma_color, float sigma_space)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW

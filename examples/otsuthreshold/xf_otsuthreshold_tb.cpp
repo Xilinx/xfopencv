@@ -111,27 +111,27 @@ int main(int argc,char **argv){
 	int maxerr_imgnum = 0;
 	int x1, y1, x2, y2, nw, nh;
 
-	cv::Mat img = cv::imread(argv[1], 1);
+	cv::Mat img = cv::imread(argv[1], 0);
 	cv::Mat in_gray, res_img;
-	cvtColor(img, in_gray, CV_BGR2GRAY);
+//	cvtColor(img, in_gray, CV_BGR2GRAY);
 
-	if(in_gray.empty()){
+	if(img.empty()){
 		std::cout << "Image not opened correctly, check path " << std::endl;
 		return 1;
 	}
 
-	res_img = in_gray.clone();
+	res_img = img.clone();
 	x1 = 0; 	y1 = 0;		nw = res_img.cols; 	nh = res_img.rows;
 
 	Otsuval_ref = GetOtsuThresholdFloat(res_img);
 
-	uint16_t img_height = in_gray.rows;
-	uint16_t img_width  = in_gray.cols;
+	uint16_t img_height = img.rows;
+	uint16_t img_width  = img.cols;
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPPC> imgInput(img.rows,img.cols);
 
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPPC>(argv[1], 0);
 	
 
     #if __SDSCC__
@@ -151,8 +151,6 @@ int main(int argc,char **argv){
 
 	printf("Floating Point: %d	HLS Threshold : %d	Difference :%d",(int)Otsuval_ref,  (int)Otsuval,  (int)maxdiff);
 
-	in_gray.~Mat();
-	res_img.~Mat();
 
 	if(maxdiff> 1)
 	{

@@ -160,17 +160,17 @@ int main(int argc,char **argv){
 		printf("Usage : <executable> <input image> \n");
 		return -1;
 	}
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 	if(!in_img.data)
 	{
 		printf("Failed to load the image ... %s\n!", argv[1]);
 		return -1;
 	}
-	cvtColor(in_img,img_gray,CV_BGR2GRAY);
-	imwrite("input.png",img_gray);
-	hls_out_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
-	ocv_out_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
-	diff_img.create(img_gray.rows,img_gray.cols,img_gray.depth());
+	//cvtColor(in_img,img_gray,CV_BGR2GRAY);
+	imwrite("input.png",in_img);
+	hls_out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	ocv_out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	diff_img.create(in_img.rows,in_img.cols,in_img.depth());
 
 	float *transform_matrix;
 
@@ -181,14 +181,15 @@ int main(int argc,char **argv){
 #endif
 
 	interpolation = BILINEAR?XF_INTERPOLATION_BILINEAR:XF_INTERPOLATION_NN;
-	warp_perspective_cref(img_gray,ocv_out_img,transform_matrix,interpolation);
+	warp_perspective_cref(in_img,ocv_out_img,transform_matrix,interpolation);
 
 
 
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(img_gray.data);
+	//imgInput.copyTo(img_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(argv[1], 0);	
 
 	
 	
@@ -205,10 +206,11 @@ perf_counter hw_ctr;
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
-	hls_out_img.data = imgOutput.copyFrom();
-
+	//hls_out_img.data = imgOutput.copyFrom();
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 	
-	uchar* out_ptr = (uchar *)hls_out_img.data;
+	uchar* out_ptr = (uchar *)imgOutput.data;
 	uchar* ocv_ref_ptr = (uchar *)ocv_out_img.data;
 	uchar* diff_ptr = (uchar *)diff_img.data;
 	uchar diff;
@@ -218,8 +220,8 @@ perf_counter hw_ctr;
 
 	uchar max_error = 0,min_error = 255;
 
-	for( int j = 0; j < img_gray.rows ; j++ ){
-		for( int i = 0; i < img_gray.cols; i++ ){
+	for( int j = 0; j < in_img.rows ; j++ ){
+		for( int i = 0; i < in_img.cols; i++ ){
 
 			diff = abs(*out_ptr++ - *ocv_ref_ptr++);
 
@@ -238,13 +240,13 @@ perf_counter hw_ctr;
 			}
 		}
 	}
-	per_error = 100*(float)pix_cnt/(img_gray.rows*img_gray.cols);
+	per_error = 100*(float)pix_cnt/(in_img.rows*in_img.cols);
 	printf("\nMin Error = %d Max Error = %d\n",min_error,max_error);
 	printf("Percentage of pixels above error threshold = %f\n",per_error);
 
 
 
-	imwrite("testcase_hls.png", hls_out_img);
+	//imwrite("testcase_hls.png", hls_out_img);
 	imwrite("testcase_ocv.png", ocv_out_img);
 	imwrite("testcase_diff.png", diff_img);
 

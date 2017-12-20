@@ -2,11 +2,11 @@ APPSOURCES =xf_pyr_up_tb.cpp xf_pyr_up_accel.cpp
 EXECUTABLE = pyrup.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xf::PyrUp <0, 2160, 3840, 1>" xf_pyr_up_accel.cpp -files ./include/imgproc/xf_pyr_up.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  -sds-hw "xf::PyrUp <0, 2160, 3840, 1>" xf_pyr_up_accel.cpp -files ../../include/imgproc/xf_pyr_up.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 LLIBS = -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -lopencv_imgcodecs -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann

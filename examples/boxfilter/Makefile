@@ -3,12 +3,12 @@ EXECUTABLE = boxfilter.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xf::boxfilter<0,3,2,1080, 1920,1>" xf_box_filter_accel.cpp -files ./include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::boxFilter<0,3,2,1080, 1920,1>" xf_box_filter_accel.cpp -files ../../include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

@@ -48,31 +48,31 @@ int main(int argc, char** argv)
 	cv::Mat in_img, in_img1, out_img;
 	cv::Mat in_gray, in_gray1, diff;
 
-	in_img  = cv::imread(argv[1], 1);  // reading image
-	in_img1 = cv::imread(argv[2], 1);  // reading image
+	in_gray  = cv::imread(argv[1], 0);  // reading image
+	in_gray1 = cv::imread(argv[2], 0);  // reading image
 
-	if (in_img.data == NULL)
+	if (in_gray.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image %s\n", argv[1]);
 		return 0;
 	}
-	if (in_img1.data == NULL)
+	if (in_gray1.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image %s\n", argv[2]);
 		return 0;
 	}
 
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
-	cvtColor(in_img1, in_gray1, CV_BGR2GRAY);
+	//cvtColor(in_img, in_gray, CV_BGR2GRAY);
+	//cvtColor(in_img1, in_gray1, CV_BGR2GRAY);
 
-	cv::Mat inout_gray(in_img.rows, in_img.cols, CV_16U, 1);
-	cv::Mat inout_gray1(in_img.rows, in_img.cols, CV_32FC1, 1);
+	cv::Mat inout_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
+	cv::Mat inout_gray1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
 
-	cv::Mat out_gray(in_img.rows, in_img.cols, CV_16U, 1);
+	cv::Mat out_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
 
-	cv::Mat ocv_ref(in_img.rows, in_img.cols, CV_16U, 1);
-	cv::Mat ocv_ref_in1(in_img.rows, in_img.cols, CV_32FC1, 1);
-	cv::Mat ocv_ref_in2(in_img.rows, in_img.cols, CV_32FC1, 1);
+	cv::Mat ocv_ref(in_gray.rows, in_gray.cols, CV_16U, 1);
+	cv::Mat ocv_ref_in1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
+	cv::Mat ocv_ref_in2(in_gray.rows, in_gray.cols, CV_32FC1, 1);
 
 	in_gray.convertTo(ocv_ref_in1, CV_32FC1);
 	in_gray1.convertTo(ocv_ref_in2, CV_32FC1);
@@ -82,7 +82,7 @@ int main(int argc, char** argv)
 
 	ocv_ref_in2.convertTo(ocv_ref, CV_16U);
 	// Write OpenCV reference image
-	imwrite("out_ocv.jpg", ocv_ref);
+	cv::imwrite("out_ocv.jpg", ocv_ref);
 
 	in_gray1.convertTo(inout_gray, CV_8U);
 
@@ -92,9 +92,11 @@ int main(int argc, char** argv)
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
 	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
 
-	imgInput1.copyTo(in_gray.data);
-	imgInput2.copyTo(inout_gray.data);
+	//imgInput1.copyTo(in_gray.data);
+	//imgInput2.copyTo(inout_gray.data);
 
+	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
+	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[2],0);
 
 
 	#if __SDSCC__
@@ -111,7 +113,7 @@ int main(int argc, char** argv)
 
 	
 	
-	out_gray.data = (unsigned char*)imgOutput.copyFrom();
+	out_gray.data = imgOutput.copyFrom();
 
 
 	// Write output image
@@ -126,9 +128,9 @@ int main(int argc, char** argv)
 	// Find minimum and maximum differences.
 	double minval = 256, maxval = 0;
 	int cnt = 0;
-	for (int i = 0; i < in_img.rows; i++)
+	for (int i = 0; i < in_gray.rows; i++)
 	{
-		for(int j = 0; j < in_img.cols; j++)
+		for(int j = 0; j < in_gray.cols; j++)
 		{
 			float v = diff.at<float>(i,j);
 			if (v > 0.0f) cnt++;
@@ -136,7 +138,7 @@ int main(int argc, char** argv)
 			if (maxval < v)  maxval = v;
 		}
 	}
-	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
+	float err_per = 100.0*(float)cnt/(in_gray.rows*in_gray.cols);
 
 	fprintf(stderr,"Minimum error in intensity = %f\n"
 			"Maximum error in intensity = %f\n"

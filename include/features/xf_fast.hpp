@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #ifndef _XF_FAST_HPP_
 #define _XF_FAST_HPP_
@@ -43,149 +43,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 
-template<int NPC,int WORDWIDTH_DST,int MAXSIZE,int TC>
-void xFFillList(ap_uint<32> listcorners[MAXSIZE],XF_SNAME(WORDWIDTH_DST) tmp_cor_bufs[][MAXSIZE>>XF_BITSHIFT(NPC)], uint16_t *cor_cnts, uint32_t *nCorners )
-{
-	uint32_t sz = 0;
-	ap_uint<9> i;
-	uint32_t EOL = 0;
-	for (i = 0; i < (1<<XF_BITSHIFT(NPC)); i++)
-	{
-#pragma HLS unroll
-
-		for(int crn_cnt=0;crn_cnt < cor_cnts[i]; crn_cnt++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-			XF_SNAME(WORDWIDTH_DST) val = tmp_cor_bufs[i][crn_cnt];
-			listcorners[sz+crn_cnt]=val;//.write(val);
-		}
-		sz += cor_cnts[i];
-	}
-
-	*nCorners = sz;
-}
-
-template<int NPC,int WORDWIDTH_DST,int MAXSIZE,int TC>
-void xFFillList_points(ap_uint32_t *listcorners,ap_uint<32> tmp_cor_bufs[][MAXSIZE>>XF_BITSHIFT(NPC)],int *cor_cnts )
-{
-	int sz = 0;
-	for (int i=0;i<(1<<XF_BITSHIFT(NPC));i++)
-	{
-#pragma HLS unroll
-		for(int crn_cnt=0;crn_cnt < cor_cnts[i]; crn_cnt++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-			listcorners[i*sz+crn_cnt] = (ap_uint32_t)(tmp_cor_bufs[i][crn_cnt]);
-		}
-		sz += cor_cnts[i];
-	}
-}
-
-
-template<int NPC,int IN_WW,int MAXSIZE,int OUT_WW>
-void xFCheckForCorners(XF_SNAME(IN_WW) val, uint16_t *corners_cnt, XF_SNAME(OUT_WW) out_keypoints[][MAXSIZE>>XF_BITSHIFT(NPC)], ap_uint<13> row, ap_uint<13> col,unsigned short _image_height,unsigned short _image_width)
-{
-	XF_SNAME(OUT_WW) tmp_store[(1<<XF_BITSHIFT(NPC))];
-
-	for(ap_uint<9> i = 0; i < (1<<XF_BITSHIFT(NPC)); i++)
-	{
-#pragma HLS unroll
-		ap_uint<9> shift = i << 3;
-		ap_uint<8> v = val >> shift;
-		uint16_t cnt = corners_cnt[i];
-
-		if ((cnt < (MAXSIZE>>XF_BITSHIFT(NPC))) && (v != 0) && (col+i)>2 && (col+i)<((_image_width*NPC)-3) && row>2 && row<(_image_height-3))
-		{
-			XF_SNAME(OUT_WW) tmp = 0;
-
-			tmp.range(15,0) = col+i;
-			tmp.range(31,16) = row;
-			out_keypoints[i][cnt] = tmp;
-			cnt++;
-		}
-		else
-		{
-			tmp_store[i] = 0;
-		}
-		corners_cnt[i] = cnt;
-	}
-}
-
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH_SRC,int MAXPTS,int WORDWIDTH_DST,int SRC_TC>
-void xFWriteFastCornersToList(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_max_sup, ap_uint<32> list[MAXPTS], uint32_t *nCorners,unsigned short _image_height,unsigned short _image_width, unsigned char _nonmax_supression)
-{
-
-	if(NPC == XF_NPPC1)
-	{
-		int cnt = 0;
-		ap_uint<13> row, col;
-		uint32_t EOL = 0;
-		for(row = 0; row < (_image_height); row++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=ROWS max = ROWS
-#pragma HLS LOOP_FLATTEN off
-
-			for (col = 0; col < (_image_width); col++){
-#pragma HLS LOOP_TRIPCOUNT min=SRC_TC max = SRC_TC
-#pragma HLS pipeline
-
-
-				XF_SNAME(WORDWIDTH_SRC) val = _max_sup.read();
-				XF_SNAME(WORDWIDTH_DST) tmp = 0;
-
-				if(col>2 && col<(_image_width-3))
-				{
-					if ((cnt < MAXPTS) && (val != 0))
-					{
-						if (_nonmax_supression)
-						{
-							tmp.range(15,0) = col;
-							tmp.range(31,16) = row;
-						}
-						else
-						{
-							tmp.range(15,0) = col;
-							tmp.range(31,16) = row;
-						}
-
-						list[cnt]=tmp;
-						cnt++;
-					}
-				}
-			}
-		}
-		*nCorners = cnt;
-	}
-
-	else
-	{
-		XF_SNAME(WORDWIDTH_DST) tmp_corbufs[(1<<XF_BITSHIFT(NPC))][(MAXPTS>>XF_BITSHIFT(NPC))];
-		uint16_t corners_cnt[(1<<XF_BITSHIFT(NPC))];
-#pragma HLS ARRAY_PARTITION variable=corners_cnt complete dim=0
-#pragma HLS ARRAY_PARTITION variable=tmp_corbufs complete dim=1
-
-		for (ap_uint<9> i = 0; i < (1<<XF_BITSHIFT(NPC)); i++)
-		{
-#pragma HLS unroll
-			corners_cnt[i] = 0;
-		}
-		ap_uint<13> row, col;
-		for(row = 0; row < _image_height; row++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=ROWS max = ROWS
-#pragma HLS LOOP_FLATTEN off
-			for (col = 0; col < _image_width >> XF_BITSHIFT(NPC); col++){
-#pragma HLS LOOP_TRIPCOUNT min=SRC_TC max = SRC_TC
-#pragma HLS pipeline
-				XF_SNAME(WORDWIDTH_SRC) val = _max_sup.read();
-				xFCheckForCorners<NPC,WORDWIDTH_SRC,MAXPTS,WORDWIDTH_DST>(val,corners_cnt,tmp_corbufs,row,(col<<XF_BITSHIFT(NPC)),_image_height,_image_width);
-			}
-		}
-
-		xFFillList<NPC,WORDWIDTH_DST,MAXPTS,(MAXPTS>>XF_BITSHIFT(NPC))>(list,tmp_corbufs,corners_cnt, nCorners);
-
-	}
-}
 // coreScore computes the score for corner pixels
 // For a given pixel identified as corner in process_function, the theshold is
 // increaded by a small value in each iteration till the pixel becomes
@@ -1024,10 +881,10 @@ void xFfastnms(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST,int MAXSIZE,int NMSVAL>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST,int NMSVAL>
 void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
-		ap_uint<32>  _strm_out[MAXSIZE],unsigned short _image_height,unsigned short _image_width,
-		uchar_t _threshold, uint32_t *nCorners)
+		hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_out,unsigned short _image_height,unsigned short _image_width,
+		uchar_t _threshold)
 {
 
 	assert(((DEPTH == XF_8UP)) && "Invalid Depth. The function xFFast "
@@ -1038,7 +895,7 @@ void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
 
 	assert(((_image_height <= ROWS ) && (_image_width <= COLS)) && "ROWS and COLS should be greater than input image");
 
-	hls::stream< XF_SNAME(WORDWIDTH_SRC) > keypoints;
+
 	hls::stream< XF_SNAME(WORDWIDTH_SRC) > _dst;
 
 
@@ -1048,14 +905,12 @@ void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
 
 #pragma HLS DATAFLOW
 		xFfast7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))+(7>>1),7, 7*7>(_strm_in, _dst,7,_image_height,_image_width,_threshold);
-		xFfastnms<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))+(3>>1),3, 3*3>(_dst, keypoints,3,_image_height,_image_width);
-		xFWriteFastCornersToList<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC,MAXSIZE, WORDWIDTH_DST, (COLS>>XF_BITSHIFT(NPC))>(keypoints, _strm_out, nCorners,_image_height,_image_width, NMSVAL);
+		xFfastnms<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))+(3>>1),3, 3*3>(_dst, _strm_out,3,_image_height,_image_width);
 	}
 	else if(NMSVAL == 0)
 	{
 #pragma HLS DATAFLOW
-		xFfast7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))+(7>>1),7, 7*7>(_strm_in, _dst,7,_image_height,_image_width,_threshold);
-		xFWriteFastCornersToList<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC,MAXSIZE, WORDWIDTH_DST, (COLS>>XF_BITSHIFT(NPC))>(_dst, _strm_out, nCorners,_image_height,_image_width, NMSVAL);
+		xFfast7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))+(7>>1),7, 7*7>(_strm_in, _strm_out,7,_image_height,_image_width,_threshold);
 	}
 
 
@@ -1063,37 +918,54 @@ void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
 
 
 
-//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
+
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
-#pragma SDS data access_pattern(list:SEQUENTIAL)
+#pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
+
 #pragma SDS data copy ("_src_mat.data"[0:"_src_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data copy ("_dst_mat.data"[0:"_dst_mat.size"])
+#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
-template<int NMS,int MAXPNTS,int SRC_T,int ROWS, int COLS,int NPC=1>
-void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,ap_uint<32> list[MAXPNTS],unsigned char _threshold,uint32_t *nCorners)
+template<int NMS,int SRC_T,int ROWS, int COLS,int NPC=1>
+void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,unsigned char _threshold)
 {
 
 #pragma HLS inline off
 
-	
+
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
+	hls::stream< XF_TNAME(SRC_T,NPC)> _dst;
 
 #pragma HLS DATAFLOW
 
 	for(int i=0; i<_src_mat.rows;i++)
 	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
+#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
 		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 #pragma HLS LOOP_FLATTEN off
-			#pragma HLS PIPELINE
+#pragma HLS PIPELINE
 			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
 		}
 	}
 
-	xFFastCornerDetection<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_32UW,MAXPNTS,NMS>(_src,list,_src_mat.rows,_src_mat.cols,_threshold,nCorners);
+	xFFastCornerDetection<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_32UW,NMS>(_src,_dst,_src_mat.rows,_src_mat.cols,_threshold);
+
+	for(int i=0; i<_dst_mat.rows;i++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
+		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
+#pragma HLS PIPELINE
+#pragma HLS LOOP_FLATTEN off
+			XF_TNAME(SRC_T,NPC) value = _dst.read();
+			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = value;
+		}
+	}
 
 }
 }

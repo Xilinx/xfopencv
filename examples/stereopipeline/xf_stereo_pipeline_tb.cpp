@@ -82,8 +82,10 @@ int main(int argc, char** argv)
 	ap_fixed<32,12> *distC_r_fix = (ap_fixed<32,12>*)malloc(XF_DIST_COEFF_SIZE*sizeof(ap_fixed<32,12>));
 #endif
 
-	leftMat.copyTo(left_img.data);
-	rightMat.copyTo(right_img.data);
+//	leftMat.copyTo(left_img.data);
+//	rightMat.copyTo(right_img.data);
+	leftMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
+	rightMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[2], 0);
 
 	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
 	bm_state.preFilterCap = 31;
@@ -121,15 +123,15 @@ int main(int argc, char** argv)
 	cv::Mat out_disp_16(rows,cols,CV_16UC1);
 	cv::Mat out_disp_img(rows,cols,CV_8UC1);
 
-	//	out_disp_16.data = dispMat.copyFrom();
+	out_disp_16.data = dispMat.copyFrom();
 
-	for (int i=0; i<rows; i++)
+/*	for (int i=0; i<rows; i++)
 	{
 		for (int j=0; j<cols; j++)
 		{
 			out_disp_16.at<unsigned short>(i,j) = (unsigned short)dispMat.data[i*cols+j];
 		}
-	}
+	}*/
 	out_disp_16.convertTo(out_disp_img, CV_8U, (256.0/NO_OF_DISPARITIES)/(16.));
 	imwrite("hls_output.png",out_disp_img);
 	printf ("run complete !\n\n");

@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	cv::Mat in_gray,in_gray1,diff;
 
 	// reading in the color image
-	in_gray = cv::imread(argv[1], 1);
+	in_gray = cv::imread(argv[1], 0);
 
 	if (in_gray.data == NULL)
 	{
@@ -55,11 +55,11 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	cvtColor(in_gray,in_gray,CV_BGR2GRAY);
+//	cvtColor(in_gray,in_gray,CV_BGR2GRAY);
 
 	// create memory for output images
 	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
+	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	uint16_t height = in_gray.rows;
 	uint16_t width = in_gray.cols;
 
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
 	#if __SDSCC__
 	perf_counter hw_ctr;
 
@@ -85,11 +85,9 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = imgOutput.copyFrom();
 
-
-
-	cv::imwrite("out_hls.jpg", out_img);
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	///////////////// 	Opencv  Reference  ////////////////////////
 	cv::Mat element = cv::getStructuringElement( 0,cv::Size(3, 3), cv::Point(-1, -1));
@@ -97,7 +95,8 @@ int main(int argc, char** argv)
 	cv::imwrite("out_ocv.jpg", ocv_ref);
 
 	//////////////////  Compute Absolute Difference ////////////////////
-	cv::absdiff(ocv_ref, out_img,diff);
+
+	xf::absDiff(ocv_ref, imgOutput, diff);
 	cv::imwrite("out_error.jpg", diff);
 
 	// Find minimum and maximum differences.

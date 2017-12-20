@@ -172,7 +172,7 @@ void xFInitUndistortRectifyMapInverseKernel (
 #pragma SDS data zero_copy(cameraMatrix[0:_cm_size])
 #pragma SDS data zero_copy(distCoeffs[0:_dc_size])
 #pragma SDS data zero_copy(ir[0:_cm_size])
-template< int ROWS, int COLS, int CM_SIZE, int DC_SIZE, int MAP_T, int NPC >
+template< int CM_SIZE, int DC_SIZE, int MAP_T, int ROWS, int COLS, int NPC >
 void InitUndistortRectifyMapInverse (
 		ap_fixed<32,12> *cameraMatrix,
 		ap_fixed<32,12> *distCoeffs,

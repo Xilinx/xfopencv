@@ -49,6 +49,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 
-void fast_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,ap_uint<32>* list,uchar_t threshold,unsigned int *nCorners);
+void fast_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst,uchar_t threshold);
 
 #endif

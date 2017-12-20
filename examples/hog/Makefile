@@ -3,12 +3,12 @@ EXECUTABLE = hog_descriptor.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::HOGDescriptor<128,64,8,16,16,8,8,9,1080,1920,0,3,576468,1,1,1>" xf_hog_descriptor_accel.cpp -files ./include/imgproc/xf_hog_descriptor.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::HOGDescriptor<128,64,8,16,16,8,8,9,576468,1,1,0,3,1080,1920,1>" xf_hog_descriptor_accel.cpp -files ../../include/imgproc/xf_hog_descriptor.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

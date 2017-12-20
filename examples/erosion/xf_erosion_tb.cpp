@@ -42,38 +42,38 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img,in_img1,out_img,ocv_ref;
-	cv::Mat in_gray,in_gray1,diff;
+	cv::Mat out_img,ocv_ref;
+	cv::Mat in_img,diff;
 
-	// reading in the color image
-	in_gray = cv::imread(argv[1], 1);
 
-	if (in_gray.data == NULL)
+	// reading in the input image
+	in_img = cv::imread(argv[1], 0);
+
+
+	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n", argv[1]);
 		return 0;
 	}
 
-	cvtColor(in_gray,in_gray,CV_BGR2GRAY);
 
 	// create memory for output images
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	unsigned short height = in_gray.rows;
-	unsigned short width = in_gray.cols;
+	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
+	out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	diff.create(in_img.rows,in_img.cols,in_img.depth());
 
 
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+
+
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
 	#endif
-
-	//xFerode<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,XF_NPPC1>(imgInput, imgOutput);
 
 	erosion_accel(imgInput, imgOutput);
 
@@ -82,28 +82,27 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = imgOutput.copyFrom();
 
-	cv::imwrite("out_hls.jpg", out_img);
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	///////////////// 	Opencv  Reference  ////////////////////////
 	cv::Mat element = cv::getStructuringElement( 0,cv::Size(3, 3), cv::Point(-1, -1));
-	cv::erode(in_gray, ocv_ref, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
+	cv::erode(in_img, ocv_ref, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
 	cv::imwrite("out_ocv.jpg", ocv_ref);
 
 	//////////////////  Compute Absolute Difference ////////////////////
 
-	cv::absdiff(ocv_ref, out_img,diff);
+	xf::absDiff(ocv_ref, imgOutput, diff);
 	cv::imwrite("out_error.jpg", diff);
 
 	// Find minimum and maximum differences.
 	double minval=256,maxval=0;
 	int cnt = 0;
-	for (int i=1; i<in_gray.rows-1; i++)
+	for (int i=1; i<in_img.rows-1; i++)
 	{
-		for(int j=1; j<in_gray.cols-1; j++)
+		for(int j=1; j<in_img.cols-1; j++)
 		{
-			uchar v = diff.at<uchar>(i,j);
+			unsigned char v = diff.at<unsigned char>(i,j);
 			if (v>0)
 				cnt++;
 			if (minval > v)
@@ -112,12 +111,12 @@ int main(int argc, char** argv)
 				maxval = v;
 		}
 	}
-	float err_per = 100.0*(float)cnt/(in_gray.rows*in_gray.cols);
+	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 	
 	if(err_per > 0.0f)
 		return 1;
 
-
 	return 0;
 }
+

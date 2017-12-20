@@ -211,29 +211,17 @@ int main(int argc, char **argv)
 	imgInput.copyTo(img_gray.data);
 	#if __SDSCC__
 	perf_counter hw_ctr;
-
-	
 	hw_ctr.start();
 	#endif
 
-	#pragma SDS async(1)
+	canny_accel(imgInput,nms_output,nms_output1,edge_output,low_threshold,high_threshold);
 
-	//xFcanny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE>(imgInput,nms_output,low_threshold,high_threshold);
-	canny_accel(imgInput,nms_output,low_threshold,high_threshold);
-
-	#pragma SDS wait(1)
-
-	nms_output1.data = (ap_uint<64>*)nms_output.data;
-
-	//xFEdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(nms_output1,edge_output);
-	edgetracing_accel(nms_output1,edge_output);
 
 	#if __SDSCC__
 	hw_ctr.stop();
-	
-	
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
+
 	out_img.data = edge_output.copyFrom();
 
 

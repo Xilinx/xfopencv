@@ -38,10 +38,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
-
-#ifdef __SDSVHLS_SYNTHESIS__
-	#include "xf_hog_descriptor_kernel.hpp"
-#endif
+#include "xf_hog_descriptor_kernel.hpp"
 
 namespace xf {
 //#pragma SDS data data_mover("_in_mat.data":AXIDMA_SIMPLE)
@@ -50,14 +47,50 @@ namespace xf {
 #pragma SDS data access_pattern("_desc_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_in_mat.data"[0:"_in_mat.size"])
 #pragma SDS data copy("_desc_mat.data"[0:"_desc_mat.size"])
-template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int BLOCK_HEIGHT, int BLOCK_WIDTH, int CELL_HEIGHT, int CELL_WIDTH, int NOB, int ROWS, int COLS, int SRC_T, int DST_T, int DESC_SIZE, int NPC = XF_NPPC1, int IMG_COLOR, int OUTPUT_VARIANT>
+template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int BLOCK_HEIGHT, int BLOCK_WIDTH, int CELL_HEIGHT, int CELL_WIDTH, 
+int NOB, int DESC_SIZE, int IMG_COLOR, int OUTPUT_VARIANT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
 void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, DESC_SIZE, NPC> &_desc_mat)
 {
+	hls::stream< XF_TNAME(SRC_T,NPC) > in_strm;
+	hls::stream< XF_CTUNAME(SRC_T,NPC) > in[IMG_COLOR];
+	hls::stream< XF_SNAME(XF_576UW) > _block_strm;
+	hls::stream< XF_TNAME(DST_T,NPC) > desc_strm;
 
-#ifdef __SDSVHLS_SYNTHESIS__
-	#include "xf_hog_descriptor_body.inc"
-#endif
+#pragma HLS DATAFLOW
 
+	int IN_TC=(ROWS*COLS>>XF_BITSHIFT(NPC));
+	for (int i = 0; i < _in_mat.size; i++)
+	{
+#pragma HLS pipeline ii=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=IN_TC
+		in_strm.write(*(_in_mat.data + i));
+	}
+
+	// Reads the input data from Input stream and writes the data to the output stream
+	xFHOGReadFromStream < ROWS,COLS,IMG_COLOR > (in_strm,in,_in_mat.rows,_in_mat.cols);
+
+	// Process function: performs HoG over the input stream and writes the descriptor data to the output stream
+	xFDHOG < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,BLOCK_HEIGHT,BLOCK_WIDTH,CELL_HEIGHT,CELL_WIDTH,
+	NOB,ROWS,COLS,XF_8UP,XF_16UP,XF_NPPC1,XF_8UW,XF_576UW,IMG_COLOR > (in,_block_strm,_in_mat.rows,_in_mat.cols);
+
+	if (OUTPUT_VARIANT == XF_HOG_RB) {
+		// writes the Descriptor data Window wise
+		xFWriteHOGDescRB < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,CELL_HEIGHT,CELL_WIDTH,NOB,
+		ROWS,COLS,XF_16UP,XF_16UP,XF_NPPC1,XF_576UW,XF_32UW > (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
+	}
+	else if (OUTPUT_VARIANT == XF_HOG_NRB) {
+		// writes the block data and the descriptors are formed on the host
+		xFWriteHOGDescNRB < BLOCK_HEIGHT,BLOCK_WIDTH,CELL_HEIGHT,CELL_WIDTH,NOB,XF_DHOG,
+		ROWS,COLS,XF_16UP,XF_NPPC1,XF_576UW,XF_TNAME(DST_T,NPC) > (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
+	}
+
+	int OUT_TC=(ROWS*COLS>>XF_BITSHIFT(NPC));
+	for (int i = 0; i < _desc_mat.size; i++)
+	{
+#pragma HLS pipeline ii=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=IN_TC
+		_desc_mat.data[i] = desc_strm.read();
+	}
 }
 }
 

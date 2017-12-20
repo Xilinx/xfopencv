@@ -46,11 +46,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WIDTH 	1920
 #define HEIGHT	1080
 
-
-
 /*  define the input and output types  */
 #if NO
 #define NPC1 XF_NPPC1
+#define IMTYPE XF_8UC1
 #endif
 
 #if RO

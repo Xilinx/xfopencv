@@ -290,8 +290,11 @@ void xFComputeScore(hls::stream < XF_SNAME(IN_WW) > &_src1_mat,
 	ap_int<32> tmp_res[2];
 	ap_int<32> det_res;
 	ap_int<17> trace_res;
+#pragma HLS RESOURCE variable=trace_res core=DSP48 latency=2
 	ap_int<50> trace_res1;
+#pragma HLS RESOURCE variable=trace_res1 core=DSP48 latency=2
 	ap_int<32> trace_res2;
+#pragma HLS RESOURCE variable=trace_res2 core=DSP48 latency=2
 	ap_uint<13> row, col;
 	ap_uint<10> i, j;
 	uint16_t shift = 0;

@@ -54,8 +54,8 @@ int main(int argc, char *argv[]){
 	
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(input_image.rows,input_image.cols);
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(output_height,output_width);
-	imgInput.copyTo(input_image.data);
-	
+//	imgInput.copyTo(input_image.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
 	
 	#if __SDSCC__
 	perf_counter hw_ctr;		
@@ -69,8 +69,9 @@ int main(int argc, char *argv[]){
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
-	output_xf.data = imgOutput.copyFrom();
-	
+	//output_xf.data = imgOutput.copyFrom();
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	int num_errors_xf = 0;
 	unsigned char max_error = 0;
@@ -80,7 +81,7 @@ int main(int argc, char *argv[]){
 	{
 		for(int j=0;j<output_width;j++)
 		{
-			if(output_xf.at<unsigned char>(i,j) == output_image.at<unsigned char>(i,j))
+			if(imgOutput.data[i*output_width +j] == output_image.at<unsigned char>(i,j))
 			{
 				output_diff_xf_cv.at<unsigned char>(i,j) = 0;
 			}
@@ -88,7 +89,7 @@ int main(int argc, char *argv[]){
 			{
 				output_diff_xf_cv.at<unsigned char>(i,j) = 255;
 				
-				unsigned char temp1 = output_xf.at<unsigned char>(i,j);
+				unsigned char temp1 = imgOutput.data[i*output_width +j];
 				unsigned char temp2 = output_image.at<unsigned char>(i,j);
 				unsigned char temp;
 				temp = std::abs(temp1-temp2);
@@ -111,7 +112,7 @@ int main(int argc, char *argv[]){
 	std::cout << "Max Error between opencv and xf: " << (unsigned int)max_error << std::endl;
 	std::cout << "Min Error between opencv and xf: " << (unsigned int)min_error << std::endl;
 	cv::imwrite("xf_cv_diff_image.png", output_diff_xf_cv);
-	cv::imwrite("xf_image.png", output_xf);
+	//cv::imwrite("xf_image.png", output_xf);
 	if(max_error > 0)
 	{
 		return 1;

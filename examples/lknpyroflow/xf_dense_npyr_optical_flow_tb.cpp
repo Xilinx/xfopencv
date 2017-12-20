@@ -58,8 +58,11 @@ int main(int argc, char *argv[]){
 	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowx(frame0.rows,frame0.cols);
 	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowy(frame0.rows,frame0.cols);
 	
-	buf0.copyTo(frame0.data);
-	buf1.copyTo(frame1.data);
+	//buf0.copyTo(frame0.data);
+	//buf1.copyTo(frame1.data);
+	buf0 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[1], 0);
+	buf1 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[2], 0);
+
 		
 		#if __SDSCC__
 			perf_counter hw_ctr;hw_ctr.start();

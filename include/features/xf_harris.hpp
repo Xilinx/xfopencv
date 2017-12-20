@@ -52,10 +52,10 @@ namespace xf{
  * xFCornerHarrisDetector : CornerHarris function to find corners in the image
  ************************************************************************/
 template<int ROWS, int COLS, int IN_DEPTH, int NPC, int IN_WW,
-int OUT_WW, int MAXPNTS, int TC,int GRAD_WW, int DET_WW>
+int OUT_WW, int TC,int GRAD_WW, int DET_WW>
 void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
-		ap_uint<32>  _dst_list[MAXPNTS], uint16_t img_height, uint16_t img_width,
-		uint16_t _filter_width, uint16_t _block_width,uint16_t _nms_radius, uint16_t _threshold, uint16_t k, uint32_t *nCorners)
+		hls::stream < XF_SNAME(IN_WW) > &_dst_mat, uint16_t img_height, uint16_t img_width,
+		uint16_t _filter_width, uint16_t _block_width,uint16_t _nms_radius, uint16_t _threshold, uint16_t k)
 {
 
 
@@ -72,7 +72,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 	hls::stream< XF_SNAME(DET_WW) > score("score");
 	hls::stream< XF_SNAME(DET_WW) > thresh("thresh");
 
-	hls::stream< XF_SNAME(IN_WW) > maxsup("maxsup");
+	//hls::stream< XF_SNAME(IN_WW) > maxsup("maxsup");
 #pragma HLS DATAFLOW
 
 	if (_filter_width == XF_FILTER_7X7){
@@ -130,21 +130,17 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 	xFThreshold<ROWS, COLS, XF_32SP, NPC, DET_WW, TC>(score, thresh, _threshold, img_height, img_width);
 
 	xFMaxSuppression<ROWS, COLS, XF_32SP, XF_8UP, NPC,
-	DET_WW, IN_WW>(thresh, maxsup, _nms_radius, img_height, img_width);
-
-	xFWriteCornersToList<ROWS, COLS, IN_DEPTH, NPC, IN_WW, MAXPNTS,
-	OUT_WW, TC>(maxsup, _dst_list, nCorners, img_height, img_width);
-
+	DET_WW, IN_WW>(thresh, _dst_mat, _nms_radius, img_height, img_width);
 
 }
 //
 ///**********************************************************************
 // * xFCornerHarrisTop :  Calls the Main Function depends on requirements
 // **********************************************************************/
-template<int ROWS, int COLS, int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int MAXPNTS>
+template<int ROWS, int COLS, int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS>
 void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
-		ap_uint<32> _dst_list[MAXPNTS], uint16_t img_height, uint16_t img_width,
-		uint16_t _threshold, uint16_t val, uint32_t *nCorners)
+		hls::stream < XF_SNAME(IN_WW) > & _dst_mat, uint16_t img_height, uint16_t img_width,
+		uint16_t _threshold, uint16_t val)
 {
 	assert(((FILTERSIZE == XF_FILTER_3X3) || (FILTERSIZE == XF_FILTER_5X5) ||
 			(FILTERSIZE == XF_FILTER_7X7)) && "filter width must be 3, 5 or 7");
@@ -164,32 +160,34 @@ void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 	if(NPC == XF_NPPC8)
 	{
 		xFCornerHarrisDetector<ROWS, COLS, DEPTH, NPC, IN_WW, OUT_WW,
-		MAXPNTS, (COLS>>XF_BITSHIFT(NPC)), XF_128UW, XF_256UW>(_src_mat, _dst_list, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val, nCorners);
+		(COLS>>XF_BITSHIFT(NPC)), XF_128UW, XF_256UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 	else if(NPC == XF_NPPC1)
 	{
 		xFCornerHarrisDetector<ROWS, COLS, DEPTH,	NPC, IN_WW, OUT_WW,
-		MAXPNTS, (COLS>>XF_BITSHIFT(NPC)), XF_16UW, XF_32UW>(_src_mat, _dst_list, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val, nCorners);
+		(COLS>>XF_BITSHIFT(NPC)), XF_16UW, XF_32UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 }
 // xFCornerHarrisTop
 //
-//#pragma SDS data data_mover("src.data":AXIDMA_SIMPLE)
+
 #pragma SDS data access_pattern("src.data":SEQUENTIAL)
-#pragma SDS data access_pattern(points:SEQUENTIAL)
+#pragma SDS data access_pattern("dst.data":SEQUENTIAL)
+
 #pragma SDS data copy ("src.data"[0:"src.size"])
+#pragma SDS data copy ("dst.data"[0:"dst.size"])
 #pragma SDS data mem_attribute("src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute("dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
-template<int MAXPNTS,int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int SRC_T,int ROWS, int COLS,int NPC=1>
-void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,ap_uint<32> points[MAXPNTS],uint16_t threshold, uint16_t k, uint32_t *nCorners)
+template<int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int SRC_T,int ROWS, int COLS,int NPC=1>
+void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,xf::Mat<SRC_T, ROWS, COLS, NPC> & dst,uint16_t threshold, uint16_t k)
 {
-
-#pragma HLS interface ap_fifo port=points
-
 #pragma HLS inline off
 
-	
+
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
+
+	hls::stream< XF_TNAME(SRC_T,NPC)> _dst;
 
 #pragma HLS DATAFLOW
 
@@ -205,7 +203,20 @@ void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,ap_uint<32> points[MAXPN
 		}
 	}
 
-	xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS, MAXPNTS>(_src, points, src.rows, src.cols, threshold, k,nCorners);
+	xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
+
+	for(int i=0; i<dst.rows;i++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
+		for(int j=0; j<(dst.cols)>>(XF_BITSHIFT(NPC));j++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
+#pragma HLS PIPELINE
+#pragma HLS LOOP_FLATTEN off
+			XF_TNAME(SRC_T,NPC) value = _dst.read();
+			*(dst.data + i*(dst.cols>>(XF_BITSHIFT(NPC))) +j) = value;
+		}
+	}
 
 }
 }

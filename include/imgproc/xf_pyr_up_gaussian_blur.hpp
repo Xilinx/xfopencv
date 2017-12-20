@@ -101,9 +101,7 @@ void xFPyrUpProcessWindow(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 #pragma HLS pipeline
 		if(row < img_height && col < img_width)
 			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
-		else
-			buf[row_ind[win_size-1]][col] = 0;
-
+		
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ

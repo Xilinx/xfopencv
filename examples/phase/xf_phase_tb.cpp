@@ -2,28 +2,28 @@
 Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
@@ -93,52 +93,80 @@ int main( int argc, char **argv)
 	imgInputx.copyTo(( short int*)c_grad_x.data);
 	imgInputy.copyTo(( short int*)c_grad_y.data);
 
-	
 
-	#if __SDSCC__
+
+#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
-	#endif
+#endif
 
 	//xFphase<DEG_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(imgInputx, imgInputy,imgOutput);
 	phase_accel(imgInputx, imgInputy,imgOutput);
-	
-	#if __SDSCC__
+
+#if __SDSCC__
 	hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
+#endif
 
 	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
-	
+
 
 
 #if DEGREES
-	cv::Mat c_phase;
-	ocv_ref.convertTo(c_phase,CV_16S);
-	absdiff(c_phase,out_img,diff);
-
-	imwrite("ocv_ref.png", c_phase);
-	imwrite("hls.png", out_img);
-	imwrite("diff.png", diff);
+	/////   writing the difference between the OpenCV and the Kernel output into a text file /////
+	FILE *fp;
+	fp = fopen("diff.txt", "w");
+	for (int i = 0; i < in_img.rows; i++)
+	{
+		for(int j = 0; j < in_img.cols; j++)
+		{
+			short int v = out_img.at<short int>(i,j);
+			float v1 = ocv_ref.at<float>(i,j);
+			float v2 = v/pow(2.0,6);
+			fprintf(fp,"%f ", v1-v2); // converting the output fixed point format from Q4.12 format to float
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
 
 	// Find minimum and maximum differences
-	double minval=256,maxval=0;
+	float ocvminvalue, ocvmaxvalue;
+	float hlsminvalue, hlsmaxvalue;
+	double minval=65535,maxval=0;
 	int cnt = 0;
-	for (int i=0;i<in_img.rows;i++)
+	for (int i = 0; i < in_img.rows; i++)
 	{
-		for(int j=0;j<in_img.cols;j++)
+		for(int j=0; j < in_img.cols; j++)
 		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v>1)
+			short int v3 = out_img.at<short int>(i,j);
+			float v2 = ocv_ref.at<float>(i,j);
+			float v1 ;
+
+			if(DEGREES)
+			{
+				v1 = v3/(pow(2.0,6));  // converting the output fixed point format from Q4.12 format to float
+			}
+
+			float v = (v2-v1);
+
+			if (v > 1)
 				cnt++;
 			if (minval > v )
+			{
 				minval = v;
+				ocvminvalue = v2;
+				hlsminvalue = v1;
+			}
 			if (maxval < v)
+			{
 				maxval = v;
+				ocvmaxvalue = v2;
+				hlsmaxvalue = v1;
+			}
 		}
 	}
-
-	c_phase.~Mat();
+	printf("Minimum value ocv = %f Minimum value hls = %f\n", ocvminvalue, hlsminvalue);
+	printf("Maximum value ocv = %f Maximum value hls = %f\n", ocvmaxvalue, hlsmaxvalue);
 
 #elif RADIANS
 
@@ -219,4 +247,5 @@ int main( int argc, char **argv)
 
 	return 0;
 }
+
 

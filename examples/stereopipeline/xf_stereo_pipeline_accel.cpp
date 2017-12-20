@@ -35,12 +35,12 @@ void stereopipeline_accel(xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftM
 	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state, ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix, ap_fixed<32,12> *distC_l_fix, ap_fixed<32,12> *distC_r_fix, 
 	ap_fixed<32,12> *irA_l_fix, ap_fixed<32,12> *irA_r_fix, int _cm_size, int _dc_size)
 {
-	xf::InitUndistortRectifyMapInverse<XF_HEIGHT,XF_WIDTH,XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_NPPC1>(cameraMA_l_fix,distC_l_fix,irA_l_fix,mapxLMat,mapyLMat,_cm_size,_dc_size);
+	xf::InitUndistortRectifyMapInverse<XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(cameraMA_l_fix,distC_l_fix,irA_l_fix,mapxLMat,mapyLMat,_cm_size,_dc_size);
 	xf::remap<XF_REMAP_BUFSIZE,XF_8UC1,XF_32FC1,XF_8UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(leftMat,leftRemappedMat,mapxLMat,mapyLMat,XF_INTERPOLATION_BILINEAR);
 
-	xf::InitUndistortRectifyMapInverse<XF_HEIGHT,XF_WIDTH,XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_NPPC1>(cameraMA_r_fix,distC_r_fix,irA_r_fix,mapxRMat,mapyRMat,_cm_size,_dc_size);
+	xf::InitUndistortRectifyMapInverse<XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(cameraMA_r_fix,distC_r_fix,irA_r_fix,mapxRMat,mapyRMat,_cm_size,_dc_size);
 	xf::remap<XF_REMAP_BUFSIZE,XF_8UC1,XF_32FC1,XF_8UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(rightMat,rightRemappedMat,mapxRMat,mapyRMat,XF_INTERPOLATION_BILINEAR);
 
-	xf::StereoBM<XF_HEIGHT,XF_WIDTH,XF_8UC1,XF_16UC1,XF_NPPC1,SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS>(leftRemappedMat, rightRemappedMat, dispMat, bm_state);
+	xf::StereoBM<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS,XF_8UC1,XF_16UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(leftRemappedMat, rightRemappedMat, dispMat, bm_state);
 }
 

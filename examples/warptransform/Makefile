@@ -3,10 +3,10 @@ EXECUTABLE = warptransform.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xf::WarpTransform<100,50,0,1,0,1080,1920,1>" xf_warp_transform_accel.cpp -files ./include/imgproc/xf_warp_transform.hpp -clkid 2 -sds-end -dmclkid 2
+-sds-hw "xf::warpTransform<100,50,0,1,0,1080,1920,1>" xf_warp_transform_accel.cpp -files ../../include/imgproc/xf_warp_transform.hpp -clkid 2 -sds-end -dmclkid 2
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 LLIBS = -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -lopencv_imgcodecs -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann

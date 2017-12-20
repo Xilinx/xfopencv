@@ -50,14 +50,14 @@ int main(int argc, char** argv)
 	uint32_t *histogram=(uint32_t *)malloc(256*sizeof(uint32_t));
 #endif
 	// reading in the color image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 
 	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image\n");
 		return 0;
 	}
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+	//cvtColor(in_img, in_gray, CV_BGR2GRAY);
 
 	//////////////////	Opencv Reference  ////////////////////////
 
@@ -67,12 +67,12 @@ int main(int argc, char** argv)
 	/// Set the ranges ( for B,G,R) )
 	float range[] = { 0, 256 } ;
 	const float* histRange = { range };
-	cv::calcHist( &in_gray, 1, 0, cv::Mat(), hist_ocv, 1, &histSize, &histRange, 1, 0 );
+	cv::calcHist( &in_img, 1, 0, cv::Mat(), hist_ocv, 1, &histSize, &histRange, 1, 0 );
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPPC>(argv[1], 0);
 #if __SDSCC__
 	perf_counter hw_ctr;
 

@@ -22,7 +22,7 @@ Where 'xfopencv' is the name of the directory where the repository will be store
 
 ## HARDWARE and SOFTWARE REQUIREMENTS
 The xfOpenCV library is designed to work with Zynq and Zynq Ultrascale+ FPGAs. The library has been verified on zcu102 board.
-SDSoC 2017.1 Development Environment is required to work with the library.
+SDSoC 2017.4 Development Environment is required to work with the library.
 zcu102 reVISION platform is required to run the library on zcu102 board. Please download it from here: [reVISION Platform]
 
 ## OTHER INFORMATION
@@ -53,17 +53,38 @@ Date      | Readme Version | Release Notes
 --------  |----------------|-------------------------
 June2017  | 1.0            | Initial Xilinx release <br> -Windows OS support is in Beta.
 September2017  | 2.0            | 2017.2 Xilinx release <br> 
+December2017  | 3.0            | 2017.4 Xilinx release <br>
 
 ## Changelog:
 
-1.	Library within xf namespace – All functions in the library are now part of xf namespace.
-2.	Dataflow enabled between functions – When multiple functions in the library are called in sequence, as part of a pipeline, dataflow is automatically inferred between the functions. Updated example for stereo pipeline provided.
-3. Updated latency profiling.
-4.	Minor bug fixes
+1. Added examples that use library functions to demonstrate hardware function pipelining using SDSoC:
+
+    • Corner Tracking Using Sparse Optical Flow
+    
+    • Color Detection
+    
+    • Difference of Gaussian Filter 
+    
+    • Stereo Vision Pipeline
+
+2. Added new functions to be used on PS side:
+
+    • xf::imread
+    
+    • xf::imwrite
+    
+    • xf::convertTo
+
+	• xf::absDiff	
+
+3. Added 8-bit output support for Sobel Filter and Scharr Filter.
+4. Output changed from list to image for Harris Corner and Fast Corner functions.
+5. All encrypted functions made public.
+6. Order of template parameters changed for Bilateral, Stereo-Pipeline, Remap, HoG and MST functions.
+7. Minor bug fixes
 
  #### Known Issues:
-1. Hardware kernels using 128-bit streaming interfaces will experience twice the expected latency. This will be resolved in a coming update. 
-2. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
+1. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
 
 
 [reVISION Getting Started Guide]: http://www.wiki.xilinx.com/reVISION+Getting+Started+Guide

@@ -61,8 +61,8 @@ int main(int argc, char** argv)
 	
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
-	imgInput.copyTo(in_gray.data);
-	
+
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;		
@@ -70,22 +70,23 @@ int main(int argc, char** argv)
 	#endif
 	
 	median_blur_accel(imgInput, imgOutput);
-	
+
 	#if __SDSCC__
 		hw_ctr.stop();
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = imgOutput.copyFrom();
+
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
+
 	
 	/////////////////    OpenCV reference  /////////////////
 	cv::medianBlur(in_gray,ocv_ref,WINDOW_SIZE);
 
 
-	cv::imwrite("out_img.jpg", out_img);  // save the output image
-
 	cv::imwrite("ref_img.jpg", ocv_ref);  // reference image
 
-	cv::absdiff(ocv_ref,out_img,diff); // Compute absolute difference image
+	xf::absDiff(ocv_ref,imgOutput,diff); // Compute absolute difference image
 
 	// Find minimum and maximum differences.
 	double minval = 255, maxval = 0;

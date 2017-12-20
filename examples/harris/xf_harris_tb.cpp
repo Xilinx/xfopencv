@@ -43,7 +43,7 @@ int main(int argc,char **argv)
 		printf("Usage : <executable> <input image> \n");
 		return -1;
 	}
-	in_img = cv::imread(argv[1],1); // reading in the color image
+	in_img = cv::imread(argv[1],0); // reading in the color image
 
 	if(!in_img.data)
 	{
@@ -65,37 +65,33 @@ int main(int argc,char **argv)
 		Th = 41151168289701888.000000;
 		Thresh = 566;
 	}
-	cvtColor(in_img, img_gray, CV_BGR2GRAY);
+//	cvtColor(in_img, img_gray, CV_BGR2GRAY);
 	// Convert rgb into grayscale
-	hls_out_img.create(img_gray.rows, img_gray.cols, CV_8U); 					// create memory for hls output image
-	ocv_out_img.create(img_gray.rows, img_gray.cols, CV_8U);		 			// create memory for opencv output image
+	hls_out_img.create(in_img.rows, in_img.cols, CV_8U); 					// create memory for hls output image
+	ocv_out_img.create(in_img.rows, in_img.cols, CV_8U);		 			// create memory for opencv output image
 
-	ocv_ref(img_gray, ocv_out_img, Th);
+	ocv_ref(in_img, ocv_out_img, Th);
 	/**************		HLS Function	  *****************/
 	float K = 0.04;
 	uint16_t k = K*(1<<16);														// Convert to Q0.16 format
 	uint32_t nCorners = 0;
 	uint16_t imgwidth  = in_img.cols;
 	uint16_t imgheight = in_img.rows;
-	unsigned int *list;
 
-#if __SDSCC__
-	list = (unsigned int *)sds_alloc_non_cacheable((MAXCORNERS)*sizeof( unsigned int));
-#else
-	list = (unsigned int *)malloc((MAXCORNERS)*sizeof( unsigned int));
-#endif
 
-	
+
 
 #if NO
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(img_gray.data);
+	//imgInput.copyTo(img_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
 #ifdef __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
 #endif
-	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
+	harris_accel(imgInput,imgOutput, Thresh, k);
 #ifdef __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
@@ -105,14 +101,16 @@ int main(int argc,char **argv)
 
 #if RO
 
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(img_gray.rows,img_gray.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(img_gray.data);
+	//imgInput.copyTo(img_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(argv[1], 0);
 #ifdef __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
 #endif
-	harris_accel(imgInput,(ap_uint<32>*)list, Thresh, k, &nCorners);
+	harris_accel(imgInput,imgOutput, Thresh, k);
 #ifdef __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
@@ -120,40 +118,69 @@ int main(int argc,char **argv)
 
 #endif
 
-	
+	///hls_out_img.data = (unsigned char *)imgOutput.copyFrom();
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	unsigned int val;
 	unsigned short int row, col;
 
 	cv::Mat out_img;
-	out_img = img_gray.clone();
+	out_img = in_img.clone();
 
 	std::vector<cv::Point> hls_points;
 	std::vector<cv::Point> ocv_points;
 	std::vector<cv::Point> common_pts;
 	/*						Mark HLS points on the image 				*/
 
-	for(int i=0; i<nCorners; i++)
-	{
-		val = list[i];
-		col = (unsigned short)(val & (0x0000ffff));
-		row = (unsigned short)(val>>16) & (0x0000ffff);
-		cv::Point tmp;
-		tmp.x = col;
-		tmp.y = row;
-		if((tmp.x < img_gray.cols) && (tmp.y <img_gray.rows) && (row>0)){
-			hls_points.push_back(tmp);
+	for( int j = 0; j < imgOutput.rows ; j++ ){
+		int l=0;
+		for( int i = 0; i < (imgOutput.cols>>XF_BITSHIFT(NPIX)); i++ ){
+
+			if(NPIX==XF_NPPC8){
+				ap_uint<64> value = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i];//.at<unsigned char>(j,i);
+				for(int k=0; k<64;k+=8,l++){
+					uchar pix = value.range(k+7,k);
+					if(pix != 0)
+					{
+						cv::Point tmp;
+						tmp.x = l;
+						tmp.y = j;
+						if((tmp.x < in_img.cols) && (tmp.y <in_img.rows) && (j>0)){
+							hls_points.push_back(tmp);
+						}
+						short int y, x;
+						y = j;
+						x = l;
+						if (j > 0)
+							cv::circle(out_img, cv::Point( x, y), 5,  Scalar(0,0,255,255), 2, 8, 0 );
+					}
+				}
+			}
+			if(NPIX==XF_NPPC1){
+				unsigned char pix = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i];
+				if(pix != 0)
+				{
+					cv::Point tmp;
+					tmp.x = i;
+					tmp.y = j;
+					if((tmp.x < in_img.cols) && (tmp.y <in_img.rows) && (j>0)){
+						hls_points.push_back(tmp);
+					}
+					short int y, x;
+					y = j;
+					x = i;
+					if (j > 0)
+						cv::circle(out_img, cv::Point( x, y), 5,  Scalar(0,0,255,255), 2, 8, 0 );
+				}
+			}
+
 		}
-		short int y, x;
-		y = row;
-		x = col;
-		if (row > 0)
-			cv::circle(out_img, cv::Point( x, y), 5,  Scalar(0,0,255,255), 2, 8, 0 );
 	}
+
 	/*						End of marking HLS points on the image 				*/
 	/*						Write HLS and Opencv corners into a file			*/
 
-	ocvpnts = img_gray.clone();
+	ocvpnts = in_img.clone();
 
 
 	int nhls = hls_points.size();
@@ -169,7 +196,7 @@ int main(int argc,char **argv)
 		}
 	}
 
-	printf("ocv corner count = %d, Hls corner count = %d\n", ocv_points.size(), nCorners);
+	printf("ocv corner count = %d, Hls corner count = %d\n", ocv_points.size(), hls_points.size());
 	int nocv = ocv_points.size();
 
 	/*									End 								*/

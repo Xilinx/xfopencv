@@ -36,6 +36,7 @@
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_pyr_dense_optical_flow_wrapper.hpp"
+#include "imgproc/xf_pyr_down.hpp"
 
 #define IN_TYPE unsigned char
 #define OUT_TYPE unsigned char

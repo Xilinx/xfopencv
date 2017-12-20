@@ -42,7 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define VIDEO_INPUT 0
 
 // total number of frames to be tracked
-#define TOTAL_FRAMES 100
+#define TOTAL_FRAMES 80
 
 #define XF_HEIGHT 1080
 #define XF_WIDTH  1920

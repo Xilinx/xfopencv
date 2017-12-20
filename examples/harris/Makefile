@@ -2,13 +2,13 @@ APPSOURCES = xf_harris_tb.cpp xf_harris_accel.cpp
 EXECUTABLE = harris.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11 ${VERBOSE} \
--sds-hw "xf::CornerHarris<1024,3,3,1,0,1080,1920,1>" xf_harris_accel.cpp -files ./include/features/xf_harris.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} ${VERBOSE} \
+-sds-hw "xf::cornerHarris<3, 3,1,0,1080,1920,1>" xf_harris_accel.cpp -files ../../include/features/xf_harris.hpp -clkid 2 -sds-end -dmclkid 2
 
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

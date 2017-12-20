@@ -120,8 +120,9 @@ void xfPhaseKernel(
 				}
 				if(_out_format == XF_DEGREES)
 				{
-					result_temp = result_temp + 0x40;
-					result = (XF_NORM_FACTOR * result_temp)>>22;
+					//result_temp = result_temp + 0x40;
+					//result = (XF_NORM_FACTOR * result_temp)>>16;
+					result = (XF_NORM_FACTOR * result_temp + 0x8000)>>16;
 				}
 				else if(_out_format == XF_RADIANS)
 				{

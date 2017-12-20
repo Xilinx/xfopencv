@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	cv::Mat diff_grad_x, diff_grad_y;
 
 	// reading in the color image
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 
 	if (in_img.data == NULL)
 	{
@@ -55,48 +55,51 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+	//cvtColor(in_img, in_img, CV_BGR2GRAY);
+
+	#define PTYPE CV_8U// CV_16S //
+	typedef unsigned char TYPE; //short int TYPE; //
 
 	// create memory for output images
-	c_grad_x.create(in_gray.rows,in_gray.cols,CV_16S);
-	c_grad_y.create(in_gray.rows,in_gray.cols,CV_16S);
-	hls_grad_x.create(in_gray.rows,in_gray.cols,CV_16S);
-	hls_grad_y.create(in_gray.rows,in_gray.cols,CV_16S);
-	diff_grad_x.create(in_gray.rows,in_gray.cols,CV_16S);
-	diff_grad_y.create(in_gray.rows,in_gray.cols,CV_16S);
+	c_grad_x.create(in_img.rows,in_img.cols,PTYPE);
+	c_grad_y.create(in_img.rows,in_img.cols,PTYPE);
+	hls_grad_x.create(in_img.rows,in_img.cols,PTYPE);
+	hls_grad_y.create(in_img.rows,in_img.cols,PTYPE);
+	diff_grad_x.create(in_img.rows,in_img.cols,PTYPE);
+	diff_grad_y.create(in_img.rows,in_img.cols,PTYPE);
 
 	////////////    Opencv Reference    //////////////////////
 	int scale = 1;
 	int delta = 0;
-	int ddepth = 3;
+	int ddepth = -1;//CV_16S;//
 
-	Scharr(in_gray, c_grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_CONSTANT );
-	Scharr(in_gray, c_grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_CONSTANT );
+	Scharr(in_img, c_grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_CONSTANT );
+	Scharr(in_img, c_grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_CONSTANT );
 
 	imwrite("out_ocvx.jpg", c_grad_x);
-	imwrite("out_hlsy.jpg", c_grad_y);
+	imwrite("out_ocvy.jpg", c_grad_y);
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
 
 
-	unsigned short height = in_gray.rows;
-	unsigned short width = in_gray.cols;
+	unsigned short height = in_img.rows;
+	unsigned short width = in_img.cols;
 
 
 
 
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputx(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_16UC1,HEIGHT,WIDTH,NPC1> imgOutputy(in_gray.rows,in_gray.cols);
+	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
+	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
-	
+	//imgInput.copyTo(in_img.data);
+	imgInput = xf::imread<IN_TYPE, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
 	#endif
 
-	//xFScharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,NPC1>(imgInput, imgOutputx,imgOutputy);
 	scharr_accel(imgInput, imgOutputx,imgOutputy);
 
 	#if __SDSCC__
@@ -105,17 +108,23 @@ int main(int argc, char** argv)
 	#endif
 
 	
-	hls_grad_x.data = (unsigned char*)imgOutputx.copyFrom();
-	hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
+	//hls_grad_x.data = (unsigned char*)imgOutputx.copyFrom();
+	//hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
+
+	xf::imwrite("hls_out_x.jpg",imgOutputx);
+	xf::imwrite("hls_out_y.jpg",imgOutputy);
 
 
-	imwrite("out_hlsx.jpg", hls_grad_x);
-	imwrite("out_hlsy.jpg", hls_grad_y);
+	//imwrite("out_hlsx.jpg", hls_grad_x);
+	//imwrite("out_hlsy.jpg", hls_grad_y);
 
 
 	//////////////////  Compute Absolute Difference ////////////////////
-	absdiff(c_grad_x, hls_grad_x, diff_grad_x);
-	absdiff(c_grad_y, hls_grad_y, diff_grad_y);
+	//absdiff(c_grad_x, hls_grad_x, diff_grad_x);
+	//absdiff(c_grad_y, hls_grad_y, diff_grad_y);
+
+	xf::absDiff(c_grad_x, imgOutputx, diff_grad_x);
+	xf::absDiff(c_grad_y, imgOutputy, diff_grad_y);
 
 	imwrite("out_errorx.jpg", diff_grad_x);
 	imwrite("out_errory.jpg", diff_grad_y);
@@ -129,8 +138,8 @@ int main(int argc, char** argv)
 	{
 		for(int j=0;j<in_img.cols;j++)
 		{
-			int16_t v = diff_grad_y.at<int16_t>(i,j);
-			int16_t v1 = diff_grad_x.at<int16_t>(i,j);
+			TYPE v = diff_grad_y.at<TYPE>(i,j);
+			TYPE v1 = diff_grad_x.at<TYPE>(i,j);
 			if (v>0)
 				cnt++;
 			if (minval > v )
@@ -151,14 +160,6 @@ int main(int argc, char** argv)
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval1,maxval1,err_per1);
 
-	in_img.~Mat();
-	in_gray.~Mat();
-	c_grad_x.~Mat();
-	c_grad_y.~Mat();;
-	hls_grad_x.~Mat();
-	hls_grad_y.~Mat();
-	diff_grad_x.~Mat();
-	diff_grad_y.~Mat();
 	int ret  = 0;
 	if(err_per > 0.0f)
 	{

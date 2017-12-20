@@ -44,6 +44,7 @@ int main(int argc, char **argv)
 	cv::Mat in_gray1, in_gray2;
 	cv::Mat in_gray3, in_gray4;
 	cv::Mat out_img, ref;
+	cv::Mat diff;
 
 	// Read images
 	in_gray1 = cv::imread(argv[1], 0);
@@ -51,17 +52,14 @@ int main(int argc, char **argv)
 	in_gray3 = cv::imread(argv[3], 0);
 	in_gray4 = cv::imread(argv[4], 0);
 
-	cv::Mat g(in_gray4.rows, in_gray1.cols, 0);
-
 	if ((in_gray1.data == NULL) | (in_gray2.data == NULL) | (in_gray3.data == NULL) | (in_gray4.data == NULL))
 	{
 		fprintf(stderr, "Cannot open image \n");
 		return 0;
 	}
 
-	//creating memory for output image
-	out_img.create(in_gray1.rows, in_gray1.cols, CV_8UC4);
-	cv::cvtColor(in_gray1, out_img, CV_GRAY2RGBA);
+	//creating memory for diff image
+	diff.create(in_gray1.rows, in_gray1.cols, CV_8UC4);
 
 
 	// image height and width
@@ -75,10 +73,11 @@ int main(int argc, char **argv)
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
 	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
-	imgInput1.copyTo(in_gray1.data);
-	imgInput2.copyTo(in_gray2.data);
-	imgInput3.copyTo(in_gray3.data);
-	imgInput4.copyTo(in_gray4.data);
+	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[2], 0);
+	imgInput3 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[3], 0);
+	imgInput4 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[4], 0);
+
 #if __SDSCC__
 	perf_counter hw_ctr;
 
@@ -91,10 +90,9 @@ int main(int argc, char **argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
-	out_img.data = imgOutput.copyFrom();
 
-	// output image
-	cv::imwrite("out_hls.jpg", out_img);
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 	// OpenCV reference
 	std::vector<cv::Mat> bgr_planes;
@@ -107,9 +105,9 @@ int main(int argc, char **argv)
 	cv::merge(bgr_planes, merged);
 	cv::imwrite("out_ocv.jpg", merged);
 
-	cv::Mat diff;
 	// compute the absolute difference
-	absdiff(merged, out_img, diff);
+	xf::absDiff(merged, imgOutput, diff);
+
 	// write the difference image
 	cv::imwrite("diff.jpg", diff);
 

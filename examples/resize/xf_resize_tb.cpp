@@ -60,7 +60,8 @@ int main(int argc,char **argv){
 
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_height,in_width);
 	xf::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> imgOutput(out_height,out_width);
-	imgInput.copyTo(img.data);
+	//imgInput.copyTo(img.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
 	
 	#ifdef __SDSCC__
 	perf_counter hw_ctr;
@@ -74,8 +75,8 @@ int main(int argc,char **argv){
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 	
-	result.data = imgOutput.copyFrom();
-
+	//result.data = imgOutput.copyFrom();
+	xf::imwrite("hls_out.jpg",imgOutput);
 	
 	/*OpenCV resize function*/
 #if INTERPOLATION==0
@@ -99,7 +100,8 @@ int main(int argc,char **argv){
 	}
 #endif
 
-	cv::absdiff(result,result_ocv,error);
+	//cv::absdiff(result,result_ocv,error);
+	xf::absDiff(result_ocv,imgOutput,error);
 
 	double minval=256,maxval=0;
 	int cnt = 0;
@@ -118,7 +120,7 @@ int main(int argc,char **argv){
 
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
-	cv::imwrite("output_hls.png", result);
+//	cv::imwrite("output_hls.png", result);
 	cv::imwrite("resize_ocv.png", result_ocv);
 	cv::imwrite("error.png", error);
 

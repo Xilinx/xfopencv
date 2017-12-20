@@ -443,7 +443,7 @@ static short Atan2LookupFP(short xs,short ys,int M1,int N1,int M2, int N2)
 {
 	assert(((N1 == 16-M1) && (N2==16-M2) && (M1==M2)) && "xs and ys should be of 16-bit and same fixed point type.");
 	short theta;
-	char s1,s2,s;
+	signed char s1,s2,s;
 	if (ys == 0 && xs == 0)
 		return 0;
 	else
@@ -516,7 +516,7 @@ static short Atan2LUT8(short xs,short ys,int M1,int N1,int M2, int N2)
 {
 	assert(((N1 == 9-M1) && (N2==9-M2) && (M1==M2)) && "xs and ys should be of signed 9-bit and same fixed point type.");
 	short theta;
-	char s1,s2,s;
+	signed char s1,s2,s;
 	if (ys == 0 && xs == 0)
 		return 0;
 	else

@@ -5,12 +5,12 @@ DMCLK = -dmclkid 2
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} -std=c++11  \
--sds-hw "xf::PyrDown <0, 1080, 1920, 1>" xf_pyr_dense_optical_flow_accel.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end \
--sds-hw "xf::DensePyrOpticalFlow<5,50,11,16,10,0,1080,1920,1>" xf_pyr_dense_optical_flow_tb.cpp -files ./include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end
+-sds-hw "xf::pyrDown < 0,1080,1920,1>" xf_pyr_dense_optical_flow_accel.cpp -files ../../include/imgproc/xf_pyr_down.hpp ${CLK_ID} -sds-end\
+-sds-hw "xf::densePyrOpticalFlow < 5,50,11,16,10,0,1080,1920,1>" xf_pyr_dense_optical_flow_accel.cpp -files ../../include/imgproc/xf_pyr_dense_optical_flow_wrapper.hpp ${CLK_ID} -sds-end
 
 CC = sds++ ${SDSCC_FLAGS}
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ./include
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib ${DMCLK} ${VERBOSE}
 LLIBS = -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -lopencv_imgcodecs -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann

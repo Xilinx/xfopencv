@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 	unsigned short in_width,in_height;
 
 	/*  reading in the color image  */
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 
 	if (in_img.data == NULL)
 	{
@@ -57,11 +57,11 @@ int main(int argc, char** argv)
 	in_height = in_img.rows;
 
 	/*  convert to gray  */
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
+//	cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
+	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
+	out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	diff.create(in_img.rows,in_img.cols,in_img.depth());
 
 
 
@@ -80,10 +80,11 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
+//	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPIX>(argv[1], 0);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -98,16 +99,18 @@ int main(int argc, char** argv)
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	out_img.data = imgOutput.copyFrom();
+//	out_img.data = imgOutput.copyFrom();
+	
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
 
-
-	for(int i = 0; i < in_gray.rows; i++)
+	for(int i = 0; i < in_img.rows; i++)
 	{
-		for(int j = 0; j < in_gray.cols; j++)
+		for(int j = 0; j < in_img.cols; j++)
 		{
 #if BINARY
-			if((in_gray.at<uchar_t>(i,j)) > thresh_value)
+			if((in_img.at<uchar_t>(i,j)) > thresh_value)
 			{
 				(ocv_ref.at<uchar_t>(i,j)) = 255;
 			}
@@ -117,11 +120,11 @@ int main(int argc, char** argv)
 			}
 
 #elif RANGE
-			if((in_gray.at<uchar_t>(i,j)) > thresh_upper)
+			if((in_img.at<uchar_t>(i,j)) > thresh_upper)
 			{
 				(ocv_ref.at<uchar_t>(i,j)) = 0;
 			}
-			else if((in_gray.at<uchar_t>(i,j)) < thresh_lower)
+			else if((in_img.at<uchar_t>(i,j)) < thresh_lower)
 			{
 				(ocv_ref.at<uchar_t>(i,j)) = 0;
 			}
@@ -136,20 +139,21 @@ int main(int argc, char** argv)
 
 
 
-	imwrite("out_img.jpg", out_img);  // save the output image
+//	imwrite("out_img.jpg", out_img);  // save the output image
 
 
 	imwrite("ref_img.jpg", ocv_ref);  // reference image
 
-	absdiff(ocv_ref,out_img,diff); // Compute absolute difference image
+	//absdiff(ocv_ref,out_img,diff); // Compute absolute difference image
+	xf::absDiff(ocv_ref, imgOutput, diff);
 	imwrite("diff_img.jpg",diff); // Save the difference image for debugging purpose
 
 	// Find minimum and maximum differences.
 	double minval = 256, maxval = 0;
 	int cnt = 0;
-	for (int i = 0; i < in_gray.rows; i++)
+	for (int i = 0; i < in_img.rows; i++)
 	{
-		for(int j = 0; j < in_gray.cols;j++)
+		for(int j = 0; j < in_img.cols;j++)
 		{
 			uchar v = diff.at<uchar>(i,j);
 			if (v > 1)
@@ -160,14 +164,9 @@ int main(int argc, char** argv)
 				maxval = v;
 		}
 	}
-	float err_per = 100.0*(float)cnt/(in_gray.rows*in_gray.cols);
+	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
-	in_img.~Mat();
-	out_img.~Mat();
-	ocv_ref.~Mat();
-	in_gray.~Mat();
-	diff.~Mat();
 
 	if(err_per > 0.0f)
 	{

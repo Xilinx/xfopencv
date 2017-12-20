@@ -3,10 +3,13 @@
     "overview" : "lknpyroflow",
     "board" : [
         "zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
+        "zcu102_rv_ss"
     ],
     "os" : [
         "Linux"
+    ],
+    "runtime" : [
+        "C/C++"
     ],
     "system" : {
         "dmclkid" : "2"
@@ -14,37 +17,8 @@
     "accelerators" : [
         {
             "name" : "DenseNonPyrLKOpticalFlow",
-            "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/imgproc/xf_dense_npyr_optical_flow.hpp",
+            "location" : "<LIBRARY>/include/imgproc/xf_dense_npyr_optical_flow.hpp",
             "clkid" : "2"
         }
-    ],
-    "compiler" : {
-        "symbols" : [
-            "HLS_NO_XIL_FPO_LIB"
-        ],
-	"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-		},
-	"linker" : {
-			"libraries" : [
-				"video",
-				"glib-2.0",
-				"drm",
-				"v4l2subdev",
-				"mediactl",
-				"opencv_imgcodecs",
-				"opencv_core",
-				"lzma",
-				"tiff",
-				"png16",
-				"z",
-				"jpeg",
-				"opencv_imgproc",
-				"dl",
-				"rt",
-				"webp",
-				"opencv_features2d",
-				"opencv_flann"
-			],
-			"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
-		}
+    ]
 }

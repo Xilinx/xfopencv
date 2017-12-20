@@ -77,20 +77,21 @@ int main(int argc, char** argv)
 	cv::Mat in_img, in_gray;
 
 	// reading in the color image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image\n");
 		return 0;
 	}
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+//	cvtColor(in_img, in_gray, CV_BGR2GRAY);
 
 
 	unsigned short mean;
 	unsigned short stddev;
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_gray.rows,in_gray.cols);
-	imgInput.copyTo(in_gray.data);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
+	//imgInput.copyTo(in_img.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPPC>(argv[1], 0);
 	
 #if __SDSCC__
 perf_counter hw_ctr;
@@ -107,8 +108,8 @@ hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	double var_c;
 
 	/* Two Pass Mean and Variance */
-	mean_c = xmean(in_gray);
-	variance(in_gray, mean_c, var_c);
+	mean_c = xmean(in_img);
+	variance(in_img, mean_c, var_c);
 	stddev_c = sqrt(var_c);
 
 	float mean_hls =(float)mean/256;

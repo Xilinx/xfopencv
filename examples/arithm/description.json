@@ -1,403 +1,194 @@
 [
 	{
-	    "example" : "arithm-add - File I/O",
-	    "overview" : "arithm-add",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "add",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-add - File I/O",
+		"overview" : "arithm-add",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "add",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-subtract - File I/O",
-	    "overview" : "arithm-subtract",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "subtract",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-subtract - File I/O",
+		"overview" : "arithm-subtract",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "subtract",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-multiply - File I/O",
-	    "overview" : "arithm-multiply",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "multiply",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-multiply - File I/O",
+		"overview" : "arithm-multiply",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "multiply",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-bitwise_and - File I/O",
-	    "overview" : "arithm-bitwise_and",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "bitwise_and",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-bitwise_and - File I/O",
+		"overview" : "arithm-bitwise_and",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "bitwise_and",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-bitwise_or - File I/O",
-	    "overview" : "arithm-bitwise_or",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "bitwise_or",
-		    "location" : "<PLATFORM>/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-bitwise_or - File I/O",
+		"overview" : "arithm-bitwise_or",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "bitwise_or",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-bitwise_not - File I/O",
-	    "overview" : "arithm-bitwise_not",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "bitwise_not",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-bitwise_not - File I/O",
+		"overview" : "arithm-bitwise_not",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "bitwise_not",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-bitwise_xor - File I/O",
-	    "overview" : "arithm-bitwise_xor",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "bitwise_xor",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-bitwise_xor - File I/O",
+		"overview" : "arithm-bitwise_xor",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "bitwise_xor",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	},
 	{
-	    "example" : "arithm-absdiff - File I/O",
-	    "overview" : "arithm-absdiff",
-	    "board" : [
-		"zcu102_es2_rv_ss",
-		"zcu102_rv_ss"
-	    ],
-	    "os" : [
-		"Linux"
-	    ],
-	    "system" : {
-		"dmclkid" : "2"
-	    },
-	    "accelerators" : [
-		{
-		    "name" : "absdiff",
-		    "location" : "<PLATFORM>/sw/a53_linux/inc/xfopencv/core/xf_arithm.hpp",
-		    "clkid" : "2"
-		}
-	    ],
-	    "compiler" : {
-		"symbols" : [
-		    "HLS_NO_XIL_FPO_LIB"
+		"example" : "arithm-absdiff - File I/O",
+		"overview" : "arithm-absdiff",
+		"board" : [
+			"zcu102_es2_rv_ss",
+			"zcu102_rv_ss"
 		],
-		"options" : "-I${SYSROOT}/usr/include/c++/6.2.1 -I${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux -I${SYSROOT}/usr/include/c++/6.2.1/backward -I${SYSROOT}/usr/include -I${SYSROOT}/usr/include/glib-2.0 -I${SYSROOT}/usr/lib/glib-2.0/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1 -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed -I${XILINX_SDX}/SDK/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include -Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
-			},
-		"linker" : {
-				"libraries" : [
-					"video",
-					"glib-2.0",
-					"drm",
-					"v4l2subdev",
-					"mediactl",
-					"opencv_imgcodecs",
-					"opencv_core",
-					"lzma",
-					"tiff",
-					"png16",
-					"z",
-					"jpeg",
-					"opencv_imgproc",
-					"dl",
-					"rt",
-					"webp",
-					"opencv_features2d",
-					"opencv_flann"
-				],
-				"options" : "--sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../data"
+		"os" : [
+			"Linux"
+		],
+		"runtime" : [
+			"C/C++"
+		],
+		"system" : {
+			"dmclkid" : "2"
+		},
+		"accelerators" : [
+			{
+				"name" : "absdiff",
+				"location" : "<LIBRARY>/include/core/xf_arithm.hpp",
+				"clkid" : "2"
 			}
+		]
 	}
 ]
-

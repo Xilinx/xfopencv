@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	cv::Mat in_img, in_gray, out_img, ocv_ref, diff, lut_mat;
 
 	/*  reading in the color image  */
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
@@ -64,19 +64,19 @@ int main(int argc, char** argv)
 		lut_ptr[i]=lut[i];
 	}
 	/*  convert to gray  */
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
+//	cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
+	out_img.create(in_img.rows,in_img.cols,in_img.depth());
+	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
+	diff.create(in_img.rows,in_img.cols,in_img.depth());
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
 	
-
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+//	imgInput.copyTo(in_gray.data);
 	#if __SDSCC__
 		perf_counter hw_ctr; hw_ctr.start();
 	#endif
@@ -87,20 +87,22 @@ int main(int argc, char** argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = imgOutput.copyFrom();
+//	out_img.data = imgOutput.copyFrom();
 	
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
 
-
-	imwrite("out_img.jpg", out_img);
+//	imwrite("out_img.jpg", out_img);
 
 	///////////// OpenCV reference  /////////////
 	lut_mat = cv::Mat(1,256,CV_8UC1,lut);
-	cv::LUT(in_gray,lut_mat,ocv_ref);
+	cv::LUT(in_img,lut_mat,ocv_ref);
 
 
 	imwrite("ref_img.jpg",ocv_ref);     // save the reference image
 	//////////////// comparision /////////////
-	absdiff(ocv_ref,out_img,diff);	  // Compute absolute difference image
+//	absdiff(ocv_ref,out_img,diff);	  // Compute absolute difference image
+	xf::absDiff(ocv_ref,imgOutput, diff);
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 
 	// Find minimum and maximum differences.
@@ -122,12 +124,6 @@ int main(int argc, char** argv)
 	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
-	in_img.~Mat();
-	in_gray.~Mat();
-	out_img.~Mat();
-	ocv_ref.~Mat();
-	diff.~Mat();
-	lut_mat.~Mat();
 
 	if(err_per > 0.0f)
 	{

@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 	cv::Mat in_img, in_gray, in_conv;
 
 	/*  reading in the color image  */
-	in_img = cv::imread(argv[1],1);
+	in_img = cv::imread(argv[1],0);
 
 	if (in_img.data == NULL)
 	{
@@ -54,17 +54,17 @@ int main(int argc, char** argv)
 	}
 
 	/*  convert to gray  */
-	cvtColor(in_img,in_gray,CV_BGR2GRAY);
+	//cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
 	/*  convert to 16S type  */
 #if T_8U
-	in_gray.convertTo(in_conv,CV_8UC1);
+	in_img.convertTo(in_conv,CV_8UC1);
 #elif T_16U
-	in_gray.convertTo(in_conv,CV_16UC1);
+	in_img.convertTo(in_conv,CV_16UC1);
 #elif T_16S
-	in_gray.convertTo(in_conv,CV_16SC1);
+	in_img.convertTo(in_conv,CV_16SC1);
 #elif T_32S
-	in_gray.convertTo(in_conv,CV_32SC1);
+	in_img.convertTo(in_conv,CV_32SC1);
 #endif
 
 
@@ -80,9 +80,20 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_conv.rows,in_conv.cols);
-	imgInput.copyTo((INTYPE *)in_conv.data);
+	xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> in_8bit(in_img.rows,in_img.cols);
+
+	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPPC>(argv[1], 0);
 	
+#if T_8U
+	imgInput=in_8bit;
+#elif T_16U
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_16U);
+#elif T_16S
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_16S);
+#elif T_32S
+	in_8bit.convertTo(imgInput,XF_CONVERT_8U_TO_32S);
+#endif
 	
 	#if __SDSCC__
 	perf_counter hw_ctr;

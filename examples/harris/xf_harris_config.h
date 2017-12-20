@@ -61,6 +61,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if NO
 #define IN_TYPE 			ap_uint<8>
 #endif
-void harris_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src, ap_uint<32> *list, unsigned short Thresh, unsigned short k, uint32_t *nCorners);
+void harris_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst, unsigned short Thresh, unsigned short k);
 
 #endif

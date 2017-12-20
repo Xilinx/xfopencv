@@ -61,7 +61,7 @@ XF_PTNAME(DEPTH_DST) xFGradientX(XF_PTNAME(DEPTH_SRC) vt0, XF_PTNAME(DEPTH_SRC) 
 		XF_PTNAME(DEPTH_SRC) vb2)
 		{
 #pragma HLS INLINE off
-	XF_PTNAME(DEPTH_DST) temp_g;
+/*	XF_PTNAME(DEPTH_DST) temp_g;
 	XF_PTNAME(DEPTH_DST) M00 = (XF_PTNAME(DEPTH_DST))vm2 << 3;
 	M00 = M00 + vm2 + vm2;
 	XF_PTNAME(DEPTH_DST) M01 = (XF_PTNAME(DEPTH_DST))vm0 << 3;
@@ -78,8 +78,37 @@ XF_PTNAME(DEPTH_DST) xFGradientX(XF_PTNAME(DEPTH_SRC) vt0, XF_PTNAME(DEPTH_SRC) 
 	S00 = S00 + S01;
 	temp_g = M00 - M01;
 	temp_g = temp_g + A00;
+	temp_g = temp_g - S00;*/
+
+	XF_PTNAME(DEPTH_DST) g_x;
+	short int temp_g;
+	short int M00 = (short int)vm2 << 3;
+	M00 = M00 + vm2 + vm2;
+	short int M01 = (short int)vm0 << 3;
+	M01 = M01 + vm0 + vm0;
+	short int A00 = (short int)vt2 << 1;
+	A00 = A00 + vt2;
+	short int A01 = (short int)vb2 << 1;
+	A01 = A01 + vb2;
+	A00 = A00 + A01;
+	short int S00 = (short int)vt0 << 1;
+	S00 = S00 + vt0;
+	short int S01 = (short int)vb0 << 1;
+	S01 = S01 + vb0;
+	S00 = S00 + S01;
+	temp_g = M00 - M01;
+	temp_g = temp_g + A00;
 	temp_g = temp_g - S00;
-	return temp_g;
+
+	g_x = temp_g;
+
+	if(DEPTH_DST == XF_8UC1){
+		if(temp_g < 0)
+			g_x = 0;
+		if(temp_g > 255)
+			g_x = 255;
+	}
+	return g_x;
 		}
 
 
@@ -100,7 +129,7 @@ XF_PTNAME(DEPTH_DST) xFGradientY(XF_PTNAME(DEPTH_SRC) vt0, XF_PTNAME(DEPTH_SRC) 
 		XF_PTNAME(DEPTH_SRC) vb2)
 		{
 #pragma HLS INLINE off
-	XF_PTNAME(DEPTH_DST) temp_g;
+/*	XF_PTNAME(DEPTH_DST) temp_g;
 	XF_PTNAME(DEPTH_DST) M00 = (XF_PTNAME(DEPTH_DST))vb1 << 3;
 	M00 = M00 + vb1 + vb1;
 	XF_PTNAME(DEPTH_DST) M01 = (XF_PTNAME(DEPTH_DST))vt1 << 3;
@@ -117,8 +146,38 @@ XF_PTNAME(DEPTH_DST) xFGradientY(XF_PTNAME(DEPTH_SRC) vt0, XF_PTNAME(DEPTH_SRC) 
 	S00 = S00 + S01;
 	temp_g = M00 - M01;
 	temp_g = temp_g + A00;
+	temp_g = temp_g - S00;*/
+
+	XF_PTNAME(DEPTH_DST) g_y;
+	short int temp_g;
+	short int M00 = (short int)vb1 << 3;
+	M00 = M00 + vb1 + vb1;
+	short int M01 = (short int)vt1 << 3;
+	M01 = M01 + vt1 + vt1;
+	short int A00 = (short int)vb0 << 1;
+	A00 = A00 + vb0;
+	short int A01 = (short int)vb2 << 1;
+	A01 = A01 + vb2;
+	A00 = A00 + A01;
+	short int S00 = (short int)vt0 << 1;
+	S00 = S00 + vt0;
+	short int S01 = (short int)vt2 << 1;
+	S01 = S01 + vt2;
+	S00 = S00 + S01;
+	temp_g = M00 - M01;
+	temp_g = temp_g + A00;
 	temp_g = temp_g - S00;
-	return temp_g;
+
+	g_y = temp_g;
+
+	if(DEPTH_DST == XF_8UC1){
+		if(temp_g < 0)
+			g_y = 0;
+		if(temp_g > 255)
+			g_y = 255;
+	}
+
+	return g_y;
 		}
 /**
  * xFScharr3x3 : Applies the mask and Computes the gradient values

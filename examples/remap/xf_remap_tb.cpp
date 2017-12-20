@@ -58,12 +58,14 @@ int main(int argc, char** argv)
 
 	cv::Mat src, ocv_remapped, hls_remapped;
 	cv::Mat map_x, map_y;
+	cv::Mat diff;
 
 	src = cv::imread( argv[1], 0 ); // read image Grayscale
 	ocv_remapped.create( src.size(), src.type()); // opencv result
 	map_x.create( src.size(), CV_32FC1 ); // Mapx for opencv remap function
 	map_y.create( src.size(), CV_32FC1 ); // Mapy for opencv remap function
 	hls_remapped.create( src.size(), src.type()); 	// create memory for output images
+	diff.create( src.size(), src.type()); 	// create memory for output images
 
 	if(!src.data)
 	{
@@ -100,7 +102,8 @@ int main(int argc, char** argv)
 	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
 	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
 
-	inMat.copyTo(src.data);
+	//inMat.copyTo(src.data);
+	inMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
 	mapxMat.copyTo((float*)map_x.data);
 	mapyMat.copyTo((float*)map_y.data);
 	
@@ -114,14 +117,15 @@ int main(int argc, char** argv)
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-	hls_remapped.data = remappedMat.copyFrom();
+	//hls_remapped.data = remappedMat.copyFrom();
+	xf::imwrite("hls_out.jpg",remappedMat);
 
 	/// Save the results
 	imwrite("output_ocv.png", ocv_remapped);      // Opencv Result
-	imwrite("output_hls.png", hls_remapped);	  // HLS Result
+//	imwrite("output_hls.png", hls_remapped);	  // HLS Result
 
-	cv::Mat diff;
-	absdiff(ocv_remapped, hls_remapped, diff);
+
+	xf::absDiff(ocv_remapped, remappedMat, diff);
 	imwrite("diff.png", diff);
 
 	// Find minimum and maximum differences.
