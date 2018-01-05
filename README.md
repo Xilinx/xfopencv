@@ -88,9 +88,9 @@ December2017  | 3.0            | 2017.4 Xilinx release <br>
 
 
 [reVISION Getting Started Guide]: http://www.wiki.xilinx.com/reVISION+Getting+Started+Guide
-[reVISION Platform]: https://secure.xilinx.com/oam/server/obrareq.cgi?wh%3Dwww.xilinx.com%20wu%3D%2Fmember%2Fforms%2Fdownload%2Fdesign-license-xef.html%3Fakdm%3D1%26filename%3Dzcu102-es2-reVISION-2017-1.zip%20wo%3D1%20rh%3Dhttp%3A%2F%2Fwww.xilinx.com%20ru%3D%252Fmember%252Fforms%252Fdownload%252Fdesign-license-xef.html%20rq%3Dakdm%253D1%2526filename%253Dzcu102-es2-reVISION-2017-1.zip
+[reVISION Platform]: https://www.xilinx.com/member/forms/download/design-license-xef.html?akdm=1&filename=zcu102-rv-ss-2017-4.zip
 [SDSoC Forums]: https://forums.xilinx.com/t5/SDSoC-Development-Environment/bd-p/sdsoc
-[SDSoC User Guides]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1027-sdsoc-user-guide.pdf
+[SDSoC User Guides]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_4/ug1027-sdsoc-user-guide.pdf
 [3-Clause BSD License]: LICENSE.txt
 [Repository Contribution README]: CONTRIBUTING.md
-[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_1/ug1233-xilinx-opencv-user-guide.pdf
+[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2017_4/ug1233-xilinx-opencv-user-guide.pdf
