@@ -44,7 +44,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int WIN_ROW, int ROWS, int COLS, bool USE_URAM, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapNNI(
 		hls::stream< SRC_T >   &src,
 		hls::stream< DST_T >   &dst,
@@ -54,9 +54,15 @@ void xFRemapNNI(
 )
 {
 	DST_T buf[WIN_ROW][COLS];
-#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+//#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 
 	SRC_T s;
+
+	ap_uint<64> bufUram[WIN_ROW][(COLS+7)/8];
+#pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
+	SRC_T sx8[8];
+#pragma HLS ARRAY_PARTITION variable=sx8 complete
+
 	DST_T d;
 	MAP_T mx_fl;
 	MAP_T my_fl;
@@ -72,12 +78,19 @@ void xFRemapNNI(
 		loop_width: for( int j=0; j< cols; j++)
 		{
 #pragma HLS PIPELINE II=1
-#pragma HLS dependence array inter false
+#pragma HLS dependence variable=buf     inter false
+#pragma HLS dependence variable=bufUram inter false
+#pragma HLS dependence variable=r inter false
 			if(i<rows&& j<cols)
 			{
+              if (USE_URAM) {
+				src >> sx8[j%8];
+				for (int k=0; k<8; k++) bufUram[i % WIN_ROW][j/8](k*8+7,k*8) = sx8[k];
+			  } else {
 				src >> s;
+			    buf[i % WIN_ROW][j] = s;
+		      }
 			}
-			buf[i % WIN_ROW][j] = s;
 			r[i % WIN_ROW] = i;
 
 			if(i>=ishift)
@@ -89,6 +102,9 @@ void xFRemapNNI(
 
 				bool in_range = (y>=0 && y<rows && r[y%WIN_ROW] == y && x>=0 && x<cols);
 				if(in_range)
+				  if (USE_URAM)	
+					d = bufUram[y%WIN_ROW][x/8]((x%8)*8+7, (x%8)*8);
+				  else
 					d = buf[y%WIN_ROW][x];
 				else
 					d = 0;
@@ -101,7 +117,7 @@ void xFRemapNNI(
 
 
 #define TWO_POW_16 65536
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int WIN_ROW, int ROWS, int COLS, bool USE_URAM, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapLI(
 		hls::stream< SRC_T >   &src,
 		hls::stream< DST_T >   &dst,
@@ -115,6 +131,14 @@ void xFRemapLI(
 #pragma HLS array_partition complete variable=buf dim=2
 #pragma HLS array_partition complete variable=buf dim=4
 	SRC_T s;
+
+  	//URAM storage garnularity is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
+  	ap_uint<72> bufUram[(WIN_ROW+1)/2][(COLS+1)/2];
+#pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
+ 	DST_T lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
+	SRC_T sx9[9];
+#pragma HLS ARRAY_PARTITION variable=sx9 complete
+
 	MAP_T mx;
 	MAP_T my;
 
@@ -130,15 +154,46 @@ void xFRemapLI(
 		loop_width: for( int j=0; j< cols; j++)
 		{
 #pragma HLS PIPELINE II=1
-#pragma HLS dependence array inter false
+#pragma HLS dependence variable=buf     inter false
+#pragma HLS dependence variable=bufUram inter false
+#pragma HLS dependence variable=sx9     inter false
+#pragma HLS dependence variable=r1      inter false
+#pragma HLS dependence variable=r2      inter false
 			if(i<rows&& j<cols)
 			{
+              if (USE_URAM) {
+				if (!(i%2)) { // even row, stored to line buffer for 1st row of 3x3 block, and to URAM for 3d row of 3x3 block
+                   if (!(j%2)) { // even col
+				      sx9[8] = src.read();
+				      lineBuf[j] = sx9[8];
+				      if ((i/2)>0 && (j/2)>0) for (int k=0; k<9; k++) bufUram[(i/2-1)%(WIN_ROW/2)][j/2-1](k*8+7,k*8) = sx9[k];
+                   } else { // odd col
+                      SRC_T const s6 = sx9[8];
+ 				      if ((i/2)>0) for (int k=0; k<9; k++) sx9[k] = bufUram[(i/2-1)%(WIN_ROW/2)][j/2](k*8+7,k*8);
+				      sx9[6] = s6;
+				      sx9[7] = src.read();
+				      lineBuf[j] = sx9[7];
+				   }
+                } else { // odd row, togeher with fetched from line buffer 1st row of 3x3 block is stored to URAM
+                   if (!(j%2)) { // even col
+				      sx9[2] = lineBuf[j];
+				      sx9[5] = src.read();
+				      if ((j/2)>0) for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2-1](k*8+7,k*8) = sx9[k];
+                   } else { // odd col
+				      sx9[0] = sx9[2];
+				      sx9[1] = lineBuf[j];
+                      sx9[3] = sx9[5];
+				      sx9[4] = src.read();
+				      //if (j==(cols-1)) //this save is needed only at last column but may done every time
+				      for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2](k*8+7,k*8) = sx9[k];
+				   }
+                }
+              } else { //for BRAM
 				src >> s;
-			}
-			if((i % WIN_ROW) % 2) {
-				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
-			} else {
-				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
+			    if((i % WIN_ROW) % 2)
+				     buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
+			    else buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
+              }
 			}
 			r1[i % WIN_ROW] = i;
 			r2[i % WIN_ROW] = i;
@@ -188,6 +243,17 @@ void xFRemapLI(
 				ya1 = (y/2)%(WIN_ROW/2);
 
 				DST_T d00, d01, d10, d11;
+
+                DST_T d3x3[9];
+#pragma HLS ARRAY_PARTITION variable=d3x3 complete
+                for (int k=0; k<9; k++) d3x3[k] = bufUram[ya1][xa1](k*8+7,k*8);
+
+              if (USE_URAM) {
+				d00 = d3x3[(y%2  )*3 + x%2  ];
+				d01 = d3x3[(y%2  )*3 + x%2+1];
+				d10 = d3x3[(y%2+1)*3 + x%2  ];
+				d11 = d3x3[(y%2+1)*3 + x%2+1];
+			  } else {
 				d00=buf[ya0][0][xa0][0];
 				d01=buf[ya0][0][xa1][1];
 				d10=buf[ya1][1][xa0][0];
@@ -201,6 +267,7 @@ void xFRemapLI(
 					std::swap(d00,d10);
 					std::swap(d01,d11);
 				}
+			  }
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k01 = (1-iv)*(  iu); // iu-iu*iv
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k10 = (  iv)*(1-iu); // iv-iu*iv
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k11 = (  iv)*(  iu); // iu*iv
@@ -220,7 +287,7 @@ void xFRemapLI(
 	}
 }
 
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int WIN_ROW, int ROWS, int COLS, bool USE_URAM, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapKernel(
 		hls::stream< SRC_T >    &src,
 		hls::stream< DST_T >   &dst,
@@ -231,9 +298,9 @@ void xFRemapKernel(
 )
 {
 	if(interpolation == XF_INTERPOLATION_NN) {
-		xFRemapNNI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
+		xFRemapNNI<WIN_ROW,ROWS,COLS,USE_URAM>(src, dst, mapx, mapy,rows,cols);
 	} else if(interpolation == XF_INTERPOLATION_BILINEAR) {
-		xFRemapLI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
+		xFRemapLI<WIN_ROW,ROWS,COLS,USE_URAM>(src, dst, mapx, mapy,rows,cols);
 	}
 }
 
@@ -241,7 +308,7 @@ void xFRemapKernel(
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_remapped_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapx_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapy_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_remapped_mat.data":SEQUENTIAL,"_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.rows*_src_mat.cols"], "_remapped_mat.data"[0:"_remapped_mat.size"],"_mapx_mat.data"[0:"_mapx_mat.size"],"_mapy_mat.data"[0:"_mapy_mat.size"])
-template<int WIN_ROWS, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
+template<int WIN_ROWS, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1, bool USE_URAM = false>
 void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
 		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat, int interpolation=XF_INTERPOLATION_NN)
 {
@@ -289,7 +356,7 @@ void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS
 		}
 	}
 
-	xFRemapKernel <WIN_ROWS,ROWS,COLS> (_src, _remapped, _mapx, _mapy, interpolation, rows, cols);
+	xFRemapKernel <WIN_ROWS,ROWS,COLS,USE_URAM> (_src, _remapped, _mapx, _mapy, interpolation, rows, cols);
 
 	xfremap_output_loop:
 	for (int i = 0; i < loop_count; i++)
