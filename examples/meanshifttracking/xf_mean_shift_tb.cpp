@@ -61,8 +61,8 @@ int main(int argc, char* argv[])
 	uint16_t *brx = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *bry = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *track = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
-	uint16_t *obj_height = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *obj_width = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
+	uint16_t *obj_height = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *dx = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *dy = (uint16_t*)sds_alloc_non_cacheable(XF_MAX_OBJECTS*sizeof(uint16_t));
 #else
@@ -75,8 +75,8 @@ int main(int argc, char* argv[])
 	uint16_t *brx = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *bry = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *track = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
-	uint16_t *obj_height = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *obj_width = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
+	uint16_t *obj_height = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *dx = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 	uint16_t *dy = (uint16_t*)malloc(XF_MAX_OBJECTS*sizeof(uint16_t));
 #endif
@@ -91,13 +91,13 @@ int main(int argc, char* argv[])
 	// object loop, for reading input to the object
 	for( uint16_t i = 0; i < no_objects; i++)
 	{
-		h_x[i] = HEIGHT_MST[i]/2;
-		h_y[i] = WIDTH_MST[i]/2;
+		h_x[i] = WIDTH_MST[i]/2;
+		h_y[i] = HEIGHT_MST[i]/2;
 		c_x[i] = X1[i] + h_x[i];
 		c_y[i] = Y1[i] + h_y[i];
 
-		obj_height[i] = HEIGHT_MST[i];
 		obj_width[i] = WIDTH_MST[i];
+		obj_height[i] = HEIGHT_MST[i];
 
 		tlx[i] = X1[i];
 		tly[i] = Y1[i];
@@ -151,7 +151,6 @@ int main(int argc, char* argv[])
 		inMat.copyTo(image.data);
 
 		uint8_t no_of_iterations = 4;
-		uint8_t max_obj = XF_MAX_OBJECTS;
 
 		printf("starting the kernel...\n");
 		
@@ -160,7 +159,7 @@ int main(int argc, char* argv[])
 		perf_counter hw_ctr;
 		hw_ctr.start();
 #endif
-		mean_shift_accel(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,max_obj,no_of_iterations);
+		mean_shift_accel(inMat,tlx,tly,obj_height,obj_width,dx,dy,track,frame_status,no_objects,no_of_iterations);
 #if __SDSCC__
 		hw_ctr.stop();
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
@@ -186,25 +185,25 @@ int main(int argc, char* argv[])
 #if !__SDSCC__
 		// bounding box in the image for the object track representation
 		if (track[0])
-			rectangle(frame,cvPoint(tly[0],tlx[0]),cvPoint(bry[0],brx[0]),cv::Scalar(0,0,255),2);
+			rectangle(frame,cvPoint(tlx[0],tly[0]),cvPoint(brx[0],bry[0]),cv::Scalar(0,0,255),2);
 		if (track[1])
-			rectangle(frame,cvPoint(tly[1],tlx[1]),cvPoint(bry[1],brx[1]),cv::Scalar(0,255,0),2);
+			rectangle(frame,cvPoint(tlx[1],tly[1]),cvPoint(brx[1],bry[1]),cv::Scalar(0,255,0),2);
 		if (track[2])
-			rectangle(frame,cvPoint(tly[2],tlx[2]),cvPoint(bry[2],brx[2]),cv::Scalar(255,0,0),2);
+			rectangle(frame,cvPoint(tlx[2],tly[2]),cvPoint(brx[2],bry[2]),cv::Scalar(255,0,0),2);
 		if (track[3])
-			rectangle(frame,cvPoint(tly[3],tlx[3]),cvPoint(bry[3],brx[3]),cv::Scalar(255,255,0),2);
+			rectangle(frame,cvPoint(tlx[3],tly[3]),cvPoint(brx[3],bry[3]),cv::Scalar(255,255,0),2);
 		if (track[4])
-			rectangle(frame,cvPoint(tly[4],tlx[4]),cvPoint(bry[4],brx[4]),cv::Scalar(255,0,255),2);
+			rectangle(frame,cvPoint(tlx[4],tly[4]),cvPoint(brx[4],bry[4]),cv::Scalar(255,0,255),2);
 		if (track[5])
-			rectangle(frame,cvPoint(tly[5],tlx[5]),cvPoint(bry[5],brx[5]),cv::Scalar(0,255,255),2);
+			rectangle(frame,cvPoint(tlx[5],tly[5]),cvPoint(brx[5],bry[5]),cv::Scalar(0,255,255),2);
 		if (track[6])
-			rectangle(frame,cvPoint(tly[6],tlx[6]),cvPoint(bry[6],brx[6]),cv::Scalar(128,0,128),2);
+			rectangle(frame,cvPoint(tlx[6],tly[6]),cvPoint(brx[6],bry[6]),cv::Scalar(128,0,128),2);
 		if (track[7])
-			rectangle(frame,cvPoint(tly[7],tlx[7]),cvPoint(bry[7],brx[7]),cv::Scalar(128,128,128),2);
+			rectangle(frame,cvPoint(tlx[7],tly[7]),cvPoint(brx[7],bry[7]),cv::Scalar(128,128,128),2);
 		if (track[8])
-			rectangle(frame,cvPoint(tly[8],tlx[8]),cvPoint(bry[8],brx[8]),cv::Scalar(255,255,255),2);
+			rectangle(frame,cvPoint(tlx[8],tly[8]),cvPoint(brx[8],bry[8]),cv::Scalar(255,255,255),2);
 		if (track[9])
-			rectangle(frame,cvPoint(tly[9],tlx[9]),cvPoint(bry[9],brx[9]),cv::Scalar(0,0,0),2);
+			rectangle(frame,cvPoint(tlx[9],tly[9]),cvPoint(brx[9],bry[9]),cv::Scalar(0,0,0),2);
 
 		cv::namedWindow( "tracking demo", 0 );
 		imshow( "tracking demo",frame );

@@ -2,28 +2,28 @@
 Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
@@ -65,14 +65,19 @@ void xFRemapNNI(
 	assert(cols <= COLS);
 	int ishift=WIN_ROW/2;
 	int r[WIN_ROW] = {};
+	int row_tripcount = ROWS+WIN_ROW;
 
 	loop_height: for( int i=0; i< rows+ishift; i++)
 	{
 #pragma HLS LOOP_FLATTEN OFF
+#pragma HLS LOOP_TRIPCOUNT min=1 max=row_tripcount
+
 		loop_width: for( int j=0; j< cols; j++)
 		{
 #pragma HLS PIPELINE II=1
 #pragma HLS dependence array inter false
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
+
 			if(i<rows&& j<cols)
 			{
 				src >> s;
@@ -123,14 +128,19 @@ void xFRemapLI(
 	int ishift=WIN_ROW/2;
 	int r1[WIN_ROW] = {};
 	int r2[WIN_ROW] = {};
+	int row_tripcount = ROWS+WIN_ROW;
 
 	loop_height: for( int i=0; i< rows+ishift; i++)
 	{
 #pragma HLS LOOP_FLATTEN OFF
+#pragma HLS LOOP_TRIPCOUNT min=1 max=row_tripcount
+
 		loop_width: for( int j=0; j< cols; j++)
 		{
 #pragma HLS PIPELINE II=1
 #pragma HLS dependence array inter false
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
+
 			if(i<rows&& j<cols)
 			{
 				src >> s;
@@ -220,37 +230,39 @@ void xFRemapLI(
 	}
 }
 
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int WIN_ROW, int INTERPOLATION_TYPE, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapKernel(
 		hls::stream< SRC_T >    &src,
 		hls::stream< DST_T >   &dst,
 		hls::stream< MAP_T >   &mapx,
 		hls::stream< MAP_T >   &mapy,
-		int interpolation,
 		uint16_t rows, uint16_t cols
 )
 {
-	if(interpolation == XF_INTERPOLATION_NN) {
+	if(INTERPOLATION_TYPE == XF_INTERPOLATION_NN) {
 		xFRemapNNI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
-	} else if(interpolation == XF_INTERPOLATION_BILINEAR) {
+	} else if(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR) {
 		xFRemapLI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
+	}
+	else {
+		assert (((INTERPOLATION_TYPE == XF_INTERPOLATION_NN)||(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR)) && "The INTERPOLATION_TYPE must be either XF_INTERPOLATION_NN or XF_INTERPOLATION_BILINEAR");
 	}
 }
 
 //#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE,"_remapped_mat.data":AXIDMA_SIMPLE,"_mapx_mat.data":AXIDMA_SIMPLE,"_mapy_mat.data":AXIDMA_SIMPLE)
-#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_remapped_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapx_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapy_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_remapped_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapx_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapy_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_remapped_mat.data":SEQUENTIAL,"_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.rows*_src_mat.cols"], "_remapped_mat.data"[0:"_remapped_mat.size"],"_mapx_mat.data"[0:"_mapx_mat.size"],"_mapy_mat.data"[0:"_mapy_mat.size"])
-template<int WIN_ROWS, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
+template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
 void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
-		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat, int interpolation=XF_INTERPOLATION_NN)
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat)
 {
 #pragma HLS inline off
 #pragma HLS dataflow
 
 	assert ((MAP_T == XF_32FC1) && "The MAP_T must be XF_32FC1");
-	assert ((SRC_T == XF_8UC1) && "The SRC_T must be XF_8UC1");
-	assert ((DST_T == XF_8UC1) && "The DST_T must be XF_8UC1");
+//	assert ((SRC_T == XF_8UC1) && "The SRC_T must be XF_8UC1");
+//	assert ((DST_T == XF_8UC1) && "The DST_T must be XF_8UC1");
 	assert ((NPC == XF_NPPC1) && "The NPC must be XF_NPPC1");
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
@@ -267,16 +279,19 @@ void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS
 	int TC=(ROWS*COLS);
 
 	int ishift = WIN_ROWS/2;
+	int row_tripcount = ROWS+WIN_ROWS;
 
 	xfremap_rows_loop:
 	for (int i = 0; i < rows+ishift; i++)
 	{
 #pragma HLS LOOP_FLATTEN OFF
+#pragma HLS LOOP_TRIPCOUNT min=1 max=row_tripcount
 
 		xfremap_cols_loop:
 		for (int j = 0; j < cols; j++)
 		{
 #pragma HLS pipeline ii=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 
 			if (i < rows) {
 				_src.write(*(_src_mat.data + i*cols + j));
@@ -289,7 +304,7 @@ void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS
 		}
 	}
 
-	xFRemapKernel <WIN_ROWS,ROWS,COLS> (_src, _remapped, _mapx, _mapy, interpolation, rows, cols);
+	xFRemapKernel <WIN_ROWS,INTERPOLATION_TYPE,ROWS,COLS> (_src, _remapped, _mapx, _mapy, rows, cols);
 
 	xfremap_output_loop:
 	for (int i = 0; i < loop_count; i++)
