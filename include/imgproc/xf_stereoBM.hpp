@@ -264,9 +264,15 @@ void xFSADBlockMatching(
 {
 	//create the left and right line buffers.
 	XF_TNAME(WORDWIDTH_SRC,1) left_line_buf[WSIZE][BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=left_line_buf core=XPM_MEMORY uram
+#endif
 #pragma HLS ARRAY_PARTITION variable=left_line_buf complete dim=1
 
 	XF_TNAME(WORDWIDTH_SRC,1) right_line_buf[WSIZE][BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=right_line_buf core=XPM_MEMORY uram
+#endif
 #pragma HLS ARRAY_PARTITION variable=right_line_buf complete dim=1
 
 	//create the left and right window buffers.
@@ -289,14 +295,22 @@ void xFSADBlockMatching(
 	int text_sum[WSIZE];
 #pragma HLS ARRAY_PARTITION variable=text_sum complete dim=0
 	int sad[NDISP_UNIT];
-    if (NDISP_UNIT != 1) {
 #pragma HLS array_partition variable=sad complete dim=0
-    }
-    short int sad_cols[NDISP_UNIT][WSIZE];
+
+	short int sad_cols[NDISP_UNIT][WSIZE];
 #pragma HLS array_partition variable=sad_cols complete dim=0
 	int minsad[COLS+WSIZE-1];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=minsad core=XPM_MEMORY uram
+#endif
 	XF_TNAME(WORDWIDTH_DST,1) mind[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=mind core=XPM_MEMORY uram
+#endif
 	bool skip[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=skip core=XPM_MEMORY uram
+#endif
 
 	loop_row:
 	for (unsigned short row = 0; row < height+WSIZE-1; row++) {
@@ -371,10 +385,25 @@ void xFSADBlockMatching(
 				}
 
 				int skip_val[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=skip_val core=XPM_MEMORY uram
+#endif
 				int edge_neighbor[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=edge_neighbor core=XPM_MEMORY uram
+#endif
 				int edge[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=edge core=XPM_MEMORY uram
+#endif
 				int minsad_p[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=minsad_p core=XPM_MEMORY uram
+#endif
 				int minsad_n[BUF_SIZE];
+#if PLATFORM_ZCU104	
+#pragma HLS RESOURCE variable=minsad_n core=XPM_MEMORY uram
+#endif
 
 				// SAD computing and store output
 				if (row >= WSIZE-1 && col >= WSIZE-1) {
@@ -388,7 +417,10 @@ void xFSADBlockMatching(
 					bool gskip = 0;
 					int gskip_val = TMP_INT_MAX_PACK;
 					int gedge_neighbor = TMP_INT_MAX_PACK;  // for uniqueness check
-					int gedge = sad[1]; // for subpixel interpolation
+					int gedge=0; // for subpixel interpolation
+					if (NDISP_UNIT != 1)
+						gedge = sad[1];
+
 					int lminsad = TMP_INT_MAX_PACK;
 					XF_TNAME(WORDWIDTH_DST,1) lmind = 0;
 					int gminsad_p = TMP_INT_MAX_PACK;
@@ -400,6 +432,8 @@ void xFSADBlockMatching(
 						gskip = skip[col];
 						gskip_val = skip_val[col];
 						gedge_neighbor = edge_neighbor[col];
+						if (sweep == 1 && NDISP_UNIT == 1)
+							gedge_neighbor = TMP_INT_MAX_PACK;
 						gedge = edge[col];
 						gminsad_p = minsad_p[col];
 						gminsad_n = (gmind == sweep*NDISP_UNIT-1 ? sad[0] : minsad_n[col]);
@@ -431,7 +465,10 @@ void xFSADBlockMatching(
 						}
 						// update global values;
 						gminsad_p = (lmind == 0 ? gedge : sad[lmind-1]);
-						gminsad_n = sad[lmind == NDISP_UNIT-1 ? lmind-1 : lmind+1];
+						if (NDISP_UNIT == 1)
+							gminsad_n = sad[lmind == NDISP_UNIT-1 ? 0 : (int)(lmind+1)];
+						else
+							gminsad_n = sad[lmind == NDISP_UNIT-1 ? lmind-1 : lmind+1];
 						gminsad = lminsad;
 						gmind = lmind + sweep*NDISP_UNIT;
 					} else {
@@ -439,7 +476,7 @@ void xFSADBlockMatching(
 							int thresh = gminsad + (gminsad * state.uniquenessRatio / 100);
 							loop_unique_search_1:
 							for (unsigned char d = 0; d < NDISP_UNIT; d++) {
-								if (sad[d] <= thresh && sad[d] < gskip_val && ((gmind == (sweep*NDISP_UNIT-1)) ? (d > 0) : 1)) {
+								if (sad[d] <= thresh && sad[d] < gskip_val && ((gmind == (sweep*NDISP_UNIT-1)) ? ((sweep*NDISP_UNIT+d) > (gmind+1)) : 1)) {
 									gskip = 1;
 									gskip_val = sad[d];
 								}
@@ -450,15 +487,17 @@ void xFSADBlockMatching(
 					mind[col] = gmind;
 					skip[col] = gskip;
 					skip_val[col] = gskip_val;
-					edge_neighbor[col] = sad[NDISP_UNIT-2];
+					if (NDISP_UNIT == 1)
+						edge_neighbor[col] = edge[col];
+					else
+						edge_neighbor[col] = sad[NDISP_UNIT-2];
 					edge[col] = sad[NDISP_UNIT-1];
 					minsad_p[col] = gminsad_p;
 					minsad_n[col] = gminsad_n;
 
 					if (sweep == state.sweepFactor-1) {
-
-						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value> p = gminsad_p;
-						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value> n = gminsad_n;
+						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value> p = gmind==0?gminsad_n:gminsad_p;
+						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value> n = gmind==NDISP-1?gminsad_p:gminsad_n;
 						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value> k = p + n - 2*gminsad + __ABS((int)p - (int)n);
 
 						ap_int<xFBitWidth<255*WSIZE*WSIZE>::Value+8> num = p - n;

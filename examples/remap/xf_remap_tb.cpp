@@ -57,16 +57,14 @@ int main(int argc, char** argv)
 	}
 
 	cv::Mat src, ocv_remapped, hls_remapped;
-	cv::Mat map_x, map_y;
-	cv::Mat diff;
-
+	cv::Mat map_x, map_y,diff;
 	src = cv::imread( argv[1], 0 ); // read image Grayscale
-	ocv_remapped.create( src.size(), src.type()); // opencv result
-	map_x.create( src.size(), CV_32FC1 ); // Mapx for opencv remap function
-	map_y.create( src.size(), CV_32FC1 ); // Mapy for opencv remap function
-	hls_remapped.create( src.size(), src.type()); 	// create memory for output images
-	diff.create( src.size(), src.type()); 	// create memory for output images
 
+	ocv_remapped.create( src.rows,src.cols, src.type()); // opencv result
+	map_x.create( src.rows,src.cols, CV_32FC1 ); // Mapx for opencv remap function
+	map_y.create( src.rows,src.cols, CV_32FC1 ); // Mapy for opencv remap function
+	hls_remapped.create( src.rows,src.cols, src.type()); 	// create memory for output images
+   diff.create( src.rows,src.cols, src.type());
 	if(!src.data)
 	{
 		cout << "Failed to load the input image ... !!!" << endl;
@@ -94,35 +92,37 @@ int main(int argc, char** argv)
 	}
 
 	/* Opencv remap function */
-	cv::remap (src,ocv_remapped,map_x,map_y,CV_INTER_NN,cv::BORDER_CONSTANT,cv::Scalar(0, 0, 0) );
+	cv::remap (src,ocv_remapped,map_x,map_y,CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(0, 0, 0) );
 
 	//////////////////	HLS Function Call  ////////////////////////
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
+	xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
 	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxMat(src.rows,src.cols);
 	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
+	xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
 
-	//inMat.copyTo(src.data);
-	inMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
-	mapxMat.copyTo((float*)map_x.data);
-	mapyMat.copyTo((float*)map_y.data);
-	
+
+	mapxMat.copyTo(map_x.data);
+	mapyMat.copyTo(map_y.data);
+
+
+	inMat = xf::imread<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
+
+
 #if __SDSCC__
 		perf_counter hw_ctr;
 		hw_ctr.start();
 #endif
-	remap_accel(inMat,remappedMat,mapxMat,mapyMat,XF_REMAP_INTERPOLATION);
+
+	remap_accel(inMat,remappedMat,mapxMat,mapyMat);
 #if __SDSCC__
 		hw_ctr.stop();
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-	//hls_remapped.data = remappedMat.copyFrom();
-	xf::imwrite("hls_out.jpg",remappedMat);
 
 	/// Save the results
 	imwrite("output_ocv.png", ocv_remapped);      // Opencv Result
-//	imwrite("output_hls.png", hls_remapped);	  // HLS Result
+	xf::imwrite("hls_out.jpg",remappedMat);
 
 
 	xf::absDiff(ocv_remapped, remappedMat, diff);

@@ -87,11 +87,11 @@ void xFTrackmulBlkReadIn (XF_SNAME(WORDWIDTH) ptr[1], unsigned int* in, int rows
 		int i, hls::stream<XF_SNAME(WORDWIDTH)>& input1, int x1, int y1, unsigned short buf_size)
 {
 #pragma HLS INLINE
-	int src_off = (cols>>XF_BITSHIFT(NPC))*(x1+i)+(y1>>XF_BITSHIFT(NPC));
+	int src_off = (cols>>XF_BITSHIFT(NPC))*(y1+i)+(x1>>XF_BITSHIFT(NPC));
 	unsigned short size = 4<<XF_BITSHIFT(NPC);
 
 	loop_blockread_inner:
-	for( int j =0; j < buf_size; j++)
+	for( int j=0; j<buf_size; j++)
 	{
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=20 max=IN_TC
@@ -118,10 +118,10 @@ void xFTrackmulBlkRead(hls::stream<XF_SNAME(WORDWIDTH)>& input1, unsigned int* i
 		uint16_t cols, uint16_t x1, uint16_t y1, uint16_t obj_hgt, uint16_t obj_wdt)
 {
 	XF_SNAME(WORDWIDTH) dst[1];
-	unsigned short h_x = obj_hgt>>1;
-	unsigned short h_y = obj_wdt>>1;
+	unsigned short h_y = obj_hgt>>1;
+	unsigned short h_x = obj_wdt>>1;
 
-	unsigned short buf_size = ((y1+(h_y<<1))>>XF_BITSHIFT(NPC))-(y1>>XF_BITSHIFT(NPC));
+	unsigned short buf_size = ((x1+(h_x<<1))>>XF_BITSHIFT(NPC))-(x1>>XF_BITSHIFT(NPC));
 
 	loop_blockread_outer:
 	for( int  i = 0; i < obj_hgt; i++)
@@ -160,15 +160,15 @@ void xFTrackmulFindbinIncrement(ap_uint32_t val, short& distance, uint16_t& bin,
 	uint8_t G = val.range(15,8);
 	uint8_t B = val.range(23,16);
 	bin = xFTrackmulFindbin(R,G,B);
-	uint16_t x = i;
-	uint16_t y = j;
-	int x_off = i*obj_wdt;
-	int loc = x_off+y;
+	uint16_t y = i;
+	uint16_t x = j;
+	int y_off = i*obj_wdt;
+	int loc = y_off+x;
 	BIN[loc] = bin;
-	int a = x - h_x;
-	int b = y - h_y;
-	x = __ABS(a);
-	y = __ABS(b);
+	int a = y - h_y;
+	int b = x - h_x;
+	y = __ABS(a);
+	x = __ABS(b);
 	int xx = xFTrackmulKernelLut[x];
 	int yy = xFTrackmulKernelLut[y];
 	short K = ((xx+yy)*wh)>>8;				// K is in 0.8 format --------> original kernel K(x,y) = (x*x+y*y)/(w/2)*(h/2)
@@ -202,15 +202,15 @@ void xFTrackmulHist(hls::stream<XF_SNAME(WORDWIDTH)>& input, uint16_t x1, uint16
 	QuPuTYPE tmp_hist2[_MST_TOTAL_BINS_];
 
 	uint16_t buf_size;
-	uint16_t h_x = obj_hgt>>1;
-	uint16_t h_y = obj_wdt>>1;
+	uint16_t h_y = obj_hgt>>1;
+	uint16_t h_x = obj_wdt>>1;
 
 	//	buf_size = h_y;
-	buf_size = ((y1+(h_y<<1))>>XF_BITSHIFT(NPC))-(y1>>XF_BITSHIFT(NPC));
+	buf_size = ((x1+(h_x<<1))>>XF_BITSHIFT(NPC))-(x1>>XF_BITSHIFT(NPC));
 
 	char shift1,shift2;
-	unsigned int _height1 = xf::Inverse(h_x, 16, &shift1);		//Q(32-shift1).shift1 -----> format
-	unsigned int _width1 = xf::Inverse(h_y, 16, &shift2);			//Q(32-shift2).shift2 -----> format
+	unsigned int _height1 = xf::Inverse(h_y, 16, &shift1);		//Q(32-shift1).shift1 -----> format
+	unsigned int _width1 = xf::Inverse(h_x, 16, &shift2);			//Q(32-shift2).shift2 -----> format
 	unsigned long int temp= _height1*_width1;					//Q(64-shift1-shift2).(shift1+shift2) -----> format
 	unsigned int wh = temp>>(shift1+shift2-16);					// wh = 1/(w/2*h/2)  --------> 0.16 format
 
@@ -308,25 +308,25 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
 #pragma HLS ARRAY_PARTITION variable=total_w complete
 
 	short buf_size;
-	int x_off,a,b;
+	int y_off,a,b;
 
-	unsigned short int h_x = obj_hgt>>1;
-	unsigned short int h_y = obj_wdt>>1;
+	unsigned short int h_x = obj_wdt>>1;
+	unsigned short int h_y = obj_hgt>>1;
 
 	buf_size = ((y1+(h_y<<1))>>XF_BITSHIFT(NPC))-(y1>>XF_BITSHIFT(NPC))+1;
 
 	char shift1,shift2;
 
-	unsigned int _height1 = xf::Inverse(h_x, 16, &shift1);		//Q(32-shift1).shift1 -----> format
-	unsigned int _width1 = xf::Inverse(h_y, 16, &shift2);			//Q(32-shift2).shift2 -----> format
-	unsigned long int temp= _height1*_width1;					//Q(64-shift1-shift2).(shift1+shift2) -----> format
+	unsigned int _width1 = xf::Inverse(h_x, 16, &shift1);		//Q(32-shift1).shift1 -----> format
+	unsigned int _height1 = xf::Inverse(h_y, 16, &shift2);			//Q(32-shift2).shift2 -----> format
+	unsigned long int temp= _width1*_height1;					//Q(64-shift1-shift2).(shift1+shift2) -----> format
 	unsigned int wh = temp>>(shift1+shift2-16);					// wh = 1/(w/2*h/2)  --------> 0.16 format
 
 	loop_weight_height:
 	for( uint16_t i = 0; i < obj_hgt; i++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=20 max=ROWS avg=ROWS
-		x_off = i*obj_wdt;
+		y_off = i*obj_wdt;
 
 		loop_weight_width:
 		for( uint16_t j = 0; j < buf_size; j++)
@@ -335,14 +335,14 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT min=20 max=IN_TC avg=IN_TC
 
-			x = i;
-			y = j;
-			loc = x_off+y;
+			y = i;
+			x = j;
+			loc = y_off+x;
 			bin = BIN[loc];
-			A = x - h_x;
-			B = y - h_y;
-			x = __ABS(A);
-			y = __ABS(B);
+			A = y - h_y;
+			B = x - h_x;
+			y = __ABS(A);
+			x = __ABS(B);
 			xx = xFTrackmulKernelLut[x];
 			yy = xFTrackmulKernelLut[y];
 			K = ((xx+yy)*wh)>>8;
@@ -356,8 +356,8 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
 				weight = xFTrackmulSqrt(a/b);
 			}
 
-			total_x += (weight*A);
-			total_y += (weight*B);
+			total_y += (weight*A);
+			total_x += (weight*B);
 			total_w += weight;
 		}
 	}
@@ -379,24 +379,24 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
 	C_y += dispy;
 
 	// Check if the object goes out of the frame
-	if(C_x+h_x >= rows)
+	if(C_y+h_y >= rows)
 	{
-		C_x = rows-h_x-1;
+		C_y = rows-h_y-1;
 		track = 0;
 	}
-	if(C_y+h_y >= cols)
+	if(C_x+h_x >= cols)
 	{
-		C_y = cols-h_y-1;
-		track = 0;
-	}
-	if(C_x-h_x <= 0)
-	{
-		C_x = h_x+1;
+		C_x = cols-h_x-1;
 		track = 0;
 	}
 	if(C_y-h_y <= 0)
 	{
 		C_y = h_y+1;
+		track = 0;
+	}
+	if(C_x-h_x <= 0)
+	{
+		C_x = h_x+1;
 		track = 0;
 	}
 
@@ -461,8 +461,8 @@ void xFTrackmulKernelFunc(unsigned int* in, uint16_t rows, uint16_t cols, uint16
 		uint16_t y1, uint16_t obj_hgt, uint16_t obj_wdt, uint16_t & dx, uint16_t &dy,
 		bool& track, uint8_t frame_status, uint8_t obj_num, uint8_t iters)
 {
-	uint16_t C_x = ((obj_hgt)>>1)+x1;
-	uint16_t C_y = ((obj_wdt)>>1)+y1;
+	uint16_t C_x = ((obj_wdt)>>1)+x1;
+	uint16_t C_y = ((obj_hgt)>>1)+y1;
 
 	uint8_t loop_count = iters<<1;
 	// setup the object feature for the first frame
@@ -479,8 +479,8 @@ void xFTrackmulKernelFunc(unsigned int* in, uint16_t rows, uint16_t cols, uint16
 	uint16_t BIN[ROWS*COLS];
 #pragma HLS DEPENDENCE variable=BIN array intra false
 
-	uint16_t h_x = obj_hgt>>1;
-	uint16_t h_y = obj_wdt>>1;
+	uint16_t h_x = obj_wdt>>1;
+	uint16_t h_y = obj_hgt>>1;
 
 	bool flag = 0;
 	// For other frames, find histogram as well as centroid in iterative manner
@@ -563,14 +563,14 @@ void xFMeanShiftKernel(unsigned int *in, uint16_t rows, uint16_t cols, uint16_t 
 		a = i;
 		x1 = tlx[i];
 		y1 = tly[i];
-		x2 = obj_hgt[i];
-		y2 = obj_wdt[i];
+		x2 = obj_wdt[i];
+		y2 = obj_hgt[i];
 		track = (bool)status[i];
 
-		assert((x2 < 700) && (y2 < 700) && "object height and width should be less than 700");
-		assert((x2 > 20) && (y2 > 20) && "object height and width should be greater than 20");
-		assert((x2 < ROWS) && "MAX_HEIGHT should be more than maximum height of the objects given ");
-		assert((y2 < COLS) && "MAX_WIDTH should be more than maximum width of the objects given ");
+		assert((x2 < 700) && (y2 < 700) && "object width and height should be less than 700");
+		assert((x2 > 20) && (y2 > 20) && "object width and height should be greater than 20");
+		assert((x2 < COLS) && "MAX_WIDTH should be more than maximum height of the objects given ");
+		assert((y2 < ROWS) && "MAX_HEIGHT should be more than maximum width of the objects given ");
 
 		if(track)
 		{

@@ -254,9 +254,15 @@ namespace xf{
 	#pragma HLS DEPENDENCE variable=cbDixO  inter WAR false
 	#pragma HLS DEPENDENCE variable=cbDiyO  inter WAR false
 
+#if PLATFORM_ZCU104
+	#pragma HLS RESOURCE variable=cbIxixE core=XPM_MEMORY uram
+	#pragma HLS RESOURCE variable=cbIxiyE core=XPM_MEMORY uram
+	#pragma HLS RESOURCE variable=cbIyiyE core=XPM_MEMORY uram
+#else
 	#pragma HLS RESOURCE variable=cbIxixE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbIxiyE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbIyiyE core=RAM_2P_BRAM
+#endif
 	#pragma HLS RESOURCE variable=cbDixE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDiyE core=RAM_2P_BRAM
 	#pragma HLS DEPENDENCE variable=cbIxixE inter WAR false
