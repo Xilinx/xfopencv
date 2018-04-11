@@ -54,14 +54,14 @@ void xFRemapNNI(
 )
 {
 	DST_T buf[WIN_ROW][COLS];
-//#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 
 	SRC_T s;
 
 	ap_uint<64> bufUram[WIN_ROW][(COLS+7)/8];
 #pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
 	SRC_T sx8[8];
-#pragma HLS ARRAY_PARTITION variable=sx8 complete
+#pragma HLS ARRAY_PARTITION variable=sx8 complete dim=1
 
 	DST_T d;
 	MAP_T mx_fl;
@@ -80,17 +80,19 @@ void xFRemapNNI(
 #pragma HLS PIPELINE II=1
 #pragma HLS dependence variable=buf     inter false
 #pragma HLS dependence variable=bufUram inter false
-#pragma HLS dependence variable=r inter false
+#pragma HLS dependence variable=r       inter false
 			if(i<rows&& j<cols)
 			{
-              if (USE_URAM) {
-				src >> sx8[j%8];
-				for (int k=0; k<8; k++) bufUram[i % WIN_ROW][j/8](k*8+7,k*8) = sx8[k];
-			  } else {
 				src >> s;
-			    buf[i % WIN_ROW][j] = s;
-		      }
+
+                if (USE_URAM) {
+			      sx8[j%8] = s;
+			      for (int k=0; k<8; k++) bufUram[i % WIN_ROW][j/8](k*8+7,k*8) = sx8[k];
+		        }
 			}
+
+            if (!USE_URAM)
+			  buf[i % WIN_ROW][j] = s;
 			r[i % WIN_ROW] = i;
 
 			if(i>=ishift)
@@ -127,17 +129,19 @@ void xFRemapLI(
 )
 {
 	// Add one to always get zero for boundary interpolation. Maybe need initialization here?
-	DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2];
+	static DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2]; //AK,ZoTech: static added for initialization, otherwise X are generated in co-sim.
 #pragma HLS array_partition complete variable=buf dim=2
 #pragma HLS array_partition complete variable=buf dim=4
 	SRC_T s;
-
-  	//URAM storage garnularity is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
-  	ap_uint<72> bufUram[(WIN_ROW+1)/2][(COLS+1)/2];
+	
+    //URAM storage garnularity is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
+    ap_uint<72> bufUram[(WIN_ROW+1)/2][(COLS+1)/2];
 #pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
- 	DST_T lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
-	SRC_T sx9[9];
-#pragma HLS ARRAY_PARTITION variable=sx9 complete
+    SRC_T lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
+	SRC_T s3x3[2][9]; //URAM-wide word is doubled to resolve pipelining read/write dependency
+#pragma HLS ARRAY_PARTITION complete variable=s3x3 dim=0
+	SRC_T s3x3_2[9];
+    SRC_T s0,s3;
 
 	MAP_T mx;
 	MAP_T my;
@@ -151,54 +155,71 @@ void xFRemapLI(
 	loop_height: for( int i=0; i< rows+ishift; i++)
 	{
 #pragma HLS LOOP_FLATTEN OFF
-		loop_width: for( int j=0; j< cols; j++)
+		loop_width: for( int j=0; j< cols+3; j++)
 		{
 #pragma HLS PIPELINE II=1
 #pragma HLS dependence variable=buf     inter false
 #pragma HLS dependence variable=bufUram inter false
-#pragma HLS dependence variable=sx9     inter false
+#pragma HLS dependence variable=s3x3    inter false RAW
 #pragma HLS dependence variable=r1      inter false
 #pragma HLS dependence variable=r2      inter false
 			if(i<rows&& j<cols)
 			{
-              if (USE_URAM) {
-				if (!(i%2)) { // even row, stored to line buffer for 1st row of 3x3 block, and to URAM for 3d row of 3x3 block
-                   if (!(j%2)) { // even col
-				      sx9[8] = src.read();
-				      lineBuf[j] = sx9[8];
-				      if ((i/2)>0 && (j/2)>0) for (int k=0; k<9; k++) bufUram[(i/2-1)%(WIN_ROW/2)][j/2-1](k*8+7,k*8) = sx9[k];
-                   } else { // odd col
-                      SRC_T const s6 = sx9[8];
- 				      if ((i/2)>0) for (int k=0; k<9; k++) sx9[k] = bufUram[(i/2-1)%(WIN_ROW/2)][j/2](k*8+7,k*8);
-				      sx9[6] = s6;
-				      sx9[7] = src.read();
-				      lineBuf[j] = sx9[7];
-				   }
-                } else { // odd row, togeher with fetched from line buffer 1st row of 3x3 block is stored to URAM
-                   if (!(j%2)) { // even col
-				      sx9[2] = lineBuf[j];
-				      sx9[5] = src.read();
-				      if ((j/2)>0) for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2-1](k*8+7,k*8) = sx9[k];
-                   } else { // odd col
-				      sx9[0] = sx9[2];
-				      sx9[1] = lineBuf[j];
-                      sx9[3] = sx9[5];
-				      sx9[4] = src.read();
-				      //if (j==(cols-1)) //this save is needed only at last column but may done every time
-				      for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2](k*8+7,k*8) = sx9[k];
-				   }
-                }
-              } else { //for BRAM
 				src >> s;
-			    if((i % WIN_ROW) % 2)
-				     buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
-			    else buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
-              }
 			}
+
+            if (USE_URAM && i<rows+1) {
+			  if (!(i%2)) { // even row, stored in line buffer for 1st row of 3x3 block, and in URAM for 3d row of 3x3 block
+                if (!(j%2)) { // even col
+                  if (j<cols) lineBuf[j] = s0 = s;
+                  else s0 = 0;
+                  s3x3[!(j&2)][8] = s0;
+				  if ((i/2)>0 && (j/2)>1) for (int k=0; k<9; k++) bufUram[(i/2-1)%(WIN_ROW/2)][j/2-2](k*8+7,k*8) = s3x3[!!(j&2)][k];
+                } else if (j<cols) { // odd col
+                  lineBuf[j] = s;
+                  if ((i/2)>0) {
+                  	for (int k=0; k<6; k++) s3x3[!!(j&2)][k] = bufUram[(i/2-1)%(WIN_ROW/2)][j/2](k*8+7,k*8);
+                    s3x3[!!(j&2)][6] = s0;
+                    s3x3[!!(j&2)][7] = s;
+                    s3x3[!!(j&2)][8] = 0;
+                  }
+   		        }
+              } else if (j<cols) { // odd row, togeher with fetched from line buffer 1st row of 3x3 block is stored in URAM
+                if (!(j%2)) { // even col
+                  s3x3_2[2] = s0 = lineBuf[j];
+                  s3x3_2[5] = s3 = s;
+				  if ((j/2)>0) for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2-1](k*8+7,k*8) = s3x3_2[k];
+                } else { // odd col
+                  s3x3_2[0] = s0;
+				  s3x3_2[1] = lineBuf[j];
+                  s3x3_2[3] = s3;
+				  s3x3_2[4] = s;
+
+				  // this clearing is needed only for case of bottom zero padding (curently last(bottom-right) sample value is used)
+                  s3x3_2[6] = 0;
+                  s3x3_2[7] = 0;
+                  s3x3_2[8] = 0;
+			      //if (j==(cols-1)) { //these clearing and save is needed only at last column but may done every cycle
+			      s3x3_2[2] = 0;
+			      s3x3_2[5] = 0;
+			      for (int k=0; k<9; k++) bufUram[(i/2)%(WIN_ROW/2)][j/2](k*8+7,k*8) = s3x3_2[k];
+			      //}
+			    }
+              }
+            }
+
+            if (!USE_URAM && j<cols) {
+			if((i % WIN_ROW) % 2) {
+				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
+			} else {
+				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
+			}
+            }
+
 			r1[i % WIN_ROW] = i;
 			r2[i % WIN_ROW] = i;
 
-			if(i>=ishift)
+			if(i>=ishift && j<cols)
 			{
 				mapx >> mx;
 				mapy >> my;
@@ -244,11 +265,10 @@ void xFRemapLI(
 
 				DST_T d00, d01, d10, d11;
 
-                DST_T d3x3[9];
-#pragma HLS ARRAY_PARTITION variable=d3x3 complete
-                for (int k=0; k<9; k++) d3x3[k] = bufUram[ya1][xa1](k*8+7,k*8);
-
               if (USE_URAM) {
+                DST_T d3x3[9];
+#pragma HLS ARRAY_PARTITION variable=d3x3 complete dim=1
+                for (int k=0; k<9; k++) d3x3[k] = bufUram[ya1][xa1](k*8+7,k*8);
 				d00 = d3x3[(y%2  )*3 + x%2  ];
 				d01 = d3x3[(y%2  )*3 + x%2+1];
 				d10 = d3x3[(y%2+1)*3 + x%2  ];
