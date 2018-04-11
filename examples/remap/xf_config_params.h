@@ -4,4 +4,4 @@
 
 // The type of interpolation, define "XF_REMAP_INTERPOLATION" as either "XF_INTERPOLATION_NN" or "XF_INTERPOLATION_BILINEAR"
 #define XF_REMAP_INTERPOLATION XF_INTERPOLATION_BILINEAR
-#define XF_USE_URAM false
+#define XF_USE_URAM true

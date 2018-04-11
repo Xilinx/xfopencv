@@ -317,9 +317,7 @@ void xFRemapLI(
 	}
 }
 
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
-template <int WIN_ROW, int ROWS, int COLS, bool USE_URAM, typename SRC_T, typename DST_T, typename MAP_T>
-template <int WIN_ROW, int INTERPOLATION_TYPE, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int WIN_ROW, int INTERPOLATION_TYPE, int ROWS, int COLS, bool USE_URAM, typename SRC_T, typename DST_T, typename MAP_T>
 void xFRemapKernel(
 		hls::stream< SRC_T >    &src,
 		hls::stream< DST_T >   &dst,
@@ -342,7 +340,7 @@ void xFRemapKernel(
 //#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_remapped_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapx_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS,"_mapy_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_remapped_mat.data":SEQUENTIAL,"_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.rows*_src_mat.cols"], "_remapped_mat.data"[0:"_remapped_mat.size"],"_mapx_mat.data"[0:"_mapx_mat.size"],"_mapy_mat.data"[0:"_mapy_mat.size"])
-template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC, bool USE_URAM = false1>
+template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1, bool USE_URAM = false>
 void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat,
 		xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat)
 {
