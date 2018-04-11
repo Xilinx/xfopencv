@@ -2,28 +2,28 @@
 Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
@@ -37,7 +37,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /**
- * xfMinMaxLoc_core : This kernal finds the minimum and maximum values in
+ * xFMinMaxLoc_core : This kernel finds the minimum and maximum values in
  * an image and a location for each.
  * Inputs : _src of type XF_8UP, XF_16UP, XF_16SP, XF_32UP or XF_32SP.
  * Output :
@@ -115,7 +115,6 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 
 			// reading the data from the stream
 			val_in = _src.read();
-
 			XF_PTNAME(DEPTH) pixel_buf[(1<<XF_BITSHIFT(NPC))+1];
 #pragma HLS ARRAY_PARTITION variable=pixel_buf complete dim=1
 
@@ -146,8 +145,8 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 				{
 					col_ind++;
 				}
-			}
 
+			}
 			// increment if NO case
 			if(!NPC)
 			{
@@ -155,6 +154,7 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 			}
 		}
 	}
+
 
 	// tracking the minimum and maximum from the resultant min and max buffers
 	trackLoop:
@@ -164,25 +164,26 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 		if(min_val_tmp[k] < _minval)
 		{
 			_minval = min_val_tmp[k];
-			_minlocx = /*(uint16_t)*/(min_loc_tmp[k].range(12,0));
-			_minlocy = /*(uint16_t)*/(min_loc_tmp[k].range(25,13));
+			_minlocy = /*(uint16_t)*/(min_loc_tmp[k].range(12,0));
+			_minlocx = /*(uint16_t)*/(min_loc_tmp[k].range(25,13));
+
 
 		}
 		else if(min_val_tmp[k] <= _minval)
 		{
-			min_loc_tmp_x = /*(uint16_t)*/(min_loc_tmp[k].range(12,0));
-			min_loc_tmp_y = /*(uint16_t)*/(min_loc_tmp[k].range(25,13));
+			min_loc_tmp_y = /*(uint16_t)*/(min_loc_tmp[k].range(12,0));
+			min_loc_tmp_x = /*(uint16_t)*/(min_loc_tmp[k].range(25,13));
 
-			if(min_loc_tmp_x < _minlocx)
+			if(min_loc_tmp_y < _minlocy)
 			{
 				_minval = min_val_tmp[k];
 				_minlocx = min_loc_tmp_x;
 				_minlocy = min_loc_tmp_y;
 			}
 
-			else if(min_loc_tmp_x == _minlocx)
+			else if(min_loc_tmp_y == _minlocy)
 			{
-				if(min_loc_tmp_y < _minlocy)
+				if(min_loc_tmp_x < _minlocx)
 				{
 					_minval = min_val_tmp[k];
 					_minlocx = min_loc_tmp_x;
@@ -191,29 +192,28 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 			}
 		}
 
-
 		// tracking the maximum value and the corresponding location
 		if(max_val_tmp[k] > _maxval)
 		{
 			_maxval = max_val_tmp[k];
-			_maxlocx = /*(uint16_t)*/(max_loc_tmp[k].range(12,0));
-			_maxlocy = /*(uint16_t)*/(max_loc_tmp[k].range(25,13));
+			_maxlocy = /*(uint16_t)*/(max_loc_tmp[k].range(12,0));
+			_maxlocx = /*(uint16_t)*/(max_loc_tmp[k].range(25,13));
 		}
 		else if(max_val_tmp[k] >= _maxval)
 		{
-			max_loc_tmp_x = (uint16_t)(max_loc_tmp[k].range(12,0));
-			max_loc_tmp_y = (uint16_t)(max_loc_tmp[k].range(25,13));
+			max_loc_tmp_y = (uint16_t)(max_loc_tmp[k].range(12,0));
+			max_loc_tmp_x = (uint16_t)(max_loc_tmp[k].range(25,13));
 
-			if(max_loc_tmp_x < _maxlocx)
+			if(max_loc_tmp_y < _maxlocy)
 			{
 				_maxval = max_val_tmp[k];
 				_maxlocx = max_loc_tmp_x;
 				_maxlocy = max_loc_tmp_y;
 			}
 
-			else if(max_loc_tmp_x == _maxlocx)
+			else if(max_loc_tmp_y == _maxlocy)
 			{
-				if(max_loc_tmp_y < _maxlocy)
+				if(max_loc_tmp_x < _maxlocx)
 				{
 					_maxval = max_val_tmp[k];
 					_maxlocx = max_loc_tmp_x;
@@ -226,22 +226,18 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 
 	_minval1 =_minval;
 	_maxval1=_maxval;
-//	*_minlocx1=_minlocx;
-//	*_minlocy1=_minlocy;
-//	*_maxlocx1=_maxlocx;
-//	*_maxlocy1=_maxlocy;
 }
 
 /**
- * xfMinMaxLocKernel: this function acts as a wrapper and calls the kernel function
- *  xfMinMaxLoc_core.
+ * xFMinMaxLocKernel: This function acts as a wrapper and calls the kernel function
+ *  xFMinMaxLoc_core.
  */
 template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
 void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 		int &_minval, int &_maxval,unsigned short int &_minlocx,unsigned short int &_minlocy,
 		unsigned short int &_maxlocx,unsigned short int &_maxlocy,uint16_t height, uint16_t width)
 {
-//#pragma HLS license key=IPAUVIZ_CV_BASIC
+
 	assert(((DEPTH == XF_8UP) || (DEPTH == XF_16UP) || (DEPTH == XF_16SP) ||
 			(DEPTH == XF_32UP) || (DEPTH == XF_32SP)) &&
 			"Depth must be XF_8UP, XF_16UP, XF_16SP, XF_32UP or XF_32SP");
@@ -257,28 +253,6 @@ void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
 	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	width=width>>XF_BITSHIFT(NPC);
-//
-//	if((NPC==XF_NPPC8) && ((DEPTH == XF_16UP)||(DEPTH == XF_16SP)))
-//	{
-//		hls::stream< ap_uint<128> > tmp;
-//
-//#pragma HLS DATAFLOW
-//		Convert64To128<ROWS,COLS,NPC,WORDWIDTH,XF_128UW,(COLS>>XF_BITSHIFT(NPC))>(_src, tmp,height,width);
-//
-//		auMinMaxLocKernel<ROWS,COLS,DEPTH,NPC,XF_128UW,(COLS>>XF_BITSHIFT(NPC))>(tmp, _minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
-//
-//
-//	}
-//	else if((NPC==XF_NPPC8) &&((DEPTH == XF_32UP)||(DEPTH == XF_32SP)))
-//	{
-//		hls::stream< ap_uint<256> > tmp;
-//#pragma HLS DATAFLOW
-//		Convert64To256<ROWS,COLS,NPC,WORDWIDTH,XF_256UW,(COLS>>XF_BITSHIFT(NPC))>(_src, tmp,height,width);
-//
-//		auMinMaxLocKernel<ROWS,COLS,DEPTH,NPC,XF_256UW,(COLS>>XF_BITSHIFT(NPC))>(tmp,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
-//	}
-//
-//	else
 
 	xFMinMaxLoc_core<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
 

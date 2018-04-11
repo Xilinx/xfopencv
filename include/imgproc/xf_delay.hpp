@@ -45,8 +45,8 @@ namespace xf{
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
-template<int SRC_T, int ROWS, int COLS,int NPC,int MAXDELAY>
-void delayimages(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
+template<int MAXDELAY, int SRC_T, int ROWS, int COLS,int NPC=1>
+void delayMat(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS inline off
 

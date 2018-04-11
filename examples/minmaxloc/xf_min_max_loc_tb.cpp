@@ -108,8 +108,8 @@ int main(int argc, char** argv)
 	/////// OpenCV output ////////
 	std::cout<<"OCV-Minvalue = "<<cv_minval<<std::endl;
 	std::cout<<"OCV-Maxvalue = "<<cv_maxval<<std::endl;
-	std::cout<<"OCV-Min Location.x = "<<cv_minloc.y<<"  OCV-Min Location.y = "<<cv_minloc.x<<std::endl;
-	std::cout<<"OCV-Max Location.x = "<<cv_maxloc.y<<"  OCV-Max Location.y = "<<cv_maxloc.x<<std::endl;
+	std::cout<<"OCV-Min Location.x = "<<cv_minloc.x<<"  OCV-Min Location.y = "<<cv_minloc.y<<std::endl;
+	std::cout<<"OCV-Max Location.x = "<<cv_maxloc.x<<"  OCV-Max Location.y = "<<cv_maxloc.y<<std::endl;
 
 	/////// Kernel output ////////
 	std::cout<<"HLS-Minvalue = "<<min_value<<std::endl;
@@ -120,11 +120,11 @@ int main(int argc, char** argv)
 	/////// printing the difference in min and max, values and locations of both OpenCV and Kernel function /////
 	printf("Difference in Minimum value: %d \n",(cv_minval-min_value));
 	printf("Difference in Maximum value: %d \n",(cv_maxval-max_value));
-	printf("Difference in Minimum value location: (%d,%d) \n",(cv_minloc.y-_min_locx),(cv_minloc.x-_min_locy));
-	printf("Difference in Maximum value location: (%d,%d) \n",(cv_maxloc.y-_max_locx),(cv_maxloc.x-_max_locy));
+	printf("Difference in Minimum value location: (%d,%d) \n",(cv_minloc.y-_min_locy),(cv_minloc.x-_min_locx));
+	printf("Difference in Maximum value location: (%d,%d) \n",(cv_maxloc.y-_max_locy),(cv_maxloc.x-_max_locx));
 
 
-	if(((cv_minloc.y-_min_locx) > 1) | ((cv_minloc.x-_min_locy) > 1)){
+	if(((cv_minloc.y-_min_locy) > 1) | ((cv_minloc.x-_min_locx) > 1)){
 		printf("\nTestcase failed\n");
 		return -1;
 	}
