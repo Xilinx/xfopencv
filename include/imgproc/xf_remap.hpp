@@ -58,10 +58,9 @@ void xFRemapNNI(
 
 	SRC_T s;
 
-    // the width is one byte wider than needed to overcome URAM implementation issue
-	ap_uint<72> bufUram[WIN_ROW][(COLS+7)/8];
+	ap_uint<64> bufUram[WIN_ROW][(COLS+7)/8];
 #pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
-	SRC_T sx8[9] = {0};
+	SRC_T sx8[8];
 #pragma HLS ARRAY_PARTITION variable=sx8 complete dim=1
 
 	DST_T d;
@@ -93,7 +92,7 @@ void xFRemapNNI(
 
                 if (USE_URAM) {
 			      sx8[j%8] = s;
-			      for (int k=0; k<9; k++) bufUram[i % WIN_ROW][j/8](k*8+7,k*8) = sx8[k];
+			      for (int k=0; k<8; k++) bufUram[i % WIN_ROW][j/8](k*8+7,k*8) = sx8[k];
 		        }
 			}
 
@@ -109,14 +108,13 @@ void xFRemapNNI(
 				int y = (int)my_fl;
 
 				bool in_range = (y>=0 && y<rows && r[y%WIN_ROW] == y && x>=0 && x<cols);
-				if (USE_URAM) {
-				  DST_T dx9[9];
-#pragma HLS ARRAY_PARTITION variable=dx9 complete dim=1
-				  for (int k=0; k<9; k++) dx9[k] = bufUram[y%WIN_ROW][x/8](k*8+7,k*8);
-				  if(in_range) d = dx9[x%8];
-				  else         d = dx9[8]; //workaround zero assignment just to use full URAM width
-			    } else
 				if(in_range)
+				  if (USE_URAM) {
+				    DST_T dx9[8];
+#pragma HLS ARRAY_PARTITION variable=dx9 complete dim=1
+				    for (int k=0; k<8; k++) dx9[k] = bufUram[y%WIN_ROW][x/8](k*8+7,k*8);
+				    d = dx9[x%8];
+				  } else
 					d = buf[y%WIN_ROW][x];
 				else
 					d = 0;
