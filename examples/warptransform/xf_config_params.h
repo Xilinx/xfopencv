@@ -17,3 +17,6 @@
 
 //transform type 0-AFFINE 1-PERSPECTIVE
 #define TRANSFORM_TYPE 0
+
+//usage of URAMs for buffers implementation
+#define XF_USE_URAM false

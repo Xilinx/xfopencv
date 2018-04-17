@@ -264,7 +264,41 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int 
 	return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
 };
 
-template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE>
+
+template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+void store_in_UramNN(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, ap_uint<64> bufUram[STORE_LINES][(COLS+7)/8])
+{
+#pragma HLS INLINE
+
+    static XF_TNAME(DEPTH,NPC) sx8[8];
+    sx8[j%8] = in_pixel;
+    for (int k=0; k<8; k++) bufUram[i][j/8](k*8+7,k*8) = sx8[k];
+};
+
+template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+void store_in_UramBL(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2])
+{
+#pragma HLS INLINE
+};
+
+template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+XF_TNAME(DEPTH,NPC) retrieve_UramNN(int i,int j, ap_uint<64> bufUram[STORE_LINES][(COLS+7)/8])
+{
+#pragma HLS INLINE
+
+    XF_TNAME(DEPTH,NPC) dx8[8];
+    for (int k=0; k<8; k++) dx8[k] = bufUram[i][j/8](k*8+7,k*8);
+    return dx8[j%8];
+};
+
+template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2])
+{
+#pragma HLS INLINE
+	return 0;
+};
+
+template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, bool USE_URAM>
 int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::stream< XF_TNAME(DEPTH,NPC) > &output_image, float P_matrix[9], short img_rows, short img_cols)
 {
 #pragma HLS INLINE
@@ -298,6 +332,12 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 #pragma HLS DEPENDENCE variable=store1_pt_2OdR_EvC intra false
 #pragma HLS DEPENDENCE variable=store1_pt_2OdR_OdC intra false
 
+    //URAM based storages
+	ap_uint<64> bufUramNN[STORE_LINES][(COLS+7)/8];
+#pragma HLS RESOURCE variable=bufUramNN core=XPM_MEMORY uram
+    //URAM storage garnularity for BL inerpolation is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
+    ap_uint<72> bufUramBL[(STORE_LINES+1)/2][(COLS+1)/2];
+#pragma HLS RESOURCE variable=bufUramBL core=XPM_MEMORY uram
 
 	//varables for loop counters
 	ap_uint<16> i=0,j=0,k=0,l=0,m=0,n=0,p=0;
@@ -362,6 +402,10 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 				//function to store the input image stream to
 				//a buffer of size STORE_LINES rows
 				//computing i-l to snap the writes to STORE_LINES size buffer
+				if (USE_URAM)
+				  if (INTERPOLATION_TYPE) store_in_UramBL<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramBL);
+				  else                    store_in_UramNN<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramNN);
+                else
 				store_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>( input_image.read() ,i-l,j, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 			}
 
@@ -468,11 +512,17 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 					I1 = I - m;
 					if(INTERPOLATION_TYPE==0)
 					{
+                      if (USE_URAM)
+						op_val = retrieve_UramNN     <COLS,STORE_LINES,DEPTH,NPC>(I1,J, bufUramNN);
+					  else
 						op_val = retrieve_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>(I1,J, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 					else
 					{
 						//calling the read function with interpolation
+                      if (USE_URAM)
+						op_val = retrieve_UramBL       <COLS,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, bufUramBL);
+					  else
 						op_val = retrieve_EvOd_image4x1<COLS,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 				}
@@ -497,7 +547,7 @@ return 0;
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
 #pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC>
+template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC, bool USE_URAM = false>
 void warpTransform(xf::Mat<TYPE,ROWS,COLS,NPC> & _src_mat, xf::Mat<TYPE,ROWS,COLS,NPC> & _dst_mat, float P_matrix[9])
 {
 	#pragma HLS INLINE OFF
@@ -516,7 +566,7 @@ hls::stream< XF_TNAME(TYPE,NPC) > out_stream;
 		}
 	}
 
-xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE>(in_stream, out_stream, P_matrix, _src_mat.rows, _src_mat.cols);
+xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE, USE_URAM>(in_stream, out_stream, P_matrix, _src_mat.rows, _src_mat.cols);
 
 	for(int i=0; i<_dst_mat.rows;i++)
 	{
