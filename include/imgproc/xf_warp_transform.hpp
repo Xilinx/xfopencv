@@ -271,14 +271,61 @@ void store_in_UramNN(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, 
 #pragma HLS INLINE
 
     static XF_TNAME(DEPTH,NPC) sx8[8];
+#pragma HLS ARRAY_PARTITION variable=sx8 complete dim=1
     sx8[j%8] = in_pixel;
     for (int k=0; k<8; k++) bufUram[i][j/8](k*8+7,k*8) = sx8[k];
 };
 
 template<int COLS, int STORE_LINES, int DEPTH, int NPC>
-void store_in_UramBL(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2])
+void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16> i,ap_uint<16> j, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2], short img_cols)
 {
 #pragma HLS INLINE
+
+    static XF_TNAME(DEPTH,NPC) lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
+    static XF_TNAME(DEPTH,NPC) s3x3[2][9]; //URAM-wide word is doubled to resolve pipelining read/write dependency
+    static XF_TNAME(DEPTH,NPC) s3x3_2[9];
+    static XF_TNAME(DEPTH,NPC) s0,s3;
+
+    static XF_TNAME(DEPTH,NPC) in_pixel;
+    if (j<img_cols) in_pixel = input_image.read();
+
+    if (!(i%2)) { // even row, stored in line buffer for 1st row of 3x3 block, and in URAM for 3d row of 3x3 block
+      if (!(j%2)) { // even col
+        if (j<img_cols) lineBuf[j] = s0 = in_pixel;
+        else s0 = 0;
+        s3x3[!(j&2)][8] = s0;
+        if ((i/2)>0 && (j/2)>1) for (int k=0; k<9; k++) bufUram[i/2-1][j/2-2](k*8+7,k*8) = s3x3[!!(j&2)][k];
+      } else if (j<img_cols) { // odd col
+        lineBuf[j] = in_pixel;
+        if ((i/2)>0) {
+          for (int k=0; k<6; k++) s3x3[!!(j&2)][k] = bufUram[i/2-1][j/2](k*8+7,k*8);
+          s3x3[!!(j&2)][6] = s0;
+          s3x3[!!(j&2)][7] = in_pixel;
+          s3x3[!!(j&2)][8] = 0;
+        }
+   	  }
+    } else if (j<img_cols) { // odd row, togeher with fetched from line buffer 1st row of 3x3 block is stored in URAM
+      if (!(j%2)) { // even col
+        s3x3_2[2] = s0 = lineBuf[j];
+        s3x3_2[5] = s3 = in_pixel;
+        if ((j/2)>0) for (int k=0; k<9; k++) bufUram[i/2][j/2-1](k*8+7,k*8) = s3x3_2[k];
+      } else { // odd col
+        s3x3_2[0] = s0;
+        s3x3_2[1] = lineBuf[j];
+        s3x3_2[3] = s3;
+        s3x3_2[4] = in_pixel;
+
+        // this clearing is needed only for case of bottom zero padding (curently last(bottom-right) sample value is used)
+        s3x3_2[6] = 0;
+        s3x3_2[7] = 0;
+        s3x3_2[8] = 0;
+        //if (j==(img_cols-1)) { //these clearing and save is needed only at last column but may done every cycle
+        s3x3_2[2] = 0;
+        s3x3_2[5] = 0;
+        for (int k=0; k<9; k++) bufUram[i/2][j/2](k*8+7,k*8) = s3x3_2[k];
+        //}
+      }
+    }
 };
 
 template<int COLS, int STORE_LINES, int DEPTH, int NPC>
@@ -286,7 +333,9 @@ XF_TNAME(DEPTH,NPC) retrieve_UramNN(int i,int j, ap_uint<64> bufUram[STORE_LINES
 {
 #pragma HLS INLINE
 
+	i = i > (STORE_LINES - 1)? (i - STORE_LINES) : ((i < 0)? (i + STORE_LINES) : i);
     XF_TNAME(DEPTH,NPC) dx8[8];
+#pragma HLS ARRAY_PARTITION variable=dx8 complete dim=1
     for (int k=0; k<8; k++) dx8[k] = bufUram[i][j/8](k*8+7,k*8);
     return dx8[j%8];
 };
@@ -295,8 +344,32 @@ template<int COLS, int STORE_LINES, int DEPTH, int NPC>
 XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2])
 {
 #pragma HLS INLINE
-	return 0;
+
+	i = (i > (STORE_LINES - 1))? (i - STORE_LINES) : ((i < 0)? (i + STORE_LINES) : i);
+
+    XF_TNAME(DEPTH,NPC) d3x3[9];
+    for (int k=0; k<9; k++) d3x3[k] = bufUram[i/2][j/2](k*8+7,k*8);
+    XF_TNAME(DEPTH,NPC) const px00 = d3x3[(i%2  )*3 + j%2  ];
+    XF_TNAME(DEPTH,NPC) const px01 = d3x3[(i%2  )*3 + j%2+1];
+    XF_TNAME(DEPTH,NPC) const px10 = d3x3[(i%2+1)*3 + j%2  ];
+    XF_TNAME(DEPTH,NPC) const px11 = d3x3[(i%2+1)*3 + j%2+1];
+
+    int const op_val = (A*px00)
+                     + (B*px01)
+                     + (C*px10)
+                     + (D*px11);
+    //returning the computed interpolated output after rounding off the op_val by adding 0.5
+    //and shifting to right by INTER_REMAP_COEF_BITS
+    return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
 };
+
+//AK(ZoTech): rounding function to substitute one from math.h, consuming 2 BRAMs per call; commented as it is not bitexact with the latter.
+// template<class T>
+// int round(T x)
+// {
+// #pragma HLS INLINE
+// 	return (x + (x>=T(0) ? T(0.5) : T(-0.5)));
+// };
 
 template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, bool USE_URAM>
 int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::stream< XF_TNAME(DEPTH,NPC) > &output_image, float P_matrix[9], short img_rows, short img_cols)
@@ -334,7 +407,8 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 
     //URAM based storages
 	ap_uint<64> bufUramNN[STORE_LINES][(COLS+7)/8];
-#pragma HLS RESOURCE variable=bufUramNN core=XPM_MEMORY uram
+#pragma HLS RESOURCE   variable=bufUramNN core=XPM_MEMORY uram
+#pragma HLS dependence variable=bufUramNN inter false
     //URAM storage garnularity for BL inerpolation is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
     ap_uint<72> bufUramBL[(STORE_LINES+1)/2][(COLS+1)/2];
 #pragma HLS RESOURCE variable=bufUramBL core=XPM_MEMORY uram
@@ -382,7 +456,7 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 	MAIN_ROWS:for (i=0;i<(img_rows + START_ROW);i++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		MAIN_COLS:for(j=0;j<(img_cols);j++)
+		MAIN_COLS:for(j=0;j<(img_cols+3);j++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 		#pragma HLS PIPELINE
@@ -403,15 +477,15 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 				//a buffer of size STORE_LINES rows
 				//computing i-l to snap the writes to STORE_LINES size buffer
 				if (USE_URAM)
-				  if (INTERPOLATION_TYPE) store_in_UramBL<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramBL);
-				  else                    store_in_UramNN<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramNN);
-                else
+				  if (INTERPOLATION_TYPE) store_in_UramBL<COLS,STORE_LINES,DEPTH,NPC>(input_image        ,i-l,j, bufUramBL, img_cols);
+				  else {if (j<img_cols)   store_in_UramNN<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramNN);}
+                else    if (j<img_cols)
 				store_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>( input_image.read() ,i-l,j, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 			}
 
 			//condition to compute and stream out the output image
 			//after START_ROW number of rows
-			if(i>=START_ROW)
+			if(i>=START_ROW && j<img_cols)
 			{
 				//computing k from i to index the output image from 0
 				k = i - (START_ROW);
