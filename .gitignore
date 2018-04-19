@@ -1,0 +1,5 @@
+/aws_demo/ide/**/*.*sdf
+/aws_demo/ide/**/*.tss
+/aws_demo/ide/**/*.suo
+/aws_demo/ide/**/Debug
+/aws_demo/ide/**/Release

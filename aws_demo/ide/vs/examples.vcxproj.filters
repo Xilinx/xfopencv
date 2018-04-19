@@ -1,0 +1,27 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="..\..\..\examples\accumulate\xf_accumulate_config.h">
+      <Filter>accumulate</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\examples\accumulate\xf_config_params.h">
+      <Filter>accumulate</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\examples\accumulate\xf_headers.h">
+      <Filter>accumulate</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\examples\accumulate\xf_accumulate_image_accel.cpp">
+      <Filter>accumulate</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\examples\accumulate\xf_accumulate_image_tb.cpp">
+      <Filter>accumulate</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="accumulate">
+      <UniqueIdentifier>{fdb0de10-a233-42a7-908e-33cb0564f49c}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
