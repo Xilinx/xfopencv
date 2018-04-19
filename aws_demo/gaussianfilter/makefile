@@ -116,7 +116,7 @@ host: $(HOST_EXE)
 krnl: $(BINARY_CONTAINERS)
 
 clean:
-	$(RMDIR) $(HOST_BLD_DIR)
+	$(RMDIR) $(HOST_BLD_DIR) build/kernel
 #	-$(RM) $(BINARY_CONTAINERS) $(ALL_KERNEL_OBJS) $(ALL_MESSAGE_FILES)  $(HOST_EXE) src/$(HOST_OBJ)
 #	-$(RM) *.xclbin.sh
 #	-$(RMDIR) $(BUILD_SUBDIRS)
@@ -135,13 +135,13 @@ nothing:
 #
 
 build/kernel/xf_gaussian_filter.xo: xf_gaussian_filter_kernel_aws.cpp
-	@echo "mkdir -p $(@D)"
+	@mkdir -p $(@D)
 	$(XOCC) $(XOCC_OPTS) -c -k xf_gaussian_filter --max_memory_ports xf_gaussian_filter --messageDb $(subst .xo,.mdb,$@) -I"$(<D)" --xp misc:solution_name=build/kernel/xocc_compile_kernel_xf_gaussian_filter -I"$(XFOPENCV)/include" -I"$(XF_EXAMPLE_DIR)" -I/opt/Xilinx/SDx/2017.4/include/ocv -o"$@" "$<"
 #	@echo -$(RM) $@
 
 xf_gaussian_filter.xclbin: $(BINARY_CONTAINER_1_OBJS)
 	-@echo $(XOCC) $(XOCC_OPTS) -l --nk xf_gaussian_filter:1  --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+) > xf_gaussian_filter.xclbin.sh
-	$(XOCC) $(XOCC_OPTS) -l --nk xf_gaussian_filter:1 --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+)
+	$(XOCC) $(XOCC_OPTS) -l --jobs 20 --nk xf_gaussian_filter:1 --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+)
 
 #
 # host rules
