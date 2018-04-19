@@ -281,8 +281,13 @@ void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16>
 {
 #pragma HLS INLINE
 
+    ap_int<16> i_hlf_mns1 = i/2-1;
+    i_hlf_mns1 = i_hlf_mns1 + (i_hlf_mns1 < 0 ? (STORE_LINES+1)/2 : 0);
+
     static XF_TNAME(DEPTH,NPC) lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
     static XF_TNAME(DEPTH,NPC) s3x3[2][9]; //URAM-wide word is doubled to resolve pipelining read/write dependency
+#pragma HLS ARRAY_PARTITION variable=s3x3 complete dim=0
+#pragma HLS dependence      variable=s3x3 inter false RAW
     static XF_TNAME(DEPTH,NPC) s3x3_2[9];
     static XF_TNAME(DEPTH,NPC) s0,s3;
 
@@ -294,15 +299,13 @@ void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16>
         if (j<img_cols) lineBuf[j] = s0 = in_pixel;
         else s0 = 0;
         s3x3[!(j&2)][8] = s0;
-        if ((i/2)>0 && (j/2)>1) for (int k=0; k<9; k++) bufUram[i/2-1][j/2-2](k*8+7,k*8) = s3x3[!!(j&2)][k];
+        if ((j/2)>1) for (int k=0; k<9; k++) bufUram[i_hlf_mns1][j/2-2](k*8+7,k*8) = s3x3[!!(j&2)][k];
       } else if (j<img_cols) { // odd col
         lineBuf[j] = in_pixel;
-        if ((i/2)>0) {
-          for (int k=0; k<6; k++) s3x3[!!(j&2)][k] = bufUram[i/2-1][j/2](k*8+7,k*8);
-          s3x3[!!(j&2)][6] = s0;
-          s3x3[!!(j&2)][7] = in_pixel;
-          s3x3[!!(j&2)][8] = 0;
-        }
+        for (int k=0; k<6; k++) s3x3[!!(j&2)][k] = bufUram[i_hlf_mns1][j/2](k*8+7,k*8);
+        s3x3[!!(j&2)][6] = s0;
+        s3x3[!!(j&2)][7] = in_pixel;
+        s3x3[!!(j&2)][8] = 0;
    	  }
     } else if (j<img_cols) { // odd row, togeher with fetched from line buffer 1st row of 3x3 block is stored in URAM
       if (!(j%2)) { // even col
@@ -315,7 +318,7 @@ void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16>
         s3x3_2[3] = s3;
         s3x3_2[4] = in_pixel;
 
-        // this clearing is needed only for case of bottom zero padding (curently last(bottom-right) sample value is used)
+        // this clearing is needed only for case of bottom zero padding (curently is not used at all)
         s3x3_2[6] = 0;
         s3x3_2[7] = 0;
         s3x3_2[8] = 0;
@@ -348,6 +351,7 @@ XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_u
 	i = (i > (STORE_LINES - 1))? (i - STORE_LINES) : ((i < 0)? (i + STORE_LINES) : i);
 
     XF_TNAME(DEPTH,NPC) d3x3[9];
+#pragma HLS ARRAY_PARTITION variable=d3x3 complete dim=1
     for (int k=0; k<9; k++) d3x3[k] = bufUram[i/2][j/2](k*8+7,k*8);
     XF_TNAME(DEPTH,NPC) const px00 = d3x3[(i%2  )*3 + j%2  ];
     XF_TNAME(DEPTH,NPC) const px01 = d3x3[(i%2  )*3 + j%2+1];
@@ -363,12 +367,20 @@ XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_u
     return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
 };
 
-//AK(ZoTech): rounding function to substitute one from math.h, consuming 2 BRAMs per call; commented as it is not bitexact with the latter.
+//AK(ZoTech): rounding function to substitute one from math.h, consuming 2 BRAMs per call; not used as it is not bitexact with the math.h.
 // template<class T>
 // int round(T x)
 // {
 // #pragma HLS INLINE
 // 	return (x + (x>=T(0) ? T(0.5) : T(-0.5)));
+// };
+
+//AK(ZoTech): floor function to substitute one from math.h, consuming 2 BRAMs per call; not used as it is not synthesisable if biexact.
+// template<class T>
+// int floor(T x)
+// {
+// #pragma HLS INLINE
+//     return (x - (x>=T(0) ? T(0) : T(1)-std::numeric_limits<T>::epsilon() ));
 // };
 
 template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, bool USE_URAM>
@@ -411,7 +423,8 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 #pragma HLS dependence variable=bufUramNN inter false
     //URAM storage garnularity for BL inerpolation is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
     ap_uint<72> bufUramBL[(STORE_LINES+1)/2][(COLS+1)/2];
-#pragma HLS RESOURCE variable=bufUramBL core=XPM_MEMORY uram
+#pragma HLS RESOURCE   variable=bufUramBL core=XPM_MEMORY uram
+#pragma HLS dependence variable=bufUramBL inter false
 
 	//varables for loop counters
 	ap_uint<16> i=0,j=0,k=0,l=0,m=0,n=0,p=0;
