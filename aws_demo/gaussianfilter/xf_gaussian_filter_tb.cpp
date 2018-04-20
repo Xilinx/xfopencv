@@ -86,7 +86,7 @@ int main(int argc, char **argv)
   cv::resize(ocv_ref, ocv_ref_s, cvSize(ocv_ref_s.cols, ocv_ref_s.rows), 0, 0, cv::INTER_NEAREST );
 
 	imwrite("output_ocv.png", ocv_ref);
-	imwrite("output_ocv_s.png", ocv_ref);
+	imwrite("output_ocv_s.png", ocv_ref_s);
 
 
 	xf::Mat<XF_8UC1, HEIGHT  , WIDTH  , NPC1> imgInput (in_img.rows  ,in_img.cols  );
