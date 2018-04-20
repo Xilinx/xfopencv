@@ -69,7 +69,7 @@ extern "C" void xf_gaussian_filter(XF_TNAME(SRC_T,NPC1) *ai, XF_TNAME(SRC_T,NPC1
 
                                                                   //setup same maximum output image size as for source image
 
-	    xf::xFresize< HEIGHT, WIDTH, SRC_T, NPC1, XF_WORDWIDTH(SRC_T,NPC1), HEIGHT, WIDTH>(flt, dst, INTERPOLATION_TYPE, rows, cols, o_rows, o_cols);
+	    xf::xFresize< HEIGHT, WIDTH, SRC_T, NPC1, XF_WORDWIDTH(SRC_T,NPC1), HEIGHT/2, WIDTH/2>(flt, dst, INTERPOLATION_TYPE, rows, cols, o_rows, o_cols);
 		
       for(int i=0;i<o_rows;i++)
 	      {

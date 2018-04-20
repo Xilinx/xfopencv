@@ -6,7 +6,7 @@
 
 #include "xf_gaussian_filter_config.h"
 
-void gaussian_filter_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1>&imgOutput, float sigma)
+void gaussian_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT/2, WIDTH/2, NPC1> &imgOutput, float sigma)
 {
     std::vector<cl::Device> devices = xcl::get_xil_devices();
 
@@ -17,7 +17,7 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     std::string device_name = device.getInfo<CL_DEVICE_NAME>();
 
-    std::string binaryFile = "xf_gaussian_filter.awsxclbin"; //xcl::find_binary_file(device_name,"xf_gaussian_filter");
+    std::string binaryFile = "xf_gaussian_filter.awsxclbin";
     
     std::cout << "========" <<  binaryFile << "  ==================" << std::endl;
     
@@ -38,18 +38,19 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<
     
 		q.enqueueMigrateMemObjects(writeBufVec,0);        // 0 means from host
 
-    auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, int, int, float>(kernel);
+    auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, int, int, float, int, int >(kernel);
 
     //----------- Launch the Kernel -----------//
 
-    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_inp, buffer_out, imgInput.rows, imgInput.cols, sigma);
-
-    std::vector<cl::Memory> readBufVec;
-    readBufVec.push_back(buffer_out);
+    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_inp, buffer_out, imgInput.rows, imgInput.cols, sigma, imgOutput.rows, imgOutput.cols);
     
 		//----------- Copy Result from Device Global Memory to Host Local Memory -----------//
     
+    std::vector<cl::Memory> readBufVec;
+    readBufVec.push_back(buffer_out);
+
 		q.enqueueMigrateMemObjects(readBufVec,CL_MIGRATE_MEM_OBJECT_HOST);
+
     q.finish();
 
 }
