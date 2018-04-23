@@ -137,9 +137,9 @@ int main(int argc, char** argv)
 
 	int cnt=0, total = 0;
 
-	for(int i=(SAD_WINDOW_SIZE>>1)+20; i<out_disp_img.rows-((SAD_WINDOW_SIZE>>1)+20); i++)
+	for(int i=SAD_WINDOW_SIZE; i<out_disp_img.rows-SAD_WINDOW_SIZE; i++)
 	{
-		for(int j=(NO_OF_DISPARITIES-1)+(SAD_WINDOW_SIZE>>1)+20; j<out_disp_img.cols-((SAD_WINDOW_SIZE>>1)+20); j++)
+		for(int j=SAD_WINDOW_SIZE; j<out_disp_img.cols-SAD_WINDOW_SIZE; j++)
 		{
 			total ++;
 			int diff = (disp8.at<unsigned char> (i,j))-(out_disp_img.data[i*out_disp_img.cols +j]);
