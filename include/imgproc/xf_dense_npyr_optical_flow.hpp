@@ -170,7 +170,7 @@ namespace xf{
 	// TODO: 
 	// 1. Dont need the entire column for img1Win and img2Win. Need only the kernel
 	// 2. Full line buffer is not needed
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void computeSums16 (hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > > img1Col [(WINDOW_SIZE+1)], 
 					  hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > > img2Col [(WINDOW_SIZE+1)], 
 					  hls::stream <int>& ixix_out0, 
@@ -208,34 +208,55 @@ namespace xf{
 	  // For II=1 pipelining, need two read and 1 write ports. Simulating it with
 	  // two arrays that have their write ports tied together.
 	  // TODO need only MAX_WODTH/2. Have to adjust zIdx and nIdx as well
-	  static int csIxixO [COLS], csIxiyO [COLS], csIyiyO [COLS], csDixO [COLS], csDiyO [COLS];
-	  static int csIxixE [COLS], csIxiyE [COLS], csIyiyE [COLS], csDixE [COLS], csDiyE [COLS];
+	  static int csIxixO [COLS/2], csIxiyO [COLS/2], csIyiyO [COLS/2], csDixO [COLS/2], csDiyO [COLS/2];
+	  static int csIxixE [COLS/2], csIxiyE [COLS/2], csIyiyE [COLS/2], csDixE [COLS/2], csDiyE [COLS/2];
 
-	  static int cbIxixO [COLS], cbIxiyO [COLS], cbIyiyO [COLS], cbDixO [COLS], cbDiyO [COLS];
-	  static int cbIxixE [COLS], cbIxiyE [COLS], cbIyiyE [COLS], cbDixE [COLS], cbDiyE [COLS];
+	  static int cbIxixO [COLS/2], cbIxiyO [COLS/2], cbIyiyO [COLS/2], cbDixO [COLS/2], cbDiyO [COLS/2];
+	  static int cbIxixE [COLS/2], cbIxiyE [COLS/2], cbIyiyE [COLS/2], cbDixE [COLS/2], cbDiyE [COLS/2];
 
-	  int zIdx= - (WINDOW_SIZE-2);   // odd
-	  int zIdx1 = zIdx + 1;   // even
+	  int zIdx=      - (WINDOW_SIZE/2-1);
+	  int nIdx = zIdx + WINDOW_SIZE/2-1;
 
-	  int nIdx = zIdx + WINDOW_SIZE-2; // even (0)
-	  int nIdx1 = nIdx + 1;     // odd
+	#pragma HLS ARRAY_MAP variable=csIxixO instance=csO vertical
+	#pragma HLS ARRAY_MAP variable=csIxiyO instance=csO vertical
+	#pragma HLS ARRAY_MAP variable=csIyiyO instance=csO vertical
+	#pragma HLS ARRAY_MAP variable=csDixO  instance=csO vertical
+	#pragma HLS ARRAY_MAP variable=csDiyO  instance=csO vertical
 
+	#pragma HLS ARRAY_MAP variable=csIxixE instance=csE vertical
+	#pragma HLS ARRAY_MAP variable=csIxiyE instance=csE vertical
+	#pragma HLS ARRAY_MAP variable=csIyiyE instance=csE vertical
+	#pragma HLS ARRAY_MAP variable=csDixE  instance=csE vertical
+	#pragma HLS ARRAY_MAP variable=csDiyE  instance=csE vertical
+
+	#pragma HLS ARRAY_MAP variable=cbIxixO instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIxiyO instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIyiyO instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDixO  instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDiyO  instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIxixE instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIxiyE instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIyiyE instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDixE  instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDiyE  instance=cb vertical
+
+    if (USE_URAM) {
+	#pragma HLS RESOURCE variable=csIxixO core=XPM_MEMORY uram
+	#pragma HLS RESOURCE variable=csIxixE core=XPM_MEMORY uram
+	#pragma HLS RESOURCE variable=cbIxixO core=XPM_MEMORY uram
+    }
+    else {
 	#pragma HLS RESOURCE variable=csIxixO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIxiyO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIyiyO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDixO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDiyO core=RAM_2P_BRAM
+	#pragma HLS RESOURCE variable=csIxixE core=RAM_2P_BRAM
+	#pragma HLS RESOURCE variable=cbIxixO core=RAM_2P_BRAM
+    }
+
 	#pragma HLS DEPENDENCE variable=csIxixO inter WAR false
 	#pragma HLS DEPENDENCE variable=csIxiyO inter WAR false
 	#pragma HLS DEPENDENCE variable=csIyiyO inter WAR false
 	#pragma HLS DEPENDENCE variable=csDixO  inter WAR false
 	#pragma HLS DEPENDENCE variable=csDiyO  inter WAR false
 
-	#pragma HLS RESOURCE variable=csIxixE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIxiyE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIyiyE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDixE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDiyE core=RAM_2P_BRAM
 	#pragma HLS DEPENDENCE variable=csIxixE inter WAR false
 	#pragma HLS DEPENDENCE variable=csIxiyE inter WAR false
 	#pragma HLS DEPENDENCE variable=csIyiyE inter WAR false
@@ -243,28 +264,12 @@ namespace xf{
 	#pragma HLS DEPENDENCE variable=csDiyE  inter WAR false
 
 
-	#pragma HLS RESOURCE variable=cbIxixO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIxiyO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIyiyO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbDixO core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbDiyO core=RAM_2P_BRAM
 	#pragma HLS DEPENDENCE variable=cbIxixO inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIxiyO inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIyiyO inter WAR false
 	#pragma HLS DEPENDENCE variable=cbDixO  inter WAR false
 	#pragma HLS DEPENDENCE variable=cbDiyO  inter WAR false
 
-#if PLATFORM_ZCU104
-	#pragma HLS RESOURCE variable=cbIxixE core=XPM_MEMORY uram
-	#pragma HLS RESOURCE variable=cbIxiyE core=XPM_MEMORY uram
-	#pragma HLS RESOURCE variable=cbIyiyE core=XPM_MEMORY uram
-#else
-	#pragma HLS RESOURCE variable=cbIxixE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIxiyE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIyiyE core=RAM_2P_BRAM
-#endif
-	#pragma HLS RESOURCE variable=cbDixE core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbDiyE core=RAM_2P_BRAM
 	#pragma HLS DEPENDENCE variable=cbIxixE inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIxiyE inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIyiyE inter WAR false
@@ -284,18 +289,18 @@ namespace xf{
 		  int csIxixL1 = 0, csIxiyL1 = 0, csIyiyL1 = 0, csDixL1  = 0, csDiyL1  = 0;
 
 		  if (zIdx >= 0) {
-			csIxixL0 = csIxixO [zIdx];
-			csIxiyL0 = csIxiyO [zIdx];
-			csIyiyL0 = csIyiyO [zIdx];
-			csDixL0  = csDixO [zIdx];
-			csDiyL0  = csDiyO [zIdx];
-		  }
-		  if (zIdx1 >= 0) {
-			csIxixL1 = csIxixE [zIdx1];
-			csIxiyL1 = csIxiyE [zIdx1];
-			csIyiyL1 = csIyiyE [zIdx1];
-			csDixL1  = csDixE [zIdx1];
-			csDiyL1  = csDiyE [zIdx1];
+	        int const zIdxPrev = zIdx==0 ? cols/2-1 : zIdx-1;
+			csIxixL0 = csIxixO [zIdxPrev];
+			csIxiyL0 = csIxiyO [zIdxPrev];
+			csIyiyL0 = csIyiyO [zIdxPrev];
+			csDixL0  = csDixO  [zIdxPrev];
+			csDiyL0  = csDiyO  [zIdxPrev];
+
+			csIxixL1 = csIxixE [zIdx];
+			csIxiyL1 = csIxiyE [zIdx];
+			csIyiyL1 = csIyiyE [zIdx];
+			csDixL1  = csDixE  [zIdx];
+			csDiyL1  = csDiyE  [zIdx];
 		  }
 
 		  for (int wr=0; wr<(WINDOW_SIZE+1); ++wr) {
@@ -344,11 +349,11 @@ namespace xf{
 		  csDixR0  = cbDixE [nIdx]  + delBotR0 * cIxBotR0 - delTopR0 * cIxTopR0;
 		  csDiyR0  = cbDiyE [nIdx]  + delBotR0 * cIyBotR0 - delTopR0 * cIyTopR0;
 
-		  csIxixR1 = cbIxixO [nIdx1] + cIxBotR1 * cIxBotR1 - cIxTopR1 * cIxTopR1;
-		  csIxiyR1 = cbIxiyO [nIdx1] + cIxBotR1 * cIyBotR1 - cIxTopR1 * cIyTopR1;
-		  csIyiyR1 = cbIyiyO [nIdx1] + cIyBotR1 * cIyBotR1 - cIyTopR1 * cIyTopR1;
-		  csDixR1  = cbDixO [nIdx1]  + delBotR1 * cIxBotR1 - delTopR1 * cIxTopR1;
-		  csDiyR1  = cbDiyO [nIdx1]  + delBotR1 * cIyBotR1 - delTopR1 * cIyTopR1;
+		  csIxixR1 = cbIxixO [nIdx] + cIxBotR1 * cIxBotR1 - cIxTopR1 * cIxTopR1;
+		  csIxiyR1 = cbIxiyO [nIdx] + cIxBotR1 * cIyBotR1 - cIxTopR1 * cIyTopR1;
+		  csIyiyR1 = cbIyiyO [nIdx] + cIyBotR1 * cIyBotR1 - cIyTopR1 * cIyTopR1;
+		  csDixR1  = cbDixO  [nIdx] + delBotR1 * cIxBotR1 - delTopR1 * cIxTopR1;
+		  csDiyR1  = cbDiyO  [nIdx] + delBotR1 * cIyBotR1 - delTopR1 * cIyTopR1;
 
 		  int tmpixix0 = (csIxixR0 - csIxixL0);
 		  int tmpixix1 = (csIxixR0 - csIxixL0) + (csIxixR1 - csIxixL1);
@@ -415,29 +420,22 @@ namespace xf{
 		  csDixE  [nIdx] = csDixR0;
 		  csDiyE  [nIdx] = csDiyR0;
 
-		  cbIxixO [nIdx1] = csIxixR1;
-		  cbIxiyO [nIdx1] = csIxiyR1;
-		  cbIyiyO [nIdx1] = csIyiyR1;
-		  cbDixO  [nIdx1] = csDixR1;
-		  cbDiyO  [nIdx1] = csDiyR1;
+		  cbIxixO [nIdx] = csIxixR1;
+		  cbIxiyO [nIdx] = csIxiyR1;
+		  cbIyiyO [nIdx] = csIyiyR1;
+		  cbDixO  [nIdx] = csDixR1;
+		  cbDiyO  [nIdx] = csDiyR1;
 
-		  csIxixO [nIdx1] = csIxixR1;
-		  csIxiyO [nIdx1] = csIxiyR1;
-		  csIyiyO [nIdx1] = csIyiyR1;
-		  csDixO  [nIdx1] = csDixR1;
-		  csDiyO  [nIdx1] = csDiyR1;
+		  csIxixO [nIdx] = csIxixR1;
+		  csIxiyO [nIdx] = csIxiyR1;
+		  csIyiyO [nIdx] = csIyiyR1;
+		  csDixO  [nIdx] = csDixR1;
+		  csDiyO  [nIdx] = csDiyR1;
 
-		  // zIdx is always odd, zIdx1 is even
-		  // nIdx is always even, nIdx1 is odd
-		  zIdx += 2;
-		  if (zIdx >= cols) zIdx = 1;
-		  zIdx1 += 2;
-		  if (zIdx1 == cols) zIdx1 = 0;
-
-		  nIdx += 2;
-		  if (nIdx == cols) nIdx = 0;
-		  nIdx1 += 2;
-		  if (nIdx1 >= cols) nIdx1 = 1;
+		  zIdx ++;
+		  if (zIdx == cols/2) zIdx = 0;
+		  nIdx ++;
+		  if (nIdx == cols/2) nIdx = 0;
 		}
 	  }
 
@@ -451,7 +449,7 @@ namespace xf{
 		img1Col0 [r] =0; img2Col0 [r] =0;
 		img1Col1 [r] =0; img2Col1 [r] =0;
 	  }
-	  for (int r=0; r < cols; ++r) {
+	  for (int r=0; r < cols/2; ++r) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 		#pragma HLS PIPELINE
 		csIxixO [r] = 0; csIxiyO [r] = 0; csIyiyO [r] = 0; csDixO [r] = 0; csDiyO [r] = 0;
@@ -588,7 +586,7 @@ namespace xf{
 
 	// top level wrapper to avoid dataflow problems
 	//void flowWrap (mywide_t frame0[NUM_WORDS], mywide_t frame1[NUM_WORDS], rgba2_t framef[NUM_WORDS])
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void flowWrap16 (ap_uint<16> *frame0, ap_uint<16> *frame1, ap_uint<64> *flowx, ap_uint<64> *flowy, int rows, int cols, int size)
 	{
 	//#pragma HLS data_pack variable=frame0
@@ -643,7 +641,7 @@ namespace xf{
 	  readMatRows16<ROWS, COLS, NPC, WINDOW_SIZE> (frame1, f1Stream, rows, cols, size);
 
 	  lbWrapper16<ROWS, COLS, NPC, WINDOW_SIZE> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
-	  computeSums16<ROWS, COLS, NPC, WINDOW_SIZE> (img1Col, img2Col, 
+	  computeSums16<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (img1Col, img2Col, 
 				   ixix0, ixiy0, iyiy0, dix0, diy0, 
 				   ixix1, ixiy1, iyiy1, dix1, diy1, rows, cols, size);
 
@@ -666,12 +664,12 @@ namespace xf{
 	// ulonglong = 64 bits, 32 bits per color pixel (rgba), so two color pix
 	//void fpga_optflow (unsigned short *frame0, unsigned short *frame1, unsigned long long *framef)
 	//void fpga_optflow (unsigned short frame0[NUM_WORDS], unsigned short frame1[NUM_WORDS], unsigned long long framef[NUM_WORDS])
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void fpga_optflow16 (ap_uint<16> *frame0, ap_uint<16> *frame1, ap_uint<64> *flowx, ap_uint<64> *flowy, int rows, int cols, int size)
 	{
 	#pragma HLS inline off
 
-	  flowWrap16<ROWS, COLS, NPC, WINDOW_SIZE> (frame0, frame1, flowx, flowy, rows, cols, size);
+	  flowWrap16<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (frame0, frame1, flowx, flowy, rows, cols, size);
 
 	  return;
 
@@ -713,7 +711,7 @@ namespace xf{
 	// TODO: 
 	// 1. Dont need the entire column for img1Win and img2Win. Need only the kernel
 	// 2. Full line buffer is not needed
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void computeSums (hls::stream <pix_t> img1Col [(WINDOW_SIZE+1)], 
 					  hls::stream <pix_t> img2Col [(WINDOW_SIZE+1)], 
 					  hls::stream <int>& ixix_out, 
@@ -742,21 +740,38 @@ namespace xf{
 	  int zIdx= - (WINDOW_SIZE-2);
 	  int nIdx = zIdx + WINDOW_SIZE-2;
 
+	#pragma HLS ARRAY_MAP variable=csIxix instance=cs vertical
+	#pragma HLS ARRAY_MAP variable=csIxiy instance=cs vertical
+	#pragma HLS ARRAY_MAP variable=csIyiy instance=cs vertical
+	#pragma HLS ARRAY_MAP variable=csDix  instance=cs vertical
+	#pragma HLS ARRAY_MAP variable=csDiy  instance=cs vertical
+
+    if (USE_URAM) {
+	#pragma HLS RESOURCE variable=csIxix core=XPM_MEMORY uram
+    }
+	else {
 	#pragma HLS RESOURCE variable=csIxix core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIxiy core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csIyiy core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDix core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=csDiy core=RAM_2P_BRAM
+	}
+	
 	#pragma HLS DEPENDENCE variable=csIxix inter WAR false
 	#pragma HLS DEPENDENCE variable=csIxiy inter WAR false
 	#pragma HLS DEPENDENCE variable=csIyiy inter WAR false
 	#pragma HLS DEPENDENCE variable=csDix  inter WAR false
 	#pragma HLS DEPENDENCE variable=csDiy  inter WAR false
+
+	#pragma HLS ARRAY_MAP variable=cbIxix instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIxiy instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbIyiy instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDix  instance=cb vertical
+	#pragma HLS ARRAY_MAP variable=cbDiy  instance=cb vertical
+
+    if (USE_URAM) {
+	#pragma HLS RESOURCE variable=cbIxix core=XPM_MEMORY uram
+    }
+    else {
 	#pragma HLS RESOURCE variable=cbIxix core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIxiy core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbIyiy core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbDix core=RAM_2P_BRAM
-	#pragma HLS RESOURCE variable=cbDiy core=RAM_2P_BRAM
+    }
+
 	#pragma HLS DEPENDENCE variable=cbIxix inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIxiy inter WAR false
 	#pragma HLS DEPENDENCE variable=cbIyiy inter WAR false
@@ -1008,7 +1023,7 @@ namespace xf{
 	}
 
 	// top level wrapper to avoid dataflow problems
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void flowWrap (ap_uint<8> *frame0, ap_uint<8> *frame1, float *flowx, float *flowy, int rows, int cols, int size)
 	{
 	#pragma HLS inline off
@@ -1048,7 +1063,7 @@ namespace xf{
 
 		lbWrapper<ROWS, COLS, NPC, WINDOW_SIZE> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
 	  
-		computeSums<ROWS, COLS, NPC, WINDOW_SIZE> (img1Col, img2Col, ixix, ixiy, iyiy, dix, diy, rows, cols, size);
+		computeSums<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (img1Col, img2Col, ixix, ixiy, iyiy, dix, diy, rows, cols, size);
 	  
 		computeFlow<ROWS, COLS, NPC, WINDOW_SIZE> (ixix, ixiy, iyiy, dix, diy, fx, fy, rows, cols, size);
 
@@ -1062,12 +1077,12 @@ namespace xf{
 	//  frame0 - First input frame (grayscale 1 byte per pixel)
 	//  frame1 - Second input frame (grayscale 1 byte per pixel)
 	//  framef - Output frame with flows visualized. 3 bytes per pixel + 1 byte padding 
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void fpga_optflow8 (ap_uint<8> *frame0, ap_uint<8> *frame1, float *flowx, float *flowy, int rows, int cols, int size)
 	{
 	#pragma HLS inline off
 
-	  flowWrap<ROWS, COLS, NPC, WINDOW_SIZE>(frame0, frame1, flowx, flowy, rows, cols, size);
+	  flowWrap<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM>(frame0, frame1, flowx, flowy, rows, cols, size);
 
 	  return;
 
@@ -1087,16 +1102,16 @@ namespace xf{
 #pragma SDS data copy("frame1.data"[0:"frame1.size"])
 #pragma SDS data copy("flowx.data"[0:"flowx.size"])
 #pragma SDS data copy("flowy.data"[0:"flowy.size"])
-template<int WINDOW_SIZE, int TYPE, int ROWS, int COLS, int NPC>
+template<int WINDOW_SIZE, int TYPE, int ROWS, int COLS, int NPC, bool USE_URAM = false>
 void DenseNonPyrLKOpticalFlow (xf::Mat<TYPE, ROWS, COLS, NPC> & frame0, xf::Mat<TYPE, ROWS, COLS, NPC> & frame1, xf::Mat<XF_32FC1, ROWS, COLS, NPC> & flowx, xf::Mat<XF_32FC1, ROWS, COLS, NPC> & flowy)
 {
 	if(NPC==XF_NPPC1)
 	{
-		fpga_optflow8 <ROWS, COLS, NPC, WINDOW_SIZE> ( (ap_uint<8> *) frame0.data, (ap_uint<8> *)frame1.data, (float *)flowx.data, (float *)flowy.data, frame0.rows, frame0.cols, frame0.size);
+		fpga_optflow8 <ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> ( (ap_uint<8> *) frame0.data, (ap_uint<8> *)frame1.data, (float *)flowx.data, (float *)flowy.data, frame0.rows, frame0.cols, frame0.size);
 	}
 	else
 	{
-		fpga_optflow16 <ROWS, COLS, NPC, WINDOW_SIZE> ( (ap_uint<16> *) frame0.data, (ap_uint<16> *) frame1.data, (ap_uint<64> *)flowx.data, (ap_uint<64> *)flowy.data, frame0.rows, frame0.cols, frame0.size);
+		fpga_optflow16 <ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> ( (ap_uint<16> *) frame0.data, (ap_uint<16> *) frame1.data, (ap_uint<64> *)flowx.data, (ap_uint<64> *)flowy.data, frame0.rows, frame0.cols, frame0.size);
 	}
 }
 }

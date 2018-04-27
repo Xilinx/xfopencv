@@ -2,3 +2,4 @@
 #define MAX_WIDTH  3840
 #define WORD_SZ 1
 #define KMED 25
+#define XF_USE_URAM false
