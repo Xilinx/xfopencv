@@ -532,15 +532,27 @@ namespace xf{
 
 	// line buffer for both input images. Can be split to a fn that models a single
 	// linebuffer
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void lbWrapper16 (hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > >& f0Stream, 
 					hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > >& f1Stream, 
 					hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > > img1Col[(WINDOW_SIZE+1)], 
 					hls::stream < mywide_t< XF_NPIXPERCYCLE(NPC) > > img2Col[(WINDOW_SIZE+1)], int rows, int cols, int size)
 	{
-	  static  mywide_t< XF_NPIXPERCYCLE(NPC) >  lb1 [(WINDOW_SIZE+1)][COLS/2], lb2 [(WINDOW_SIZE+1)][COLS/2];
-	#pragma HLS ARRAY_PARTITION variable=lb1 complete dim=1
-	#pragma HLS ARRAY_PARTITION variable=lb2 complete dim=1
+	  static pix_t lb1 [(WINDOW_SIZE+1)][COLS/XF_NPIXPERCYCLE(NPC)][XF_NPIXPERCYCLE(NPC)],
+	               lb2 [(WINDOW_SIZE+1)][COLS/XF_NPIXPERCYCLE(NPC)][XF_NPIXPERCYCLE(NPC)];
+
+    #pragma HLS ARRAY_MAP variable=lb1 instance=lbMap vertical
+    #pragma HLS ARRAY_MAP variable=lb2 instance=lbMap vertical
+
+    #pragma HLS ARRAY_RESHAPE variable=lb1 complete dim=1      
+    #pragma HLS ARRAY_RESHAPE variable=lb2 complete dim=1
+    #pragma HLS ARRAY_RESHAPE variable=lb1 complete dim=3      
+    #pragma HLS ARRAY_RESHAPE variable=lb2 complete dim=3
+
+    if (USE_URAM) {
+    #pragma HLS RESOURCE variable=lb1 core=XPM_MEMORY uram
+    #pragma HLS RESOURCE variable=lb2 core=XPM_MEMORY uram
+    }
 
 	  for (int r = 0; r < rows; r++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
@@ -550,36 +562,46 @@ namespace xf{
 		  #pragma HLS pipeline
 		  // shift up both linebuffers at col=c
 		  for (int i = 0; i < ((WINDOW_SIZE+1) - 1); i++) {
-			lb1 [i][c] = lb1 [i + 1][c];
-			img1Col [i]. write (lb1 [i][c]);
-			
-			lb2 [i][c] = lb2 [i+1][c];
-			img2Col [i]. write (lb2 [i][c]);
+			mywide_t< XF_NPIXPERCYCLE(NPC) > lb;
+
+			for (int k = 0; k <XF_NPIXPERCYCLE(NPC); k++) {
+			  lb.data[k] = lb1[i + 1][c][k];
+			  lb1[i][c][k] = lb.data[k];
+		    }
+ 			img1Col[i].write(lb);
+
+			for (int k = 0; k <XF_NPIXPERCYCLE(NPC); k++) {
+			  lb.data[k] = lb2[i + 1][c][k];
+			  lb2[i][c][k] = lb.data[k];
+		    }
+ 			img2Col[i].write(lb);
 		  }
 
 		  // read in the new pixels at col=c and row=bottom_of_lb
 		   mywide_t< XF_NPIXPERCYCLE(NPC) >  pix0 = f0Stream. read ();
-		  lb1 [(WINDOW_SIZE+1) - 1][c] = pix0;
 		  img1Col [(WINDOW_SIZE+1) - 1]. write (pix0);
 
 		   mywide_t< XF_NPIXPERCYCLE(NPC) >  pix1 = f1Stream. read ();
-		  lb2 [(WINDOW_SIZE+1) -1][c] = pix1;
 		  img2Col [(WINDOW_SIZE+1) - 1]. write (pix1);
+
+          for (int k = 0; k <XF_NPIXPERCYCLE(NPC); k++) {
+		    lb1 [(WINDOW_SIZE+1) - 1][c][k] = pix0.data[k];
+		    lb2 [(WINDOW_SIZE+1) - 1][c][k] = pix1.data[k];
+		  }
 		}
 	  }
 
 
 	  // cleanup
-	   mywide_t< XF_NPIXPERCYCLE(NPC) >  tmpClr;
-	  tmpClr. data [0] = 0;
-	  tmpClr. data [1] = 0;
-	  for (int r = 0; r < (WINDOW_SIZE+1); r++) {
-		  #pragma HLS LOOP_TRIPCOUNT min=1 max=WINDOW_SIZE+1
-		for (int c = 0; c < cols/2; c++) {
+      for (int c = 0; c < cols/2; c++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/2
 		  #pragma HLS PIPELINE
-		  lb1 [r][c] = tmpClr;
-		  lb2 [r][c] = tmpClr;
+	    for (int r = 0; r < (WINDOW_SIZE+1); r++) {
+		  #pragma HLS LOOP_TRIPCOUNT min=1 max=WINDOW_SIZE+1
+          for (int k = 0; k <XF_NPIXPERCYCLE(NPC); k++) {
+		    lb1[r][c][k] = 0;
+		    lb2[r][c][k] = 0;
+		  }
 		}
 	  }
 	}
@@ -640,7 +662,7 @@ namespace xf{
 	  readMatRows16<ROWS, COLS, NPC, WINDOW_SIZE> (frame0, f0Stream, rows, cols, size);
 	  readMatRows16<ROWS, COLS, NPC, WINDOW_SIZE> (frame1, f1Stream, rows, cols, size);
 
-	  lbWrapper16<ROWS, COLS, NPC, WINDOW_SIZE> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
+	  lbWrapper16  <ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
 	  computeSums16<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (img1Col, img2Col, 
 				   ixix0, ixiy0, iyiy0, dix0, diy0, 
 				   ixix1, ixiy1, iyiy1, dix1, diy1, rows, cols, size);
@@ -972,15 +994,21 @@ namespace xf{
 
 	// line buffer for both input images. Can be split to a fn that models a single
 	// linebuffer
-	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE>
+	template<int ROWS, int COLS, int NPC, int WINDOW_SIZE, bool USE_URAM>
 	static void lbWrapper (hls::stream <pix_t>& f0Stream, 
 					hls::stream <pix_t>& f1Stream, 
 					hls::stream <pix_t> img1Col[(WINDOW_SIZE+1)], 
 					hls::stream <pix_t> img2Col[(WINDOW_SIZE+1)], int rows, int cols, int size)
 	{
 	static pix_t lb1 [(WINDOW_SIZE+1)][COLS], lb2 [(WINDOW_SIZE+1)][COLS];
-	#pragma HLS ARRAY_PARTITION variable=lb1 complete dim=1
-	#pragma HLS ARRAY_PARTITION variable=lb2 complete dim=1
+	#pragma HLS ARRAY_MAP variable=lb1 instance=lbMap vertical
+	#pragma HLS ARRAY_MAP variable=lb2 instance=lbMap vertical
+	#pragma HLS ARRAY_RESHAPE variable=lb1 complete dim=1
+	#pragma HLS ARRAY_RESHAPE variable=lb2 complete dim=1
+	if (USE_URAM) {
+	#pragma HLS RESOURCE variable=lb1 core=XPM_MEMORY uram
+	#pragma HLS RESOURCE variable=lb2 core=XPM_MEMORY uram
+	}
 
 	  for (int r = 0; r < rows; r++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
@@ -1011,11 +1039,11 @@ namespace xf{
 
 
 	  // cleanup
-	  for (int r = 0; r < (WINDOW_SIZE+1); r++) {
-		  #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for (int c = 0; c < COLS; c++) {
+      for (int c = 0; c < cols; c++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 		  #pragma HLS PIPELINE
+        for (int r = 0; r < (WINDOW_SIZE+1); r++) {
+		  #pragma HLS LOOP_TRIPCOUNT min=1 max=WINDOW_SIZE+1
 		  lb1 [r][c] = 0;
 		  lb2 [r][c] = 0;
 		}
@@ -1061,7 +1089,7 @@ namespace xf{
 		readMatRows<ROWS, COLS, NPC, WINDOW_SIZE> (frame0, f0Stream, rows, cols, size);
 		readMatRows<ROWS, COLS, NPC, WINDOW_SIZE> (frame1, f1Stream, rows, cols, size);
 
-		lbWrapper<ROWS, COLS, NPC, WINDOW_SIZE> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
+		lbWrapper  <ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (f0Stream, f1Stream, img1Col, img2Col, rows, cols, size);
 	  
 		computeSums<ROWS, COLS, NPC, WINDOW_SIZE, USE_URAM> (img1Col, img2Col, ixix, ixiy, iyiy, dix, diy, rows, cols, size);
 	  
