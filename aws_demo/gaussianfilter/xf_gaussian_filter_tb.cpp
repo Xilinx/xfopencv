@@ -106,9 +106,9 @@ int main(int argc, char **argv)
   double minval = 256, maxval = 0;
   int cnt = 0;
 
-  for( int i = 0; i < cv_img_inp.rows; i++ ) 
+  for( int i = 0; i < diff.rows; i++ ) 
     {
-      for( int j = 0; j < cv_img_inp.cols; j++ ) 
+      for( int j = 0; j < diff.cols; j++ ) 
         {
           uchar v = diff.at<uchar>(i, j);
 
