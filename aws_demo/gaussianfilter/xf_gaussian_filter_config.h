@@ -29,39 +29,65 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 
 #ifndef _XF_GAUSSIAN_FILTER_CONFIG_H_
-#define _XF_GAUSSIAN_FILTER_CONFIG_H_
+//{
+    #define _XF_GAUSSIAN_FILTER_CONFIG_H_
 
-#include "hls_stream.h"
-#include "common/xf_common.h"
-#include "common/xf_utility.h"
-#include "imgproc/xf_gaussian_filter.hpp"
-#include "xf_config_params.h"
+    #include "hls_stream.h"
+    #include "common/xf_common.h"
+    #include "common/xf_utility.h"
+    #include "imgproc/xf_gaussian_filter.hpp"
+    #include "xf_config_params.h"
 
-typedef unsigned short int  uint16_t;
+    typedef unsigned short int  uint16_t;
 
-#define WIDTH 1920
-#define HEIGHT 1080
+    #define SCALE    ( 0.5f )
 
+    #define ROWS_INP ( 1080 )
+    #define COLS_INP ( 1920 )
 
-#if FILTER_SIZE_3
-#define FILTER_WIDTH 3
-#define FILTER 3
-#elif FILTER_SIZE_5
-#define FILTER_WIDTH 5
-#define FILTER 5
-#elif FILTER_SIZE_7
-#define FILTER_WIDTH 7
-#define FILTER 7
-#endif
+    #define ROWS_OUT ( ROWS_INP / 2 )
+    #define COLS_OUT ( COLS_INP / 2 )
 
-#if NO
-#define NPC1 XF_NPPC1
-#endif
-#if RO
-#define NPC1 XF_NPPC8
-#endif
+    //----------------- Filters parameters -----------------//
 
-void gaussian_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT/2, WIDTH/2, NPC1>&imgOutput, float sigma);
+    #define XF_RESIZE_INTERPOLATION XF_INTERPOLATION_NN          // Interpolation type for xf::resize() inside kernel
+    #define CV_RESIZE_INTERPOLATION cv::INTER_NEAREST            // Interpolation type for cv::resize() called from testbench
+                                                                    
+    #define XF_GAUSSIAN_BORDER  XF_BORDER_CONSTANT               // Border type of xfopencv Gaussian filter inside kernel
+    #define CV_GAUSSIAN_BORDER  cv::BORDER_CONSTANT              // Border type of   opencv Gaussian filter called from testbench
 
+    #if FILTER_SIZE_3                                            // Set Gaussian filter parameters depending on constant defined in xf_config_params.h
+    //{
+        #define FILTER_WIDTH (  3  )
+        #define FILTER       (  3  )
+        #define SIGMA        ( 0.5f)
+    //}
+    #elif FILTER_SIZE_5
+    //{
+        #define FILTER_WIDTH (    5    )
+        #define FILTER       (    5    )
+        #define SIGMA        ( 0.8333f )
+    //}
+    #elif FILTER_SIZE_7
+    //{
+        #define FILTER_WIDTH (     7    )
+        #define FILTER       (     7    )
+        #define SIGMA        ( 1.16666f )
+    //}
+    #endif
 
+    #if NO
+    //{
+        #define NPC1 XF_NPPC1
+    //}
+    #endif
+
+    #if RO
+    //{
+        #define NPC1 XF_NPPC8
+    //}
+    #endif
+
+    void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> &img_out, float sigma);
+//}
 #endif //_XF_GAUSSIAN_FILTER_CONFIG_H_

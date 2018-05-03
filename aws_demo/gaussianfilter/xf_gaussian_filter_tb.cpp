@@ -36,105 +36,104 @@
 
 #include "xf_gaussian_filter_config.h"
 
-
 using namespace std;
-
 
 int main(int argc, char **argv) 
 {
-
-	if (argc != 2)
-	  {
-		  printf("Usage: <executable> <input image path> \n");
-		  return -1;
-	  }
-
-	cv::Mat in_img, out_img, ocv_ref, ocv_ref_s, in_img_gau;
-	cv::Mat in_gray, in_gray1, diff;
-
-	in_img = cv::imread(argv[1], 0); // reading in the color image
-
-	if (!in_img.data) 
+  if (argc != 2)
     {
-		  printf("Failed to load the image ... !!!");
-		  return -1;
-	  }
+      printf("Usage: <executable> <input image path> \n");
+      return -1;
+    }
 
-	//extractChannel(in_img, in_gray, 1);
-	diff.create(in_img.rows/2, in_img.cols/2, in_img.depth()); // create memory for diff image
-	
-  ocv_ref.create(in_img.rows, in_img.cols, in_img.depth()); // create memory for OCV output image
+  cv::Mat cv_img_inp, cv_img_out, cv_img_ref;
+  cv::Mat diff;
 
-  ocv_ref_s.create(in_img.rows/2, in_img.cols/2, in_img.depth()); // create memory for resized OCV output image
+  int rows_out, cols_out;
 
-  #if FILTER_WIDTH==3
-	  float sigma = 0.5f;
-  #endif
+  cv_img_inp = cv::imread(argv[1], 0); // reading in the color image
 
-  #if FILTER_WIDTH==7
-	  float sigma=1.16666f;
-  #endif
+  if (!cv_img_inp.data) 
+    {
+      printf("Failed to load the image ... !!!");
+      return -1;
+    }
 
-  #if FILTER_WIDTH==5
-	  float sigma = 0.8333f;
-  #endif
+  rows_out = cv_img_inp.rows * SCALE;
+  cols_out = cv_img_inp.cols * SCALE;
 
+  cv_img_ref.create(cv_img_inp.rows, cv_img_inp.cols, cv_img_inp.depth()); // create memory for OCV output image
 
-	// OpenCV Gaussian filter function
-	cv::GaussianBlur(in_img, ocv_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH),FILTER_WIDTH / 6.0, FILTER_WIDTH / 6.0, cv::BORDER_CONSTANT);
+  cv_img_out.create(rows_out, cols_out, cv_img_inp.depth()); // create memory for OCV output image
 
-  cv::resize(ocv_ref, ocv_ref_s, cvSize(ocv_ref_s.cols, ocv_ref_s.rows), 0, 0, cv::INTER_NEAREST );
+  float sigma = SIGMA;
 
-	imwrite("output_ocv.png", ocv_ref);
-	imwrite("output_ocv_s.png", ocv_ref_s);
+  // OpenCV Gaussian filter function
+  cv::GaussianBlur(cv_img_inp, cv_img_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH), SIGMA, SIGMA, CV_GAUSSIAN_BORDER);
 
+  cv::resize(cv_img_ref, cv_img_out, cvSize(cv_img_out.cols, cv_img_out.rows), 0, 0, CV_RESIZE_INTERPOLATION );
 
-	xf::Mat<XF_8UC1, HEIGHT  , WIDTH  , NPC1> imgInput (in_img.rows  ,in_img.cols  );
-	xf::Mat<XF_8UC1, HEIGHT/2, WIDTH/2, NPC1> imgOutput(in_img.rows/2,in_img.cols/2);
-
-	//imgInput.copyTo(in_img.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+  imwrite("cv_img_ref.jpg", cv_img_ref);
+  imwrite("cv_img_out.jpg", cv_img_out);
 
 
-	gaussian_filter_accel(imgInput, imgOutput, sigma);
+  diff.create(cv_img_out.rows, cv_img_out.cols, cv_img_out.depth()); // create memory for diff image
 
 
-	// Write output image
-	xf::imwrite("hls_out.jpg",imgOutput);
+  //=====================================================================//
 
-	//imwrite("output_hls.png", out_img);
-	xf::absDiff(ocv_ref_s, imgOutput, diff); // Compute absolute difference image
 
-	imwrite("error.png", diff); // Save the difference image for debugging purpose
+  xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> xf_img_inp(cv_img_inp.rows,cv_img_inp.cols);
+  xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> xf_img_out(cv_img_out.rows,cv_img_out.cols);
 
-	// 	Find minimum and maximum differences.
+  xf_img_inp = xf::imread<XF_8UC1, ROWS_INP, COLS_INP, NPC1>(argv[1], 0);
 
-	double minval = 256, maxval = 0;
-	int cnt = 0;
-	for (int i = 0; i < diff.rows; i++) {
-		for (int j = 0; j < diff.cols; j++) {
-			uchar v = diff.at<uchar>(i, j);
-			if (v > 0)
-				cnt++;
-			if (minval > v)
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0 * (float) cnt / (diff.rows * diff.cols);
-	printf(
-			"Minimum error in intensity = %f\n\
-				Maximum error in intensity = %f\n\
-				Percentage of pixels above error threshold = %f\n",
-			minval, maxval, err_per);
+  gaussian_filter_accel(xf_img_inp, xf_img_out, sigma);
 
-	if(err_per > 1){
-		printf("\nTest failed\n");
-		return -1;
-	}
-	else{
-		printf("\nTest Pass\n");
-	return 0;
-	}
+
+  // Write output image
+  xf::imwrite("xf_img_out.jpg",xf_img_out);
+
+
+  xf::absDiff(cv_img_out, xf_img_out, diff); // Compute absolute difference image
+
+  imwrite("error.png", diff); // Save the difference image for debugging purpose
+
+  // Find minimum and maximum differences.
+
+  #define THRESHOLD 1
+
+  double minval = 256, maxval = 0;
+  int cnt = 0;
+
+  for( int i = 0; i < cv_img_inp.rows; i++ ) 
+    {
+      for( int j = 0; j < cv_img_inp.cols; j++ ) 
+        {
+          uchar v = diff.at<uchar>(i, j);
+
+          if( v > THRESHOLD )  
+            cnt++;
+          
+          if (minval > v) minval = v;
+          if (maxval < v) maxval = v;
+        }
+    }
+
+  float err_per = 100.0 * (float) cnt / (cv_img_inp.rows * cv_img_inp.cols);
+  
+  printf( "\nMinimum error in intensity = %f\n", minval);
+  printf(   "Maximum error in intensity = %f\n", maxval);
+
+  printf( "\nPercentage of pixels above error threshold = %f\n", err_per);
+        
+  if(err_per > 1) 
+    {  
+      printf("\nTest Failed\n");  
+      return -1; 
+    }
+
+  printf("\nTest Pass\n");  
+  
+  return 0;
 }

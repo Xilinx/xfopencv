@@ -6,7 +6,7 @@
 
 #include "xf_gaussian_filter_config.h"
 
-void gaussian_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput, xf::Mat<XF_8UC1, HEIGHT/2, WIDTH/2, NPC1> &imgOutput, float sigma)
+void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> &img_out, float sigma)
 {
     std::vector<cl::Device> devices = xcl::get_xil_devices();
 
@@ -28,29 +28,28 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput, xf::
 
     //----------- Allocate Buffer in Global Memory -----------//
 
-    cl::Buffer buffer_inp(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY , imgInput.rows  * imgInput.cols, imgInput.data);
-    cl::Buffer buffer_out(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, imgOutput.rows * imgOutput.cols, imgOutput.data);
+    cl::Buffer buffer_inp(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY , img_inp.rows * img_inp.cols, img_inp.data);
+    cl::Buffer buffer_out(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY, img_out.rows * img_out.cols, img_out.data);
 
     std::vector<cl::Memory> writeBufVec;
     writeBufVec.push_back(buffer_inp);
     
-		//----------- Migrate  input data to device global memory -----------//
+    //----------- Migrate  input data to device global memory -----------//
     
-		q.enqueueMigrateMemObjects(writeBufVec,0);        // 0 means from host
+    q.enqueueMigrateMemObjects(writeBufVec,0);        // 0 means from host
 
     auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, int, int, float, int, int >(kernel);
 
     //----------- Launch the Kernel -----------//
 
-    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_inp, buffer_out, imgInput.rows, imgInput.cols, sigma, imgOutput.rows, imgOutput.cols);
+    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_inp, buffer_out, img_inp.rows, img_inp.cols, sigma, img_out.rows, img_out.cols);
     
-		//----------- Copy Result from Device Global Memory to Host Local Memory -----------//
+    //----------- Copy Result from Device Global Memory to Host Local Memory -----------//
     
     std::vector<cl::Memory> readBufVec;
     readBufVec.push_back(buffer_out);
 
-		q.enqueueMigrateMemObjects(readBufVec,CL_MIGRATE_MEM_OBJECT_HOST);
+    q.enqueueMigrateMemObjects(readBufVec,CL_MIGRATE_MEM_OBJECT_HOST);
 
     q.finish();
-
 }
