@@ -444,7 +444,7 @@ namespace xf{
 	  // TODO zero in the line buffer instead, for r < WINDOW_SIZE
 	  for (int r = 0; r < (WINDOW_SIZE+1); r++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=WINDOW_SIZE+1
-		#pragma HLS PIPELINE
+		#pragma HLS UNROLL
 		img1Win [r] = 0; img1Win [r+(WINDOW_SIZE+1)] = 0; img2Win [r] = 0;
 		img1Col0 [r] =0; img2Col0 [r] =0;
 		img1Col1 [r] =0; img2Col1 [r] =0;
@@ -897,7 +897,7 @@ namespace xf{
 	  // TODO zero in the line buffer instead, for r < WINDOW_SIZE
 	  for (int r = 0; r < (WINDOW_SIZE+1); r++) {
 		  #pragma HLS LOOP_TRIPCOUNT min=1 max=WINDOW_SIZE+1
-		#pragma HLS PIPELINE
+		#pragma HLS UNROLL
 		img1Win [r] = 0; img1Win [r+(WINDOW_SIZE+1)] = 0; img2Win [r] = 0;
 		img1Col_ [r] =0; img2Col_ [r] =0;
 	  }
