@@ -25,7 +25,7 @@ rm -f LOGS_FILES_GO_HERE.txt
 
 $SDACCEL_DIR/tools/create_sdaccel_afi.sh -xclbin=xf_gaussian_filter.xclbin -s3_bucket=xfg -s3_dcp_key=dcp -s3_logs_key=log
 
-cat *afi*
+cat *afi_id*
 
-@echo use following command to check afi ready
-@echo aws ec2 describe-fpga-images --fpga-image-id <afi id>
+echo "use following command to check afi ready"
+echo "aws ec2 describe-fpga-images --fpga-image-id <afi id>"
