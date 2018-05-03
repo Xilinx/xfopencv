@@ -10,6 +10,18 @@
       <Platform>Win32</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\gaussianfilter\makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_accel_aws.cpp" />
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_kernel_aws.cpp" />
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_tb.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\gaussianfilter\xf_config_params.h" />
+    <ClInclude Include="..\..\gaussianfilter\xf_gaussian_filter_config.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4F175088-E060-4DD3-B199-92A67421ACE2}</ProjectGuid>
     <RootNamespace>Gaussian_Filter</RootNamespace>
@@ -43,7 +55,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;..\..\..\..\OpenCV;..\..\..\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -55,7 +67,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;..\..\..\..\OpenCV;..\..\..\..\OpenCL;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -63,18 +75,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\..\examples\gaussianfilter\xf_gaussian_filter_accel.cpp" />
-    <ClCompile Include="..\..\..\examples\gaussianfilter\xf_gaussian_filter_tb.cpp" />
-    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_accel_aws.cpp" />
-    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_kernel_aws.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\..\..\examples\gaussianfilter\xf_config_params.h" />
-    <ClInclude Include="..\..\..\examples\gaussianfilter\xf_gaussian_filter_config.h" />
-    <ClInclude Include="..\..\..\examples\gaussianfilter\xf_headers.h" />
-    <ClInclude Include="..\..\..\include\imgproc\xf_gaussian_filter.hpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
