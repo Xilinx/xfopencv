@@ -99,8 +99,13 @@ void xFPyrDownprocessgaussian(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
+
+        XF_TNAME(DEPTH,NPC) bufWord[WIN_SZ];
+#pragma HLS ARRAY_PARTITION variable=bufWord complete dim=1
+	    for (int k=0; k<WIN_SZ; k++) bufWord[k] = buf[k][col];
 		if(row < img_height && col < img_width)
-			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
+			bufWord[row_ind[win_size-1]] = _src_mat.read(); // Read data
+	    for (int k=0; k<WIN_SZ; k++) buf[k][col] = bufWord[k];
 
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
