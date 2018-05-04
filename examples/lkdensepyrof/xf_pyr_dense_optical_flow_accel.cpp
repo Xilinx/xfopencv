@@ -35,10 +35,10 @@ void pyr_dense_optical_flow_pyr_down_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1
 	{
 	#pragma SDS async(1)
 	#pragma SDS resource(1)
-		xf::pyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr1[pyr_comp], mat_imagepyr1[pyr_comp+1]);
+		xf::pyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1,XF_USE_URAM>(mat_imagepyr1[pyr_comp], mat_imagepyr1[pyr_comp+1]);
 	#pragma SDS async(2)
 	#pragma SDS resource(2)
-		xf::pyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>(mat_imagepyr2[pyr_comp], mat_imagepyr2[pyr_comp+1]);
+		xf::pyrDown<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1,XF_USE_URAM>(mat_imagepyr2[pyr_comp], mat_imagepyr2[pyr_comp+1]);
 	#pragma SDS wait(1)
 	#pragma SDS wait(2)	
 	}

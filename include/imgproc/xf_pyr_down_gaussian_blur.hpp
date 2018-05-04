@@ -158,7 +158,7 @@ void xFPyrDownprocessgaussian(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM>
 void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_out_mat, ap_uint<8> win_size,
 		uint16_t img_height, uint16_t img_width)
@@ -181,8 +181,12 @@ void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	XF_TNAME(DEPTH,NPC) P0;
 
 	XF_TNAME(DEPTH,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))];
-#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+#pragma HLS ARRAY_RESHAPE variable=buf complete dim=1 	
+if (USE_URAM) {
+#pragma HLS RESOURCE variable=buf core=XPM_MEMORY uram
+} else {
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
+}
 
 //initializing row index
 	
@@ -237,7 +241,7 @@ void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM = false>
 void xFPyrDownGaussianBlur(
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_src,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_dst, ap_uint<8> win_size,
@@ -249,7 +253,7 @@ void xFPyrDownGaussianBlur(
 
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 
-	xf_pyrdown_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ>(_src, _dst,WIN_SZ,imgheight,imgwidth);
+	xf_pyrdown_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ, USE_URAM>(_src, _dst,WIN_SZ,imgheight,imgwidth);
 
 }
 
