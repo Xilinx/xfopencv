@@ -5,168 +5,232 @@
 
 #include "xf_stereo_pipeline_config.h"
 
-template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1, bool USE_URAM = false>
-void remap_aws( XF_TNAME(SRC_T,NPC) *_src_mat, XF_TNAME(SRC_T,NPC) *_remapped_mat, XF_TNAME(SRC_T,NPC) *_mapx_mat, XF_TNAME(SRC_T,NPC) *_mapy_mat, int m_rows, int m_cols );
+extern "C"                                            
+  {                                                      
+    void xf_stereopipeline                            
+      (                                               
+        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_l ,       
+                                                      
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_r,       
+                                                      
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s ,       
 
+        XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_l,       
+        XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_l,         
 
-extern "C"
-  {
-    void xf_stereopipeline
-      (
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *leftMat ,            //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat,   
-                            
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *rightMat,            //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, 
-    
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *dispMat ,            //xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat,
-	  
-        XF_TNAME(XF_32FC1, XF_NPPC1) *mapxLMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxLMat,  //out + internal stream
-                                                                              
-        XF_TNAME(XF_32FC1, XF_NPPC1) *mapyLMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyLMat,  //out + internal stream
-                                                                              
-        XF_TNAME(XF_32FC1, XF_NPPC1) *mapxRMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxRMat,  //out + internal stream
-                                                                              
-        XF_TNAME(XF_32FC1, XF_NPPC1) *mapyRMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyRMat,  //out + internal stream
+        ap_fixed<32,12> *cameraMA_l_fix, // ap_fixed<32,12> *cameraMA_r_fix,                                                     
+        ap_fixed<32,12> *distC_l_fix   , // ap_fixed<32,12> *distC_r_fix   ,                                                     
+        ap_fixed<32,12> *irA_l_fix     , // ap_fixed<32,12> *irA_r_fix     ,                                                     
 
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *leftRemappedMat,     //xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftRemappedMat, 
-                            
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *rightRemappedMat,     //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightRemappedMat,
-	  
-        xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state, 
-    
-        ap_fixed<32,12> *cameraMA_l_fix,  ap_fixed<32,12> *cameraMA_r_fix, 
-        ap_fixed<32,12> *distC_l_fix   ,  ap_fixed<32,12> *distC_r_fix   , 
-	      ap_fixed<32,12> *irA_l_fix     ,  ap_fixed<32,12> *irA_r_fix     , 
-
-        int _cm_size, int _dc_size
-
-        int rows,
-        int cols 
-      );
+        int cm_size, int dc_size,                   
+                                                      
+        int rows,                                     
+        int cols                                      
+      );                                                                                                                                                        
   }
 
-void xf_stereopipeline(
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *leftMat ,            //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat,   
-                            
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *rightMat,            //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, 
-    
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *dispMat ,            //xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat,
-	  
-                            XF_TNAME(XF_32FC1, XF_NPPC1) *mapxLMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxLMat,  //out + internal stream
-                                                                              
-                            XF_TNAME(XF_32FC1, XF_NPPC1) *mapyLMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyLMat,  //out + internal stream
-                                                                              
-                            XF_TNAME(XF_32FC1, XF_NPPC1) *mapxRMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxRMat,  //out + internal stream
-                                                                              
-                            XF_TNAME(XF_32FC1, XF_NPPC1) *mapyRMat,            //xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyRMat,  //out + internal stream
+void xf_stereopipeline(                                                  
+                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_l,      
+                                                                         
+//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_r,      
+                                                                         
+//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s,      
 
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *leftRemappedMat,     //xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftRemappedMat, 
-                            
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *rightRemappedMat,     //xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightRemappedMat,
-	  
-                            xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state, 
-    
-                            ap_fixed<32,12> *cameraMA_l_fix,  ap_fixed<32,12> *cameraMA_r_fix, 
-                            
-                            ap_fixed<32,12> *distC_l_fix   ,  ap_fixed<32,12> *distC_r_fix   , 
-	                          
-                            ap_fixed<32,12> *irA_l_fix     ,  ap_fixed<32,12> *irA_r_fix     , 
+                            XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_l,       
+                            XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_l,         
 
-                            int _cm_size, int _dc_size,
-
-                            int rows,
-                            int cols 
+                            ap_fixed<32,12> *cameraMA_l_fix, // ap_fixed<32,12> *cameraMA_r_fix,                                                     
+                            ap_fixed<32,12> *distC_l_fix   , // ap_fixed<32,12> *distC_r_fix   ,                                                     
+                            ap_fixed<32,12> *irA_l_fix     , // ap_fixed<32,12> *irA_r_fix     ,                                                     
+                                                                         
+                            int cm_size, int dc_size,                  
+                                                                         
+                            int rows,                                    
+                            int cols                                     
                          )
 {
-  #pragma HLS INTERFACE m_axi     port=leftMat    offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=rightMat   offset=slave bundle=gmem
+  #pragma HLS INTERFACE m_axi     port=img_l      offset=slave bundle=gmem_0
+//  #pragma HLS INTERFACE m_axi     port=img_r      offset=slave bundle=gmem_0
                                                  
-  #pragma HLS INTERFACE m_axi     port=dispMat    offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=img_s      offset=slave bundle=gmem
 
-  #pragma HLS INTERFACE m_axi     port=mapxLMat   offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=mapyLMat   offset=slave bundle=gmem
+  #pragma HLS INTERFACE m_axi     port=img_map_x_l  offset=slave bundle=gmem_1
+  #pragma HLS INTERFACE m_axi     port=img_map_y_l  offset=slave bundle=gmem_1
 
-  #pragma HLS INTERFACE m_axi     port=mapxRMat   offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=mapyRMat   offset=slave bundle=gmem
-
-  #pragma HLS INTERFACE m_axi     port=leftRemappedMat   offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=rightRemappedMat  offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=mapxLMat   offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=mapyLMat   offset=slave bundle=gmem
+//
+//  #pragma HLS INTERFACE m_axi     port=mapxRMat   offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=mapyRMat   offset=slave bundle=gmem
+//
+//  #pragma HLS INTERFACE m_axi     port=leftRemappedMat   offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=rightRemappedMat  offset=slave bundle=gmem
 
 
   #pragma HLS INTERFACE m_axi     port=cameraMA_l_fix    offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=cameraMA_r_fix    offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=cameraMA_r_fix    offset=slave bundle=gmem
                                                          
   #pragma HLS INTERFACE m_axi     port=distC_l_fix       offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=distC_r_fix       offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=distC_r_fix       offset=slave bundle=gmem
                                                          
   #pragma HLS INTERFACE m_axi     port=irA_l_fix         offset=slave bundle=gmem
-  #pragma HLS INTERFACE m_axi     port=irA_r_fix         offset=slave bundle=gmem
+//  #pragma HLS INTERFACE m_axi     port=irA_r_fix         offset=slave bundle=gmem
 
 
-  #pragma HLS INTERFACE s_axilite     port=leftMat            bundle=control
-  #pragma HLS INTERFACE s_axilite     port=rightMat           bundle=control
+  #pragma HLS INTERFACE s_axilite     port=img_l              bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=img_r              bundle=control
                                                              
-  #pragma HLS INTERFACE s_axilite     port=dispMat            bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=img_s              bundle=control
+                                       
+  #pragma HLS INTERFACE s_axilite     port=img_map_x_l        bundle=control
+  #pragma HLS INTERFACE s_axilite     port=img_map_y_l        bundle=control                         
                                                              
-  #pragma HLS INTERFACE s_axilite     port=mapxLMat           bundle=control
-  #pragma HLS INTERFACE s_axilite     port=mapyLMat           bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=mapxLMat           bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=mapyLMat           bundle=control
                                                              
-  #pragma HLS INTERFACE s_axilite     port=mapxRMat           bundle=control
-  #pragma HLS INTERFACE s_axilite     port=mapyRMat           bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=mapxRMat           bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=mapyRMat           bundle=control
 
-  #pragma HLS INTERFACE s_axilite     port=leftRemappedMat    bundle=control
-  #pragma HLS INTERFACE s_axilite     port=rightRemappedMat   bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=leftRemappedMat    bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=rightRemappedMat   bundle=control
                                                               
                                                               
   #pragma HLS INTERFACE s_axilite     port=cameraMA_l_fix     bundle=control
-  #pragma HLS INTERFACE s_axilite     port=cameraMA_r_fix     bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=cameraMA_r_fix     bundle=control
                                                               
   #pragma HLS INTERFACE s_axilite     port=distC_l_fix        bundle=control
-  #pragma HLS INTERFACE s_axilite     port=distC_r_fix        bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=distC_r_fix        bundle=control
                                                               
   #pragma HLS INTERFACE s_axilite     port=irA_l_fix          bundle=control
-  #pragma HLS INTERFACE s_axilite     port=irA_r_fix          bundle=control
+//  #pragma HLS INTERFACE s_axilite     port=irA_r_fix          bundle=control
 
 
-  #pragma HLS INTERFACE s_axilite port=_cm_size    bundle=control
-  #pragma HLS INTERFACE s_axilite port=_dc_size    bundle=control
+  #pragma HLS INTERFACE s_axilite port=cm_size    bundle=control
+  #pragma HLS INTERFACE s_axilite port=dc_size    bundle=control
 
   #pragma HLS INTERFACE s_axilite port=rows        bundle=control
   #pragma HLS INTERFACE s_axilite port=cols        bundle=control
 
   #pragma HLS INTERFACE s_axilite port=return      bundle=control
 
-  #pragma HLS inline off
+
   #pragma HLS dataflow
 
 
+  const int pROWS = XF_HEIGHT;
+  const int pCOLS = XF_WIDTH ;
+
+  const int pNPC  = XF_NPPC1;
 
 
-  XF_TNAME(XF_32FC1, XF_NPPC1) map_x_l[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
-  XF_TNAME(XF_32FC1, XF_NPPC1) map_y_l[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
+//  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat;
+//  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat;
 
-  XF_TNAME(XF_32FC1, XF_NPPC1) map_x_r[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
-  XF_TNAME(XF_32FC1, XF_NPPC1) map_y_r[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
-
-  XF_TNAME(XF_8UC1 , XF_NPPC1) remapped_l[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
-  XF_TNAME(XF_8UC1 , XF_NPPC1) remapped_r[ XF_HEIGHT * (XF_WIDTH>>(XF_BITSHIFT(XF_NPPC1))) ];
-
-
-
-	xf::xFInitUndistortRectifyMapInverseKernel<XF_HEIGHT, XF_WIDTH, XF_CAMERA_MATRIX_SIZE, ap_fixed<32,12>, XF_DIST_COEFF_SIZE, XF_TNAME(XF_32FC1, XF_NPPC1)>(cameraMA_l_fix, distC_l_fix, irA_l_fix, map_x_l, map_y_l, rows, cols);
-
-  remap_aws<XF_REMAP_BUFSIZE, XF_INTERPOLATION_BILINEAR, XF_8UC1, XF_32FC1, XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>( leftMat, remapped_l, map_x_l, map_y_l, rows, cols );	
+//  #pragma HLS stream variable=leftMat.data  depth=pCOLS/pNPC 
+//  #pragma HLS stream variable=rightMat.data depth=pCOLS/pNPC 
 
 
 
+//  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat;
+//
+//  #pragma HLS stream variable=dispMat.data  depth=pCOLS/pNPC 
 
-	xf::xFInitUndistortRectifyMapInverseKernel<XF_HEIGHT, XF_WIDTH, XF_CAMERA_MATRIX_SIZE, ap_fixed<32,12>, XF_DIST_COEFF_SIZE, XF_TNAME(XF_32FC1, XF_NPPC1)>(cameraMA_r_fix, distC_r_fix, irA_r_fix, map_x_r, map_y_r, rows, cols);
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_l;
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_l;
 
-  remap_aws<XF_REMAP_BUFSIZE, XF_INTERPOLATION_BILINEAR, XF_8UC1, XF_32FC1, XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>( rightMat, remapped_r, map_x_r, map_y_r, rows, cols );	
+  #pragma HLS stream variable=map_x_l.data depth=pCOLS/pNPC 
+  #pragma HLS stream variable=map_y_l.data depth=pCOLS/pNPC 
+
+//  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_r;
+//  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_r;
+
+//  #pragma HLS stream variable=map_x_r.data depth=pCOLS/pNPC 
+//  #pragma HLS stream variable=map_y_r.data depth=pCOLS/pNPC 
+
+  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_l;
+//  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_r;
+
+//  #pragma HLS stream variable=remapped_l.data depth=pCOLS/pNPC 
+//  #pragma HLS stream variable=remapped_r.data depth=pCOLS/pNPC 
+
+  //=================================================//
+
+//  xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
+
+//  ap_fixed<32,12> cameraMA_l_fix[XF_CAMERA_MATRIX_SIZE];
+//  ap_fixed<32,12> cameraMA_r_fix[XF_CAMERA_MATRIX_SIZE]; 
+
+//  #pragma HLS stream variable=cameraMA_l_fix depth=2 
+//  #pragma HLS stream variable=cameraMA_r_fix depth=2
+  
+//  ap_fixed<32,12> distC_l_fix[XF_DIST_COEFF_SIZE];
+//  ap_fixed<32,12> distC_r_fix[XF_DIST_COEFF_SIZE];
+
+//  #pragma HLS stream variable=distC_l_fix depth=2 
+//  #pragma HLS stream variable=distC_r_fix depth=2
+
+//  ap_fixed<32,12> irA_l_fix[XF_CAMERA_MATRIX_SIZE];
+//  ap_fixed<32,12> irA_r_fix[XF_CAMERA_MATRIX_SIZE];
+
+//  #pragma HLS stream variable=irA_l_fix depth=2 
+//  #pragma HLS stream variable=irA_r_fix depth=2
+
+  //================================================//
+
+
+//  for(int i=0; i < rows; i++)
+//    {
+//      #pragma HLS LOOP_TRIPCOUNT min=1 max=pROWS
+//
+//      for(int j=0; j < (cols >> (XF_BITSHIFT(XF_NPPC1))); j++)
+//        {
+//          #pragma HLS LOOP_TRIPCOUNT min=1 max=pCOLS/pNPC
+//          #pragma HLS PIPELINE
+//          #pragma HLS loop_flatten off
+//
+//          *(leftMat.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(img_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
+//        }
+//    }
+
+  
+  xf::InitUndistortRectifyMapInverse < XF_CAMERA_MATRIX_SIZE, XF_DIST_COEFF_SIZE, XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1 > (cameraMA_l_fix, distC_l_fix, irA_l_fix, map_x_l, map_y_l, cm_size, dc_size);
+
+//  xf::remap <XF_REMAP_BUFSIZE, XF_INTERPOLATION_BILINEAR, XF_8UC1, XF_32FC1, XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1, false> ( leftMat, remapped_l, map_x_l, map_y_l ); 
+
+
+
+//  xf::InitUndistortRectifyMapInverse < XF_CAMERA_MATRIX_SIZE, XF_DIST_COEFF_SIZE, XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1 > (cameraMA_r_fix, distC_r_fix, irA_r_fix, map_x_r, map_y_r, cm_size, dc_size);
+
+//  xf::remap <XF_REMAP_BUFSIZE, XF_INTERPOLATION_BILINEAR, XF_8UC1, XF_32FC1, XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1, false> ( rightMat, remapped_r, map_x_r, map_y_r); 
 
 
 
 
-	xf::xFFindStereoCorrespondenceLBM<XF_HEIGHT, XF_WIDTH, XF_8UC1, XF_16UC1, XF_NPPC1, SAD_WINDOW_SIZE, NO_OF_DISPARITIES, PARALLEL_UNITS>(remapped_l, remapped_r, dispMat, bm_state, rows, cols);
+//  xf::StereoBM <SAD_WINDOW_SIZE, NO_OF_DISPARITIES, PARALLEL_UNITS, XF_8UC1, XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> ( remapped_l, remapped_r, dispMat, bm_state );
+
+
+
+
+  for(int i=0; i < rows; i++)
+    {
+      #pragma HLS LOOP_TRIPCOUNT min=1 max=pROWS
+
+      for(int j=0; j < (cols >> (XF_BITSHIFT(XF_NPPC1))); j++)
+        {
+          #pragma HLS LOOP_TRIPCOUNT min=1 max=pCOLS/pNPC
+          #pragma HLS PIPELINE
+          #pragma HLS loop_flatten off
+
+          *(img_map_x_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_x_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
+          *(img_map_y_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_y_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
+        }
+    }
+
+
+
+
+
+
 }
 
 
@@ -175,68 +239,41 @@ void xf_stereopipeline(
 
 
 
+//    void xf_stereopipeline                                                                                                                       
+//      (                                                                                                                                          
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *leftMat ,          // xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat,                             
+//                                                         
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *rightMat,          // xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat,                            
+//                                                         
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *dispMat ,          // xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat,                            
+//                                                         
+//        XF_TNAME(XF_32FC1, XF_NPPC1) *mapxLMat,          // xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxLMat,    out + internal stream  
+//                                                         
+//        XF_TNAME(XF_32FC1, XF_NPPC1) *mapyLMat,          // xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyLMat,    out + internal stream  
+//                                                         
+//        XF_TNAME(XF_32FC1, XF_NPPC1) *mapxRMat,          // xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxRMat,    out + internal stream  
+//                                                         
+//        XF_TNAME(XF_32FC1, XF_NPPC1) *mapyRMat,          // xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyRMat,    out + internal stream  
+//                                                         
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *leftRemappedMat,   // xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftRemappedMat,                    
+//                                                         
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *rightRemappedMat,  // xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightRemappedMat,  
+//                                                                                                                               
+//        xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state,                                             
+//                                                                                                                               
+//        ap_fixed<32,12> *cameraMA_l_fix,  ap_fixed<32,12> *cameraMA_r_fix,                                                     
+//        ap_fixed<32,12> *distC_l_fix   ,  ap_fixed<32,12> *distC_r_fix   ,                                                     
+//        ap_fixed<32,12> *irA_l_fix     ,  ap_fixed<32,12> *irA_r_fix     ,                                                     
+//                                                                                                                               
+//        int cm_size, int dc_size                                                                                             
+//                                                                                                                               
+//        int rows,                                                                                                              
+//        int cols                                                                                                               
+//      );                                                                                                                       
 
 
 
 
 
-template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1, bool USE_URAM = false>
-void remap_aws( XF_TNAME(SRC_T,NPC) *_src_mat, XF_TNAME(SRC_T,NPC) *_remapped_mat, XF_TNAME(SRC_T,NPC) *_mapx_mat, XF_TNAME(SRC_T,NPC) *_mapy_mat, int m_rows, int m_cols )
-{
-  #pragma HLS inline off
-  #pragma HLS dataflow
 
-	assert ((MAP_T == XF_32FC1) && "The MAP_T must be XF_32FC1");
-	assert ((NPC == XF_NPPC1) && "The NPC must be XF_NPPC1");
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(MAP_T,NPC)> _mapx;
-	hls::stream< XF_TNAME(MAP_T,NPC)> _mapy;
-	hls::stream< XF_TNAME(DST_T,NPC)> _remapped;
-
-	int depth_est = WIN_ROWS * m_cols;
-
-	uint16_t rows = m_rows;
-	uint16_t cols = m_cols;
-
-	int loop_count = (rows*cols);
-	int TC=(ROWS*COLS);
-
-	int ishift = WIN_ROWS/2;
-	int row_tripcount = ROWS+WIN_ROWS;
-
-	xfremap_rows_loop:
-	for(int i = 0; i < rows+ishift; i++)
-	  {
-      #pragma HLS LOOP_FLATTEN OFF
-      #pragma HLS LOOP_TRIPCOUNT min=1 max=row_tripcount
-
-		  xfremap_cols_loop:
-		  for (int j = 0; j < cols; j++)
-		    {
-          #pragma HLS pipeline ii=1
-          #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
-
-			    if (i < rows) 
-            {
-				      _src.write(*(_src_mat + i*cols + j));
-			      }
-
-			    if (i >= ishift) 
-            {
-				      _mapx.write(*(_mapx_mat + (i-ishift)*cols + j));
-				      _mapy.write(*(_mapy_mat + (i-ishift)*cols + j));
-			      }
-		    }
-	  }
-
-	xf::xFRemapKernel <WIN_ROWS,INTERPOLATION_TYPE,ROWS,COLS,USE_URAM> (_src, _remapped, _mapx, _mapy, rows, cols);
-
-	xfremap_output_loop:
-	for (int i = 0; i < loop_count; i++)
-	  {
-      #pragma HLS pipeline ii=1
-      #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-		  _remapped_mat[i] = _remapped.read();
-	  }
-}
