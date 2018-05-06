@@ -37,7 +37,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ap_int.h"
 
-#define __ABS(X) ((X) < 0 ? (-(X)) : (X))  
+// #define __ABS(X) ((X) < 0 ? (-(X)) : (X))  
 
 //Channels of an image
 enum _channel_extract
