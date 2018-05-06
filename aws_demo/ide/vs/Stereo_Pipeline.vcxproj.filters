@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <None Include="..\..\stereopipeline\makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\stereopipeline\xf_stereo_pipeline_tb.cpp" />
+    <ClCompile Include="..\..\stereopipeline\xf_stereo_pipeline_kernel_aws.cpp" />
+    <ClCompile Include="..\..\stereopipeline\xf_stereo_pipeline_accel_aws.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="xfopencv">
+      <UniqueIdentifier>{c22c4267-6cf2-4761-b9f9-50716799aa60}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="h">
+      <UniqueIdentifier>{4f3f7a8a-73c4-455b-a5de-39d8d14135a4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\include\imgproc\xf_stereo_pipeline.hpp">
+      <Filter>xfopencv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\imgproc\xf_remap.hpp">
+      <Filter>xfopencv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\include\imgproc\xf_stereoBM.hpp">
+      <Filter>xfopencv</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\stereopipeline\xf_config_params.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\stereopipeline\xf_headers.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\stereopipeline\xf_stereo_pipeline_config.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\stereopipeline\cameraParameters.h">
+      <Filter>h</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

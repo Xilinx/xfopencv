@@ -10,6 +10,18 @@
     <ClInclude Include="..\..\..\examples\accumulate\xf_headers.h">
       <Filter>accumulate</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\examples\stereopipeline\cameraParameters.h">
+      <Filter>stereopipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\examples\stereopipeline\xf_config_params.h">
+      <Filter>stereopipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\examples\stereopipeline\xf_headers.h">
+      <Filter>stereopipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\examples\stereopipeline\xf_stereo_pipeline_config.h">
+      <Filter>stereopipeline</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\examples\accumulate\xf_accumulate_image_accel.cpp">
@@ -18,10 +30,27 @@
     <ClCompile Include="..\..\..\examples\accumulate\xf_accumulate_image_tb.cpp">
       <Filter>accumulate</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\examples\stereopipeline\xf_stereo_pipeline_accel.cpp">
+      <Filter>stereopipeline</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\examples\stereopipeline\xf_stereo_pipeline_tb.cpp">
+      <Filter>stereopipeline</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="accumulate">
       <UniqueIdentifier>{fdb0de10-a233-42a7-908e-33cb0564f49c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="stereopipeline">
+      <UniqueIdentifier>{8cbe6705-9bb3-4895-918d-c42dcf0d36f6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\examples\stereopipeline\Makefile">
+      <Filter>stereopipeline</Filter>
+    </None>
+    <None Include="..\..\..\examples\stereopipeline\description.json">
+      <Filter>stereopipeline</Filter>
+    </None>
   </ItemGroup>
 </Project>
