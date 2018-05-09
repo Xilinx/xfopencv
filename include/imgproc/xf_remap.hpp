@@ -137,7 +137,8 @@ void xFRemapLI(
 )
 {
 	// Add one to always get zero for boundary interpolation. Maybe need initialization here?
-	static DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2]; //AK,ZoTech: static added for initialization, otherwise X are generated in co-sim.
+    //AK,ZoTech: static may be added for initialization, otherwise X are generated in co-sim.
+	DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2];
 #pragma HLS array_partition complete variable=buf dim=2
 #pragma HLS array_partition complete variable=buf dim=4
 	SRC_T s;
