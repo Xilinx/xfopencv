@@ -46,6 +46,6 @@ void pyr_dense_optical_flow_pyr_down_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1
 
 void pyr_dense_optical_flow_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _current_img, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> & _next_image, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowin, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in, ap_uint<1> init_flag)
 {	
-	xf::densePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(_current_img, _next_image, _streamFlowin, _streamFlowout, level, scale_up_flag, scale_in, init_flag);
+	xf::densePyrOpticalFlow<NUM_LEVELS, NUM_LINES_FINDIT, WINSIZE_OFLOW, TYPE_FLOW_WIDTH, TYPE_FLOW_INT, XF_8UC1, HEIGHT, WIDTH, XF_NPPC1, XF_USE_URAM>(_current_img, _next_image, _streamFlowin, _streamFlowout, level, scale_up_flag, scale_in, init_flag);
 }
 
