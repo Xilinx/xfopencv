@@ -43,7 +43,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;..\..\..\..\OpenCV;..\..\..\..\OpenCL;..\..\..\..\SDx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -55,7 +55,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\include;..\..\..\examples\gaussianfilter;..\..\..\..\aws-fpga\SDAccel\examples\xilinx\libs\xcl2;..\..\..\..\OpenCV;..\..\..\..\OpenCL;..\..\..\..\SDx\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>

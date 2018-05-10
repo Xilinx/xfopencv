@@ -25,7 +25,7 @@ XF_EXAMPLE_DIR = $(XFOPENCV)/examples/gaussianfilter
 XCL2_LIB_DIR = $(SDACCEL_DIR)/examples/xilinx/libs/xcl2
 XCL_LIB_DIR  = $(SDACCEL_DIR)/examples/xilinx/libs/xcl
 
-CXXFLAGS += -DSDX_PLATFORM=$(SDX_PLATFORM) -D__USE_XOPEN2K8 
+CXXFLAGS += -DSDX_PLATFORM=$(SDX_PLATFORM) -D__USE_XOPEN2K8 -DHLS_NO_XIL_FPO_LIB
 CXXFLAGS += -I/opt/Xilinx/SDx/2017.1.op/runtime/include/1_2/ 
 CXXFLAGS += -I/opt/Xilinx/SDx/2017.1.op/include/         
 CXXFLAGS += -I$(XFOPENCV)/include/  
@@ -63,8 +63,8 @@ LDFLAGS += -Wl,-rpath,/opt/Xilinx/2017.1.rte.4ddr/runtime/lib/x86_64
 
 HOST_DEP = ../src/xcl2.hpp
 
-HOST_AWS_SRC +=  xf_gaussian_filter_accel_aws
-HOST_AWS_SRC +=  xf_gaussian_filter_tb
+HOST_AWS_SRC +=  xf_stereo_pipeline_accel_aws
+HOST_AWS_SRC +=  xf_stereo_pipeline_tb
 
 HOST_SDx_SRC +=  xcl2
 
@@ -79,7 +79,7 @@ HOST_XF_OBJ  +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_XF_SRC)) )
 
 HOST_OBJ = $(HOST_XF_OBJ) $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
 
-HOST_EXE ?= gaussian_filter_test
+HOST_EXE ?= run/stereo_pipeline_test
 
 BUILD_SUBDIRS += $(HOST_BLD_DIR)
 
@@ -97,11 +97,11 @@ XOCC_OPTS = -t hw --platform $(SDX_PLATFORM) --save-temps  --report system
 # OpenCL kernel files
 #
 
-BINARY_CONTAINERS += xf_gaussian_filter.xclbin
+BINARY_CONTAINERS += xf_stereo_pipeline.xclbin
 
 BUILD_SUBDIRS += build/kernel
-BINARY_CONTAINER_1_OBJS += build/kernel/xf_gaussian_filter.xo
-ALL_KERNEL_OBJS += build/kernel/xf_gaussian_filter.xo
+BINARY_CONTAINER_1_OBJS += build/kernel/xf_stereo_pipeline.xo
+ALL_KERNEL_OBJS += build/kernel/xf_stereo_pipeline.xo
 
 ALL_MESSAGE_FILES = $(subst .xo,.mdb,$(ALL_KERNEL_OBJS)) $(subst .xclbin,.mdb,$(BINARY_CONTAINERS))
 
@@ -137,14 +137,14 @@ nothing:
 # binary container: binary_container_1.xclbin
 #
 
-build/kernel/xf_gaussian_filter.xo: xf_gaussian_filter_kernel_aws.cpp
+build/kernel/xf_stereo_pipeline.xo: xf_stereo_pipeline_kernel_aws.cpp
 	@mkdir -p $(@D)                                                                                                                                                                                                                    #-I"$(XF_EXAMPLE_DIR)"
-	$(XOCC) $(XOCC_OPTS) -c -k xf_gaussian_filter --max_memory_ports xf_gaussian_filter --messageDb $(subst .xo,.mdb,$@) -I"$(<D)" --xp misc:solution_name=build/kernel/xocc_compile_kernel_xf_gaussian_filter -I"$(XFOPENCV)/include"                       -I/opt/Xilinx/SDx/2017.4/include/ocv -o"$@" "$<"
+	$(XOCC) $(XOCC_OPTS) -c -k xf_stereo_pipeline --max_memory_ports xf_stereo_pipeline --messageDb $(subst .xo,.mdb,$@) -I"$(<D)" --xp misc:solution_name=build/kernel/xocc_compile_kernel_xf_stereo_pipeline -I"$(XFOPENCV)/include"                       -I/opt/Xilinx/SDx/2017.4/include/ocv -o"$@" "$<"
 #	@echo -$(RM) $@
 
-xf_gaussian_filter.xclbin: $(BINARY_CONTAINER_1_OBJS)
-	-@echo $(XOCC) $(XOCC_OPTS) -l --nk xf_gaussian_filter:1  --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+) > xf_gaussian_filter.xclbin.sh
-	$(XOCC) $(XOCC_OPTS) -l --jobs 20 --nk xf_gaussian_filter:1 --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+)
+xf_stereo_pipeline.xclbin: $(BINARY_CONTAINER_1_OBJS)
+	-@echo $(XOCC) $(XOCC_OPTS) -l --nk xf_stereo_pipeline:1  --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+) > xf_stereo_pipeline.xclbin.sh
+	$(XOCC) $(XOCC_OPTS) -l --jobs 20 --nk xf_stereo_pipeline:1 --messageDb $(subst .xclbin,.mdb,$@) --xp misc:solution_name=build/kernel/xocc_link_kernel --remote_ip_cache /root/workspace/ip_cache -o"$@" $(+)
 
 #
 # host rules

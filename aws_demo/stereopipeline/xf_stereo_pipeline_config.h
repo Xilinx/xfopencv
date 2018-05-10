@@ -36,10 +36,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
-#include "imgproc/xf_stereo_pipeline.hpp"
-#include "imgproc/xf_remap.hpp"
-#include "imgproc/xf_stereoBM.hpp"
-
 #include "xf_config_params.h"
 
 
@@ -53,13 +49,31 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IN_TYPE      ap_uint<8>
 #define OUT_TYPE     ap_uint<16>
 
-/*
-void stereopipeline_accel(xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat, xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightMat, xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &dispMat,
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxLMat, xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyLMat, xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxRMat, 
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyRMat, xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftRemappedMat, xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &rightRemappedMat,
-  xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state, ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix, ap_fixed<32,12> *distC_l_fix, ap_fixed<32,12> *distC_r_fix, 
-  ap_fixed<32,12> *irA_l_fix, ap_fixed<32,12> *irA_r_fix, int _cm_size, int _dc_size);
-*/
+
+void stereo_pipeline_accel
+  (
+    xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_l       , xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_r, 
+                                                                    
+    xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_s       ,
+
+
+    xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_x_l     , 
+    xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_y_l     , 
+                                                                       xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_x_r, 
+                                                                       xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_y_r, 
+
+    xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_remaped_l    , xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_remaped_r,
+
+    xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state, 
+    
+    ap_fixed<32,12> *cameraMA_l_fix                                  , ap_fixed<32,12> *cameraMA_r_fix, 
+    ap_fixed<32,12> *distC_l_fix                                     , ap_fixed<32,12> *distC_r_fix   , 
+    ap_fixed<32,12> *irA_l_fix                                       , ap_fixed<32,12> *irA_r_fix     , 
+    
+    int cm_size, 
+    int dc_size
+  );
+
 
 #endif // _XF_STEREO_PIPELINE_CONFIG_H_
 

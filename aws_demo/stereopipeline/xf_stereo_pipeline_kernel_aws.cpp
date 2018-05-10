@@ -5,15 +5,20 @@
 
 #include "xf_stereo_pipeline_config.h"
 
+#include "imgproc/xf_stereo_pipeline.hpp"
+#include "imgproc/xf_remap.hpp"
+#include "imgproc/xf_stereoBM.hpp"
+
+
 extern "C"                                            
   {                                                      
-    void xf_stereopipeline                            
+    void xf_stereo_pipeline                            
       (                                               
         XF_TNAME(XF_8UC1 , XF_NPPC1) *img_l ,       
                                                       
         XF_TNAME(XF_8UC1 , XF_NPPC1) *img_r,       
                                                       
-//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s ,       
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s ,
 
 //         XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_l,       
 //         XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_l,         
@@ -21,26 +26,29 @@ extern "C"
 //         XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_r,       
 //         XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_r,         
 
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_l,       
-        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_r,       
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_l,       
+//        XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_r,       
 
         ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix,                                                     
         ap_fixed<32,12> *distC_l_fix   , ap_fixed<32,12> *distC_r_fix   ,                                                     
         ap_fixed<32,12> *irA_l_fix     , ap_fixed<32,12> *irA_r_fix     ,                                                     
 
-        int cm_size, int dc_size,                   
+        XF_TNAME(XF_16UC1 , XF_NPPC1) *img_s ,
+
+        int cm_size, 
+        int dc_size,                   
                                                       
         int rows,                                     
         int cols                                      
       );                                                                                                                                                        
   }
 
-void xf_stereopipeline(                                                  
+void xf_stereo_pipeline(                                                  
                             XF_TNAME(XF_8UC1 , XF_NPPC1) *img_l,      
                                                                          
                             XF_TNAME(XF_8UC1 , XF_NPPC1) *img_r,      
                                                                          
-//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s,      
+//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_s,
 
 //                             XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_l,       
 //                             XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_l,         
@@ -48,13 +56,15 @@ void xf_stereopipeline(
 //                             XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_x_r,       
 //                             XF_TNAME(XF_32FC1 , XF_NPPC1) *img_map_y_r,         
 
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_l,
-                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_r,
+//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_l,
+//                            XF_TNAME(XF_8UC1 , XF_NPPC1) *img_remapped_r,
   
                             ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix,                                                     
                             ap_fixed<32,12> *distC_l_fix   , ap_fixed<32,12> *distC_r_fix   ,                                                     
                             ap_fixed<32,12> *irA_l_fix     , ap_fixed<32,12> *irA_r_fix     ,                                                     
                                                                          
+                            XF_TNAME(XF_16UC1 , XF_NPPC1) *img_s,
+
                             int cm_size, int dc_size,                  
                                                                          
                             int rows,                                    
@@ -72,8 +82,8 @@ void xf_stereopipeline(
 //   #pragma HLS INTERFACE m_axi     port=img_map_x_r  offset=slave bundle=gmem_1
 //   #pragma HLS INTERFACE m_axi     port=img_map_y_r  offset=slave bundle=gmem_1
 
-  #pragma HLS INTERFACE m_axi     port=img_remapped_l offset=slave bundle=gmem_0_l
-  #pragma HLS INTERFACE m_axi     port=img_remapped_r offset=slave bundle=gmem_0_r
+//  #pragma HLS INTERFACE m_axi     port=img_remapped_l offset=slave bundle=gmem_0_l
+//  #pragma HLS INTERFACE m_axi     port=img_remapped_r offset=slave bundle=gmem_0_r
 
 //  #pragma HLS INTERFACE m_axi     port=mapxLMat   offset=slave bundle=gmem
 //  #pragma HLS INTERFACE m_axi     port=mapyLMat   offset=slave bundle=gmem
@@ -94,6 +104,8 @@ void xf_stereopipeline(
   #pragma HLS INTERFACE m_axi     port=irA_l_fix         offset=slave bundle=gmem_l
   #pragma HLS INTERFACE m_axi     port=irA_r_fix         offset=slave bundle=gmem_r
 
+#pragma HLS INTERFACE m_axi     port=img_s      offset=slave bundle=gmem
+
 
   #pragma HLS INTERFACE s_axilite     port=img_l              bundle=control
   #pragma HLS INTERFACE s_axilite     port=img_r              bundle=control
@@ -106,8 +118,8 @@ void xf_stereopipeline(
 //   #pragma HLS INTERFACE s_axilite     port=img_map_x_r        bundle=control
 //   #pragma HLS INTERFACE s_axilite     port=img_map_y_r        bundle=control                         
 
-  #pragma HLS INTERFACE s_axilite     port=img_remapped_l     bundle=control                         
-  #pragma HLS INTERFACE s_axilite     port=img_remapped_r     bundle=control                         
+//  #pragma HLS INTERFACE s_axilite     port=img_remapped_l     bundle=control                         
+//  #pragma HLS INTERFACE s_axilite     port=img_remapped_r     bundle=control                         
                                                              
 //  #pragma HLS INTERFACE s_axilite     port=mapxLMat           bundle=control
 //  #pragma HLS INTERFACE s_axilite     port=mapyLMat           bundle=control
@@ -128,6 +140,7 @@ void xf_stereopipeline(
   #pragma HLS INTERFACE s_axilite     port=irA_l_fix          bundle=control
   #pragma HLS INTERFACE s_axilite     port=irA_r_fix          bundle=control
 
+#pragma HLS INTERFACE s_axilite     port=img_s              bundle=control
 
   #pragma HLS INTERFACE s_axilite port=cm_size    bundle=control
   #pragma HLS INTERFACE s_axilite port=dc_size    bundle=control
@@ -156,9 +169,9 @@ void xf_stereopipeline(
 
 
 
-//  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat;
-//
-//  #pragma HLS stream variable=dispMat.data  depth=pCOLS/pNPC 
+  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat;
+
+  #pragma HLS stream variable=dispMat.data  depth=pCOLS/pNPC 
 
   xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_l;
   xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_l;
@@ -180,7 +193,7 @@ void xf_stereopipeline(
 
   //=================================================//
 
-//  xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
+  xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
 
 //  ap_fixed<32,12> cameraMA_l_fix[XF_CAMERA_MATRIX_SIZE];
 //  ap_fixed<32,12> cameraMA_r_fix[XF_CAMERA_MATRIX_SIZE]; 
@@ -214,26 +227,11 @@ void xf_stereopipeline(
           #pragma HLS loop_flatten off
 
           *(leftMat .data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(img_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-//          *(rightMat.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(img_r + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-        }
-    }
-
-  for(int i=0; i < rows; i++)
-    {
-      #pragma HLS LOOP_TRIPCOUNT min=1 max=pROWS
-
-      for(int j=0; j < (cols >> (XF_BITSHIFT(XF_NPPC1))); j++)
-        {
-          #pragma HLS LOOP_TRIPCOUNT min=1 max=pCOLS/pNPC
-          #pragma HLS PIPELINE
-          #pragma HLS loop_flatten off
-
-//          *(leftMat .data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(img_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
           *(rightMat.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(img_r + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
         }
     }
 
-  
+ 
   xf::InitUndistortRectifyMapInverse < XF_CAMERA_MATRIX_SIZE, XF_DIST_COEFF_SIZE, XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1 > (cameraMA_l_fix, distC_l_fix, irA_l_fix, map_x_l, map_y_l, cm_size, dc_size);
 
   xf::remap <XF_REMAP_BUFSIZE, XF_INTERPOLATION_BILINEAR, XF_8UC1, XF_32FC1, XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1, false> ( leftMat, remapped_l, map_x_l, map_y_l ); 
@@ -247,7 +245,7 @@ void xf_stereopipeline(
 
 
 
-//  xf::StereoBM <SAD_WINDOW_SIZE, NO_OF_DISPARITIES, PARALLEL_UNITS, XF_8UC1, XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> ( remapped_l, remapped_r, dispMat, bm_state );
+  xf::StereoBM <SAD_WINDOW_SIZE, NO_OF_DISPARITIES, PARALLEL_UNITS, XF_8UC1, XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> ( remapped_l, remapped_r, dispMat, bm_state );
 
 
 
@@ -265,34 +263,12 @@ void xf_stereopipeline(
           //*(img_map_x_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_x_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
           //*(img_map_y_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_y_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
 
-          *(img_remapped_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-//          *(img_remapped_r + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_r.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-          
+          //*(img_remapped_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
+          //*(img_remapped_r + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_r.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
+
+          *(img_s + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(dispMat.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
         }
     }
-
-
-  for(int i=0; i < rows; i++)
-    {
-      #pragma HLS LOOP_TRIPCOUNT min=1 max=pROWS
-
-      for(int j=0; j < (cols >> (XF_BITSHIFT(XF_NPPC1))); j++)
-        {
-          #pragma HLS LOOP_TRIPCOUNT min=1 max=pCOLS/pNPC
-          #pragma HLS PIPELINE
-          #pragma HLS loop_flatten off
-
-          //*(img_map_x_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_x_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-          //*(img_map_y_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(map_y_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-
-//          *(img_remapped_l + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_l.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-          *(img_remapped_r + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j) = *(remapped_r.data + i*(cols >> (XF_BITSHIFT(XF_NPPC1))) +j);
-          
-        }
-    }
-
-
-
 
 }
 
@@ -302,7 +278,7 @@ void xf_stereopipeline(
 
 
 
-//    void xf_stereopipeline                                                                                                                       
+//    void xf_stereo_pipeline                                                                                                                       
 //      (                                                                                                                                          
 //        XF_TNAME(XF_8UC1 , XF_NPPC1) *leftMat ,          // xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftMat,                             
 //                                                         
