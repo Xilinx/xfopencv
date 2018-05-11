@@ -71,9 +71,9 @@ void stereo_pipeline_accel
     kernel_wr_buf.push_back(buffer_dc_l);               kernel_wr_buf.push_back(buffer_dc_r);
     kernel_wr_buf.push_back(buffer_ir_l);               kernel_wr_buf.push_back(buffer_ir_r);
     
-		//----------- Migrate  input data to device global memory -----------//
+    //----------- Migrate  input data to device global memory -----------//
     
-		q.enqueueMigrateMemObjects(kernel_wr_buf, CL_MIGRATE_MEM_OBJECT_KERNEL);
+    q.enqueueMigrateMemObjects(kernel_wr_buf, CL_MIGRATE_MEM_OBJECT_KERNEL);
 
     // The kernel parameters should be rearranged: input buffers, output buffers, variables
     // 
@@ -84,12 +84,12 @@ void stereo_pipeline_accel
 
     krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_l, buffer_r, buffer_cm_l, buffer_cm_r, buffer_dc_l, buffer_dc_r, buffer_ir_l, buffer_ir_r, buffer_s, cm_size, dc_size, rows, cols);
     
-		//----------- Copy Result from Device Global Memory to Host Local Memory -----------//
+    //----------- Copy Result from Device Global Memory to Host Local Memory -----------//
     
     std::vector<cl::Memory> kernel_rd_buf;
     kernel_rd_buf.push_back(buffer_s);
 
-		q.enqueueMigrateMemObjects(kernel_rd_buf, CL_MIGRATE_MEM_OBJECT_HOST);
+    q.enqueueMigrateMemObjects(kernel_rd_buf, CL_MIGRATE_MEM_OBJECT_HOST);
 
     q.finish();
 }

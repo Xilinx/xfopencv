@@ -20,8 +20,6 @@ XFOPENCV ?= /home/centos/src/project_data/xfopencv
 #                                      #
 ########################################
 
-XF_EXAMPLE_DIR = $(XFOPENCV)/examples/gaussianfilter
-
 XCL2_LIB_DIR = $(SDACCEL_DIR)/examples/xilinx/libs/xcl2
 XCL_LIB_DIR  = $(SDACCEL_DIR)/examples/xilinx/libs/xcl
 
@@ -29,7 +27,6 @@ CXXFLAGS += -DSDX_PLATFORM=$(SDX_PLATFORM) -D__USE_XOPEN2K8 -DHLS_NO_XIL_FPO_LIB
 CXXFLAGS += -I/opt/Xilinx/SDx/2017.1.op/runtime/include/1_2/ 
 CXXFLAGS += -I/opt/Xilinx/SDx/2017.1.op/include/         
 CXXFLAGS += -I$(XFOPENCV)/include/  
-#CXXFLAGS += -I$(XF_EXAMPLE_DIR)/
 CXXFLAGS += -I$(XCL2_LIB_DIR)/
 CXXFLAGS += -I/opt/Xilinx/SDx/2017.1.op/Vivado_HLS/include
 CXXFLAGS += -O2 -Wall -c -fmessage-length=0 -std=c++14
@@ -68,16 +65,13 @@ HOST_AWS_SRC +=  xf_stereo_pipeline_tb
 
 HOST_SDx_SRC +=  xcl2
 
-HOST_XF_SRC  +=
-
 HOST_AWS_DIR = ./
 HOST_BLD_DIR = build/host
 
 HOST_AWS_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_AWS_SRC)) )
 HOST_SDx_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_SDx_SRC)) )
-HOST_XF_OBJ  +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_XF_SRC)) )
 
-HOST_OBJ = $(HOST_XF_OBJ) $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
+HOST_OBJ = $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
 
 HOST_EXE ?= run/stereo_pipeline_test
 
@@ -138,8 +132,8 @@ nothing:
 #
 
 build/kernel/xf_stereo_pipeline.xo: xf_stereo_pipeline_kernel_aws.cpp
-	@mkdir -p $(@D)                                                                                                                                                                                                                    #-I"$(XF_EXAMPLE_DIR)"
-	$(XOCC) $(XOCC_OPTS) -c -k xf_stereo_pipeline --max_memory_ports xf_stereo_pipeline --messageDb $(subst .xo,.mdb,$@) -I"$(<D)" --xp misc:solution_name=build/kernel/xocc_compile_kernel_xf_stereo_pipeline -I"$(XFOPENCV)/include"                       -I/opt/Xilinx/SDx/2017.4/include/ocv -o"$@" "$<"
+	@mkdir -p $(@D)                                                                                                                                                                                                                   
+	$(XOCC) $(XOCC_OPTS) -c -k xf_stereo_pipeline --max_memory_ports xf_stereo_pipeline --messageDb $(subst .xo,.mdb,$@) -I"$(<D)" --xp misc:solution_name=build/kernel/xocc_compile_kernel_xf_stereo_pipeline -I"$(XFOPENCV)/include" -I/opt/Xilinx/SDx/2017.4/include/ocv -o"$@" "$<"
 #	@echo -$(RM) $@
 
 xf_stereo_pipeline.xclbin: $(BINARY_CONTAINER_1_OBJS)
@@ -159,13 +153,6 @@ $(HOST_AWS_OBJ): $(HOST_BLD_DIR)/%.o : $(HOST_AWS_DIR)/%.cpp
 
 	
 $(HOST_SDx_OBJ): $(HOST_BLD_DIR)/%.o : $(XCL2_LIB_DIR)/%.cpp 
-	@echo "================================================================"
-	@echo "Compilation of $< to $@"
-	@echo "================================================================"
-	@mkdir -p $(HOST_BLD_DIR)                                       
-	$(SDX_CXX) $(CXXFLAGS) -o "$@" "$<"
-
-$(HOST_XF_OBJ): $(HOST_BLD_DIR)/%.o : $(XF_EXAMPLE_DIR)/%.cpp 
 	@echo "================================================================"
 	@echo "Compilation of $< to $@"
 	@echo "================================================================"
