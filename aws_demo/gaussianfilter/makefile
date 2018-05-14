@@ -1,5 +1,3 @@
-include ../common_makefile
-
 ########################################
 #                                      #
 #             Host section             #
@@ -22,6 +20,10 @@ HOST_XF_SRC  +=
 ########################################
 
 KERNEL = xf_gaussian_filter
+
+########################################
+
+include ../common_makefile
 
 
 
