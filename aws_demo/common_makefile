@@ -1,0 +1,217 @@
+########################################
+#                                      #
+#             Tools section            #
+#                                      #
+########################################
+
+XILINX_SDX ?= /opt/Xilinx/SDx/2017.1.op
+XILINX_HLS ?= $(XILINX_SDX)/Vivado_HLS
+
+
+SDX_CXX ?= $(XILINX_SDX)/bin/xcpp
+XOCC ?= $(XILINX_SDX)/bin/xocc
+
+RM = rm -f
+RMDIR = rm -rf
+
+ifeq "$(AWS_PLATFORM)" "$(AWS_PLATFORM_1DDR)"
+  XILINX_SDX_RUNTIME=/opt/Xilinx/2017.1.rte.1ddr/runtime/lib/x86_64
+else ifeq "$(AWS_PLATFORM)" "$(AWS_PLATFORM_4DDR)"
+  XILINX_SDX_RUNTIME=/opt/Xilinx/2017.1.rte.4ddr/runtime/lib/x86_64
+else ifeq "$(AWS_PLATFORM)" "$(AWS_PLATFORM_4DDR_DEBUG)"
+  XILINX_SDX_RUNTIME=/opt/Xilinx/2017.1.rte.4ddr_debug/runtime/lib/x86_64
+endif
+
+XFOPENCV ?= /home/centos/src/project_data/xfopencv
+
+TARGET ?= hw_emu
+
+########################################
+#                                      #
+#             Host section             #
+#                                      #
+########################################
+
+XF_EXAMPLE_DIR = $(XFOPENCV)/examples/gaussianfilter
+
+XCL2_LIB_DIR = $(SDACCEL_DIR)/examples/xilinx/libs/xcl2
+XCL_LIB_DIR  = $(SDACCEL_DIR)/examples/xilinx/libs/xcl
+
+CXXFLAGS += -DSDX_PLATFORM=$(AWS_PLATFORM) -D__USE_XOPEN2K8 
+CXXFLAGS += -I$(XILINX_SDX)/runtime/include/1_2/ 
+CXXFLAGS += -I$(XILINX_SDX)/include/         
+CXXFLAGS += -I$(XFOPENCV)/include/  
+CXXFLAGS += -I$(XCL2_LIB_DIR)/
+CXXFLAGS += -I$(XILINX_HLS)/include
+CXXFLAGS += -O2 -Wall -c -fmessage-length=0 -std=c++14
+
+#--- Specify OpenCV libraries ---#
+
+LDFLAGS += -L$(XILINX_SDX)/lnx64/tools/opencv
+LDFLAGS += -lopencv_core
+LDFLAGS += -lopencv_imgproc
+LDFLAGS += -lopencv_highgui
+
+#--- Specify common libraries ---#
+
+LDFLAGS += -L$(XILINX_SDX)/lib/lnx64.o 
+LDFLAGS += -lstdc++
+LDFLAGS += -lpthread 
+LDFLAGS += -lrt
+
+#--- Specify AWS libraries ---#
+
+LDFLAGS += -L$(XILINX_SDX_RUNTIME) 
+LDFLAGS += -lxilinxopencl
+
+#--- Specify runtime libraries ---#
+
+LDFLAGS += -Wl,-rpath,$(XILINX_SDX)/lnx64/tools/opencv
+LDFLAGS += -Wl,-rpath,$(XILINX_SDX)/lib/lnx64.o 
+LDFLAGS += -Wl,-rpath,$(XILINX_SDX_RUNTIME)
+
+#--- Specify objects ---#
+
+# TEST_NAME = gaussian_filter_test
+# 
+# HOST_AWS_SRC +=  xf_gaussian_filter_accel_aws
+# HOST_AWS_SRC +=  xf_gaussian_filter_tb
+# 
+# HOST_SDx_SRC +=  xcl2
+# 
+# HOST_XF_SRC  +=
+
+HOST_AWS_DIR = ./
+HOST_BLD_DIR = $(TARGET)/build/host
+HOST_RUN_DIR = $(TARGET)/run
+
+HOST_AWS_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_AWS_SRC)) )
+HOST_SDx_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_SDx_SRC)) )
+HOST_XF_OBJ  +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_XF_SRC)) )
+
+HOST_OBJ = $(HOST_XF_OBJ) $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
+
+HOST_EXE ?= $(HOST_RUN_DIR)/$(TEST_NAME)
+
+BUILD_SUBDIRS += $(HOST_BLD_DIR)
+
+
+########################################
+#                                      #
+#            Kernel section            #
+#                                      #
+########################################
+
+# KERNEL = xf_gaussian_filter
+
+XOCC_OPTS += --platform $(AWS_PLATFORM) 
+XOCC_OPTS += --save-temps  
+XOCC_OPTS += --report system
+
+XOCC_INCL += -I$(XFOPENCV)/include
+XOCC_INCL += -I/opt/Xilinx/SDx/2017.4/include/ocv
+
+KERNEL_BLD_DIR = $(TARGET)/build/kernel
+
+ifeq "$(TARGET)" "hw"
+  KERNEL_RUN_DIR = $(TARGET)/afi
+else 
+  KERNEL_RUN_DIR = $(TARGET)/run  
+  XOCC_OPTS += -g
+endif
+
+BUILD_SUBDIRS += $(KERNEL_BLD_DIR)
+
+KERNEL_OBJ += $(addsuffix .xo    , $(addprefix $(KERNEL_BLD_DIR)/, $(KERNEL)) )
+KERNEL_BIN += $(addsuffix .xclbin, $(addprefix $(KERNEL_RUN_DIR)/, $(KERNEL)) )
+
+
+########################################
+#                                      #
+#            Build section             #
+#                                      #
+########################################
+
+.PHONY: all
+
+all: host krnl
+
+host: $(HOST_EXE)
+
+krnl: $(KERNEL_BIN)
+
+clean:
+	$(RMDIR) $(BUILD_SUBDIRS)
+	$(RMDIR) .Xil
+	$(RM)    $(HOST_RUN_DIR)/*.jpg $(HOST_RUN_DIR)/*.png *.log *.csv *.html
+	$(RM)    $(KERNEL_BIN)
+	$(RM)    $(HOST_EXE)
+	$(RM)    $(HOST_EXE)/*.*xclbin
+
+.PHONY: all
+
+#--- Kernel rules ---#
+
+$(KERNEL_OBJ): $(KERNEL_BLD_DIR)/%.xo : %_kernel_aws.cpp
+	@echo " "
+	@echo "================================================================"
+	@echo "Compilation of $< to $@"
+	@echo "================================================================"
+	@echo " "
+	@mkdir -p $(@D)
+	$(XOCC) -c -t $(TARGET)  $(XOCC_OPTS) $(XOCC_INCL) -k $(*F) --max_memory_ports $(*F) -I$(<D) --xp misc:solution_name=$(KERNEL_BLD_DIR)/$(*F)_compile -o$(@) $(<)
+	
+
+
+$(KERNEL_BIN): $(KERNEL_RUN_DIR)/%.xclbin : $(KERNEL_BLD_DIR)/%.xo
+	@echo " "
+	@echo "================================================================"
+	@echo "Linking of $@  ($(@D))"
+	@echo "================================================================"
+	@echo " "
+	mkdir -p $(KERNEL_RUN_DIR)
+	$(XOCC) -l -t $(TARGET) $(XOCC_OPTS) --jobs 8 --nk $(*F):1 --xp misc:solution_name=$(KERNEL_BLD_DIR)/$(*F)_link -o$(@) $(+)
+
+
+#--- Host rules ---#
+
+$(HOST_AWS_OBJ): $(HOST_BLD_DIR)/%.o : $(HOST_AWS_DIR)/%.cpp 
+	@echo " "
+	@echo "================================================================"
+	@echo "Compilation of $< to $@"
+	@echo "================================================================"
+	@echo " "
+	@mkdir -p $(HOST_BLD_DIR)                                       
+	$(SDX_CXX) $(CXXFLAGS) -o $(@) $(<)
+
+	
+$(HOST_SDx_OBJ): $(HOST_BLD_DIR)/%.o : $(XCL2_LIB_DIR)/%.cpp 
+	@echo " "
+	@echo "================================================================"
+	@echo "Compilation of $< to $@"
+	@echo "================================================================"
+	@echo " "
+	@mkdir -p $(HOST_BLD_DIR)                                       
+	$(SDX_CXX) $(CXXFLAGS) -o $(@) $(<)
+
+$(HOST_XF_OBJ): $(HOST_BLD_DIR)/%.o : $(XF_EXAMPLE_DIR)/%.cpp 
+	@echo " "
+	@echo "================================================================"
+	@echo "Compilation of $< to $@"
+	@echo "================================================================"
+	@echo " "
+	@mkdir -p $(HOST_BLD_DIR)                                       
+	$(SDX_CXX) $(CXXFLAGS) -o ($@) ($<)
+
+	
+$(HOST_EXE): $(HOST_OBJ)
+	@echo " "
+	@echo "================================================================"
+	@echo "Linking of $@  ($(@D))"
+	@echo "================================================================"
+	@echo " "
+	mkdir -p $(HOST_RUN_DIR)
+	$(SDX_CXX) -o "$@" $(+) $(LDFLAGS) 
+	
+
+

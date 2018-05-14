@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="h">
+      <UniqueIdentifier>{b5f48f04-d9bc-4b50-b9a6-c222b80c54d0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\gaussianfilter\makefile" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_accel_aws.cpp" />
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_kernel_aws.cpp" />
+    <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_tb.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\gaussianfilter\xf_gaussian_filter_config.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\gaussianfilter\xf_config_params.h">
+      <Filter>h</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

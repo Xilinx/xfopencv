@@ -1138,45 +1138,49 @@ void xFGaussianFilter(hls::stream< XF_SNAME(WORDWIDTH)> &_src, hls::stream< XF_S
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
-template<int FILTER_SIZE, int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC = 1>
-void GaussianBlur(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst, float sigma)
+template<int FILTER_SIZE, int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC>
+void GaussianBlur(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src, xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst, float sigma)
 {
-#pragma HLS inline off
+  #pragma HLS inline off
 
-#pragma HLS dataflow
+  #pragma HLS dataflow
 
-	hls::stream<XF_TNAME(SRC_T,NPC)>src;
-	hls::stream< XF_TNAME(SRC_T,NPC)> dst;
+  hls::stream<XF_TNAME(SRC_T,NPC)> src;
+  hls::stream<XF_TNAME(SRC_T,NPC)> dst;
 
-	/********************************************************/
+  /********************************************************/
 
-	Read_yuyv_Loop:
-	for(int i=0; i<_src.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			src.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
+  Read_yuyv_Loop:
+  for(int i=0; i < _src.rows; i++)
+    {
+      #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 
-	xFGaussianFilter< ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(src, dst, FILTER_SIZE, BORDER_TYPE, _src.rows,_src.cols,sigma);
+      for(int j=0; j < (_src.cols)>>(XF_BITSHIFT(NPC)); j++)
+        {
+          #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
+          #pragma HLS PIPELINE
+          #pragma HLS loop_flatten off
 
-	for(int i=0; i<_dst.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			*(_dst.data + i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) = dst.read();
+          src.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
+        }
+    }
 
-		}
-	}
+  xFGaussianFilter< ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(src, dst, FILTER_SIZE, BORDER_TYPE, _src.rows, _src.cols, sigma);
+
+  for(int i=0; i < _src.rows; i++)
+    {
+      #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
+
+      for(int j=0; j < (_src.cols)>>(XF_BITSHIFT(NPC)); j++)
+        {
+          #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
+          #pragma HLS PIPELINE
+          #pragma HLS loop_flatten off
+
+          *(_dst.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) = dst.read();
+
+        }
+    }
 }
 }
 #endif //_XF_GAUSSIAN_HPP_
