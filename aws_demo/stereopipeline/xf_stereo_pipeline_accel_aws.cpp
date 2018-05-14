@@ -40,7 +40,7 @@ void stereo_pipeline_accel
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     std::string device_name = device.getInfo<CL_DEVICE_NAME>();
 
-    std::string binaryFile = "xf_stereo_pipeline.awsxclbin";
+    std::string binaryFile = (xcl::is_emulation() || xcl::is_hw_emulation ()) ? "xf_stereo_pipeline.xclbin" : "xf_stereo_pipeline.awsxclbin";
     
     std::cout << "========" <<  binaryFile << "  ==================" << std::endl;
     

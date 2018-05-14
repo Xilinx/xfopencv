@@ -17,7 +17,7 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, 
     cl::CommandQueue q(context, device, CL_QUEUE_PROFILING_ENABLE);
     std::string device_name = device.getInfo<CL_DEVICE_NAME>();
 
-    std::string binaryFile = "xf_gaussian_filter.awsxclbin";
+    std::string binaryFile = (xcl::is_emulation() || xcl::is_hw_emulation ()) ? "xf_gaussian_filter.xclbin" : "xf_gaussian_filter.awsxclbin";
     
     std::cout << "========" <<  binaryFile << "  ==================" << std::endl;
     
