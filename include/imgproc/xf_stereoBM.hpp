@@ -732,8 +732,6 @@ void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
 #pragma SDS data copy("_right_mat.data"[0:"_right_mat.size"])
 #pragma SDS data copy("_disp_mat.data"[0:"_disp_mat.size"])
 
-//#NO template <int WSIZE, int NDISP, int NDISP_UNIT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
-
 template <int WSIZE, int NDISP, int NDISP_UNIT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC>
 void StereoBM(xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
     xf::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,

@@ -1138,7 +1138,7 @@ void xFGaussianFilter(hls::stream< XF_SNAME(WORDWIDTH)> &_src, hls::stream< XF_S
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_dst.data"[0:"_dst.size"])
 
-template<int FILTER_SIZE, int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC = 1>
+template<int FILTER_SIZE, int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC>
 void GaussianBlur(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src, xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst, float sigma)
 {
   #pragma HLS inline off

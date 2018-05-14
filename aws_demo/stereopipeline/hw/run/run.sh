@@ -2,4 +2,4 @@
 
 source /opt/Xilinx/SDx/2017.1.rte.4ddr/setup.sh
 
-./stereo_pipeline_test ../../im0.jpg
+./stereo_pipeline_test ../../left.png ../../right.png

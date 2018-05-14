@@ -137,7 +137,7 @@ void xFRemapLI(
 )
 {
   // Add one to always get zero for boundary interpolation. Maybe need initialization here?
-  DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2]; //AK,ZoTech: static added for initialization, otherwise X are generated in co-sim.
+  DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2];
 #pragma HLS array_partition complete variable=buf dim=2
 #pragma HLS array_partition complete variable=buf dim=4
   SRC_T s;
@@ -344,10 +344,8 @@ void xFRemapKernel(
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,"_remapped_mat.data":SEQUENTIAL,"_mapx_mat.data":SEQUENTIAL,"_mapy_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.rows*_src_mat.cols"], "_remapped_mat.data"[0:"_remapped_mat.size"],"_mapx_mat.data"[0:"_mapx_mat.size"],"_mapy_mat.data"[0:"_mapy_mat.size"])
 
-//#NO template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1, bool USE_URAM = false>
-
 template<int WIN_ROWS, int INTERPOLATION_TYPE, int SRC_T, int MAP_T, int DST_T, int ROWS, int COLS, int NPC, bool USE_URAM >
-void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat)
+void remap(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_remapped_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapx_mat, xf::Mat<MAP_T, ROWS, COLS, NPC> &_mapy_mat)
 {
   #pragma HLS inline off
   #pragma HLS dataflow

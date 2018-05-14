@@ -1,3 +1,5 @@
+include ../common_makefile
+
 ########################################
 #                                      #
 #             Host section             #
