@@ -7,6 +7,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\gaussianfilter\makefile" />
+    <None Include="..\..\common_makefile" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\gaussianfilter\xf_gaussian_filter_accel_aws.cpp" />

@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\common_makefile" />
     <None Include="..\..\gaussianfilter\makefile" />
   </ItemGroup>
   <ItemGroup>

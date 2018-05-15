@@ -6,6 +6,8 @@
 
 #include "xf_gaussian_filter_config.h"
 
+#define CL_MIGRATE_MEM_OBJECT_KERNEL 0       //OpenCL define constant to indicate memory object migration to host only, to make program more readable define "counterpart" constant
+
 void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> &img_out, float sigma)
 {
     std::vector<cl::Device> devices = xcl::get_xil_devices();
@@ -19,7 +21,7 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, 
 
     std::string binaryFile = (xcl::is_emulation() || xcl::is_hw_emulation ()) ? "xf_gaussian_filter.xclbin" : "xf_gaussian_filter.awsxclbin";
     
-    std::cout << "========" <<  binaryFile << "  ==================" << std::endl;
+    std::cout << "======== " <<  binaryFile << " ========" << std::endl;
     
     cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
     devices.resize(1);
@@ -36,7 +38,7 @@ void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, 
     
     //----------- Migrate  input data to device global memory -----------//
     
-    q.enqueueMigrateMemObjects(writeBufVec,0);        // 0 means from host
+    q.enqueueMigrateMemObjects(writeBufVec, CL_MIGRATE_MEM_OBJECT_KERNEL);
 
     auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, int, int, float, int, int >(kernel);
 
