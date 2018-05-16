@@ -6,6 +6,8 @@
 
 #include "xf_stereo_pipeline_config.h"
 
+typedef xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> xf_BMState;
+
 #define CL_MIGRATE_MEM_OBJECT_KERNEL 0       //OpenCL define constant to indicate memory object migration to host only, to make program more readable define "counterpart" constant
 
 void stereo_pipeline_accel
@@ -42,7 +44,7 @@ void stereo_pipeline_accel
 
     std::string binaryFile = (xcl::is_emulation() || xcl::is_hw_emulation ()) ? "xf_stereo_pipeline.xclbin" : "xf_stereo_pipeline.awsxclbin";
     
-    std::cout << "========" <<  binaryFile << "  ==================" << std::endl;
+    std::cout << "======== " <<  binaryFile << " ========" << std::endl;
     
     cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
     devices.resize(1);
@@ -70,19 +72,38 @@ void stereo_pipeline_accel
     kernel_wr_buf.push_back(buffer_cm_l);               kernel_wr_buf.push_back(buffer_cm_r);
     kernel_wr_buf.push_back(buffer_dc_l);               kernel_wr_buf.push_back(buffer_dc_r);
     kernel_wr_buf.push_back(buffer_ir_l);               kernel_wr_buf.push_back(buffer_ir_r);
-    
+
     //----------- Migrate  input data to device global memory -----------//
     
     q.enqueueMigrateMemObjects(kernel_wr_buf, CL_MIGRATE_MEM_OBJECT_KERNEL);
 
     // The kernel parameters should be rearranged: input buffers, output buffers, variables
-    // 
-    //                                img_l        img_r        cm_l         cm_r         dc_l         dc_r         ir_l         ir_r         img_s    cm_size  dc_size  rows  cols
-    auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, int,     int,     int,  int >(kernel);
+    //                                              
+    //                                img_l        img_r        cm_l         cm_r         dc_l         dc_r         ir_l         ir_r         img_s               
+    auto krnl = cl::KernelFunctor<cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, cl::Buffer&, int,  // preFilterType,
+                                                                                                                                                       int,  // preFilterCap,
+                                                                                                                                                       int,  // minDisparity,
+                                                                                                                                                       int,  // textureThreshold,
+                                                                                                                                                       int,  // uniquenessRatio,
+
+                                                                                                                                                       int,  // cm_size  
+                                                                                                                                                       int,  // dc_size   
+                                                                                                                                                       int,  // rows  
+                                                                                                                                                       int   // cols
+                                                                                                                                                       >(kernel);
 
     //----------- Launch the Kernel -----------//
+                                                                                     
+    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_l, buffer_r, buffer_cm_l, buffer_cm_r, buffer_dc_l, buffer_dc_r, buffer_ir_l, buffer_ir_r, buffer_s, bm_state.preFilterType,
+                                                                                                                                                                                 bm_state.preFilterCap,
+                                                                                                                                                                                 bm_state.minDisparity,
+                                                                                                                                                                                 bm_state.textureThreshold,
+                                                                                                                                                                                 bm_state.uniquenessRatio,
 
-    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_l, buffer_r, buffer_cm_l, buffer_cm_r, buffer_dc_l, buffer_dc_r, buffer_ir_l, buffer_ir_r, buffer_s, cm_size, dc_size, rows, cols);
+                                                                                                                                                                                 cm_size, 
+                                                                                                                                                                                 dc_size, 
+                                                                                                                                                                                 rows, 
+                                                                                                                                                                                 cols);
     
     //----------- Copy Result from Device Global Memory to Host Local Memory -----------//
     
