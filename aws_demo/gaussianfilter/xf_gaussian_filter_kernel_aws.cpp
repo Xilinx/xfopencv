@@ -41,15 +41,20 @@ void xf_gaussian_filter(XF_TNAME(XF_8UC1, NPC1) *img_inp, XF_TNAME(XF_8UC1, NPC1
   
   const int pNPC1 = NPC1;
 
-  xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> mi(rows_inp, cols_inp);
-  xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> mf(rows_inp, cols_inp);
+  xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> mi;
+  xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> mf;
 
   #pragma HLS stream variable=mi.data depth=pCOLS_INP/pNPC1
   #pragma HLS stream variable=mf.data depth=pCOLS_INP/pNPC1
 
-  xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> mo(rows_out, cols_out);
+  xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> mo;
 
   #pragma HLS stream variable=mo.data depth=pCOLS_OUT/pNPC1
+
+  mi.rows = rows_inp;  mi.cols = cols_inp;
+  mf.rows = rows_inp;  mi.cols = cols_inp;
+
+  mo.rows = rows_out;  mi.cols = cols_out;
 
   /********************************************************/
 

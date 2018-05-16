@@ -172,36 +172,47 @@ void xf_stereo_pipeline(
 
   const int pNPC  = XF_NPPC1;
 
-  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat (rows, cols);
-  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(rows, cols);
+  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat ;   // don't use non default constructor xf::Mat<...> leftMat(rows, cols) - kernel will suspend on hw emulation and FPGA
+  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat;
 
   #pragma HLS stream variable=leftMat.data  depth=pCOLS/pNPC 
   #pragma HLS stream variable=rightMat.data depth=pCOLS/pNPC 
 
 
-  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(rows, cols);
+  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat;
 
   #pragma HLS stream variable=dispMat.data  depth=pCOLS/pNPC 
 
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_l(rows, cols);
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_l(rows, cols);
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_l;
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_l;
 
   #pragma HLS stream variable=map_x_l.data depth=pCOLS/pNPC 
   #pragma HLS stream variable=map_y_l.data depth=pCOLS/pNPC 
 
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_r(rows, cols);
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_r(rows, cols);
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_x_r;
+  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> map_y_r;
 
   #pragma HLS stream variable=map_x_r.data depth=pCOLS/pNPC 
   #pragma HLS stream variable=map_y_r.data depth=pCOLS/pNPC 
 
-  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_l(rows, cols);
-  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_r(rows, cols);
+  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_l;
+  xf::Mat<XF_8UC1,  XF_HEIGHT, XF_WIDTH, XF_NPPC1> remapped_r;
 
   #pragma HLS stream variable=remapped_l.data depth=pCOLS/pNPC 
   #pragma HLS stream variable=remapped_r.data depth=pCOLS/pNPC 
 
   xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
+
+  leftMat .rows = rows; leftMat .cols = cols;
+  rightMat.rows = rows; rightMat.cols = cols;
+  dispMat .rows = rows; dispMat .cols = cols;
+  map_x_l .rows = rows; map_x_l .cols = cols;
+  map_y_l .rows = rows; map_y_l .cols = cols;
+  map_x_r .rows = rows; map_x_r .cols = cols;
+  map_y_r .rows = rows; map_y_r .cols = cols;
+
+  remapped_l.rows = rows;  remapped_l.cols = cols;
+  remapped_r.rows = rows;  remapped_r.cols = cols;
 
 	bm_state.preFilterType       = preFilterType   ;
 	bm_state.preFilterCap        = preFilterCap    ;
