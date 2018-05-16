@@ -52,9 +52,9 @@ void xf_gaussian_filter(XF_TNAME(XF_8UC1, NPC1) *img_inp, XF_TNAME(XF_8UC1, NPC1
   #pragma HLS stream variable=mo.data depth=pCOLS_OUT/pNPC1
 
   mi.rows = rows_inp;  mi.cols = cols_inp;
-  mf.rows = rows_inp;  mi.cols = cols_inp;
+  mf.rows = rows_inp;  mf.cols = cols_inp;
 
-  mo.rows = rows_out;  mi.cols = cols_out;
+  mo.rows = rows_out;  mo.cols = cols_out;
 
   /********************************************************/
 
