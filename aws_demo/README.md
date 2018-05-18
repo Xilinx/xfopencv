@@ -49,19 +49,19 @@ make TARGET=hw_emu|sw_emu clean
 
 ### Build example for FPGA
 
-To build examples for FPGA F1 instance you will need access to [**AWS CLI**](https://aws.amazon.com/cli/) and [**S3**](https://aws.amazon.com/s3/). Please refer to ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)*** and [***Getting Started with Amazon S3***](https://aws.amazon.com/s3/getting-started/).     
+To build examples for FPGA F1 instance you will need access to [**AWS CLI**](https://aws.amazon.com/cli/) and [**S3**](https://aws.amazon.com/s3/). Please refer to ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)*** and ***[Getting Started with Amazon S3](https://aws.amazon.com/s3/getting-started/)***.     
 1. Go to root folder of example.
 2. Build whole example (`all`), kernel part only (`krnl`) or host application only (`host`) for HW (`hw_emu`) or SW (`sw_emu`) emulation with the following command:
 ```
 make TARGET=hw all|host|krnl
 ```
 3. After kernel build complete go to ***afi*** folder to generate AWS FPGA binary file for Amazon F1 instance and register AFI
-4. Setup [**AWS CLI**](https://aws.amazon.com/cli/) ( see ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)***)
+4. Setup [**AWS CLI**](https://aws.amazon.com/cli/)  (see ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)***) 
 5. Run script placed in ***afi*** folder to generate AWS FPGA binary file for Amazon F1 instance and register AFI 
 ```
 source ./gen_afi.sh
 ```
-Script will create S3 bucket for FPGA image and launch image generation in background process. When script finish the FPGA image will not be ready. 
+Script will create S3 bucket for FPGA image and launch image generation in background process. When script finish the FPGA image will not be ready.
 6. Wait until FPGA image will be generated. To check generation completion periodically run following command:
 ```
 aws ec2 describe-fpga-images --fpga-image-id <afi id>
