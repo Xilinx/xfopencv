@@ -19,6 +19,12 @@ Each example is organized into the following folders
 
 
 ## HOW TO BUILD EXAMPLE
+Place xfOpenCV library (`xfopencv` folder) together with Amazon's FPGA framework
+```
+project_data
+ ├─ aws-fpga
+ └─ xfopencv
+```
 
 ### Prepare environment
 Run following code to prepare environment for build.
