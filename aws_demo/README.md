@@ -7,7 +7,7 @@ Each example is organized into the following folders
 
 
 |  Folder Name | Contents |
-| - 
+| :----- | :------ 
 | &lt;example&nbsp;name&gt; | **Root folder of example.** Folder contains input image(s), headers with kernel configuration and declaration, makefile, source code of host application, kernel wrapper and kernel.|
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;hw |**Folder for FPGA flow.**  |
 | &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;afi |**Folder for AWS FPGA binary file generation.** After successful build folder will contain the kernel container  binary (`<kernel name>.xclbin`) to generate AWS FPGA binary file for Amazon F1 instance and register AFI. During generation all intermediate files will be stored there. |
