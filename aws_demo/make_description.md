@@ -60,7 +60,7 @@ Common makefile contains following variables and makefile's targets for host app
 | **`all`**         | Build host application and kernel for target flow specified by **`$(TARGET)`** variable |
 | **`host`**        | Build host application only for target flow specified by **`$(TARGET)`** variable |   
 | **`krnl`**        | Build kernel only for target flow specified by **`$(TARGET)`** variable |   
-| **`clean`**       | Clean build artifacts of target flow specified by **`$(TARGET)`** variable. <br/>***Note: afi folder of FPGA flow ($(TARGET) == hw) kept untouched. You should clean it manually if needed *** |   
+| **`clean`**       | Clean build artifacts of target flow specified by **`$(TARGET)`** variable. <br/>**_Note: afi folder of FPGA flow ($(TARGET) == hw) kept untouched. You should clean it manually if needed_** |   
 
 
 
