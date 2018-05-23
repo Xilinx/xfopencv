@@ -8,7 +8,7 @@ Example specific makefile contains following variables to list source files for 
 ### Variables for host part ###
  
 | Variable&nbsp;Name |Necessity | Purpose |
-| :------------- | :------------- |
+|       :-           |   :-     |    :-   |
 | **`TEST_NAME`** |Mandatory| Name of the host executable which will be created as successful build result in **`run`** folder |
 | **`HOST_AWS_SRC`** |Mandatory| List of host source files placed in root folder of example |
 | **`HOST_SDx_SRC`** <br/> **`SDx_LIB_DIR`** | Optional | The **`HOST_SDx_SRC`** contains list of SDx kernel driver source files which provide interaction between host and FPGA kernel on Amazon F1 instance and **`SDx_LIB_DIR`** contains path to these sources. Originally all examples use xcl driver v.2. Default values are assigned in [`common_makefile`](common_makefile). If you would like to use other driver you need to do following: <br/> 1) Modify example source code to use desired driver; <br/>2) assign list of appropriate library source files to **`HOST_SDx_SRC`**; <br/>3) setup path to the library in **`SDx_LIB_DIR`** variable. <br/> Settings of these variables in example specific makefile override default values of [`common_makefile`](common_makefile) |
@@ -16,7 +16,7 @@ Example specific makefile contains following variables to list source files for 
 ### Variables for kernel part ###
 
 | Variable&nbsp;Name |Necessity | Purpose |
-| :------------- | :------------- |
+|       :-           |   :-     |    :-   |
 | **`KERNEL`** |Mandatory| Name of the kernel should be same as kernel source file name (without extension) |
 
 
@@ -26,7 +26,7 @@ Common makefile contains following variables and makefile's targets for host app
 ### Variables for host part ###
  
 | Variable&nbsp;Name |Default&nbsp;value | Description |
-| :------------- | :------------- |
+|       :-           |          :-       |      :-     |
 | **`XILINX_SDX`**        |**`/opt/Xilinx/SDx/2017.1.op`**| Path to Xilinx SDx toolset on Amazon F1 instance |
 | **`XILINX_HLS`**        |**`$(XILINX_SDX)/Vivado_HLS`** | Path to Xilinx Vivado HLS                        |
 | **`SDX_CXX`**           |**`$(XILINX_SDX)/bin/xcpp`**   | Alias for Xilinx SDx compiler                    |
@@ -46,7 +46,7 @@ Common makefile contains following variables and makefile's targets for host app
 ### Variables for kernel part ###
 
 | Variable&nbsp;Name |Default value | Description |
-| :------------- | :------------- |
+|       :-           |     :-       |      :-     |
 | **`XOCC_OPTS`**         |-                              | Contains XOCC options. Please see default value in [`common_makefile`](common_makefile) |
 | **`XOCC_INCL`**         |-                              | Contains paths to search header files. Please see default value in [`common_makefile`](common_makefile) |   
 | **`KERNEL_BLD_DIR`**    |**`$(TARGET)/build/kernel`**   | Build folder for kernel build artifacts|
@@ -56,11 +56,11 @@ Common makefile contains following variables and makefile's targets for host app
 ### Makefile targets ###
 
 | Target&nbsp;label | Description |
-| :------------- | :------------- |
-| **`all`**      | Build host application and kernel for target flow specified by **`$(TARGET)`** variable |
-| **`host`**     | Build host application only for target flow specified by **`$(TARGET)`** variable |   
-| **`krnl`**     | Build kernel only for target flow specified by **`$(TARGET)`** variable |   
-| **`clean`**    | Clean build artifacts of target flow specified by **`$(TARGET)`** variable. <br/>***Note: afi folder of FPGA flow ($(TARGET) == hw) kept untouched. You should clean it manually if needed *** |   
+| :-                | :-          |
+| **`all`**         | Build host application and kernel for target flow specified by **`$(TARGET)`** variable |
+| **`host`**        | Build host application only for target flow specified by **`$(TARGET)`** variable |   
+| **`krnl`**        | Build kernel only for target flow specified by **`$(TARGET)`** variable |   
+| **`clean`**       | Clean build artifacts of target flow specified by **`$(TARGET)`** variable. <br/>***Note: afi folder of FPGA flow ($(TARGET) == hw) kept untouched. You should clean it manually if needed *** |   
 
 
 
