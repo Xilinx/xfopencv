@@ -26,6 +26,8 @@ project_data
  └─ xfopencv
 ```
 
+If you would like to have other folder structure you need tune [`aws_demo/common_makefile`](common_makefile). For more information please see [make_description.md](make_description.md) 
+
 ### Prepare environment
 Run following code to prepare environment for build.
 ```
@@ -49,14 +51,14 @@ make TARGET=hw_emu|sw_emu clean
 
 ### Build example for FPGA
 
-To build examples for FPGA F1 instance you will need access to [**AWS CLI**](https://aws.amazon.com/cli/) and [**S3**](https://aws.amazon.com/s3/). Please refer to ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)*** and ***[Getting Started with Amazon S3](https://aws.amazon.com/s3/getting-started/)***.     
+To build examples for FPGA F1 instance you will need access to [**AWS CLI**](https://aws.amazon.com/cli/) and [**S3**](https://aws.amazon.com/s3/). Please refer to **_[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)_** and **_[Getting Started with Amazon S3](https://aws.amazon.com/s3/getting-started/)_**.     
 1. Go to root folder of example.
 2. Build whole example (`all`), kernel part only (`krnl`) or host application only (`host`) for HW (`hw_emu`) or SW (`sw_emu`) emulation with the following command:
 ```
 make TARGET=hw all|host|krnl
 ```
 3. After kernel build complete go to ***afi*** folder to generate AWS FPGA binary file for Amazon F1 instance and register AFI
-4. Setup [**AWS CLI**](https://aws.amazon.com/cli/)  (see ***[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)***) 
+4. Setup **[AWS CLI](https://aws.amazon.com/cli/)**  (see **_[What Is the AWS Command Line Interface?](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)_**)
 5. Run script placed in ***afi*** folder to generate AWS FPGA binary file for Amazon F1 instance and register AFI 
 ```
 source ./gen_afi.sh

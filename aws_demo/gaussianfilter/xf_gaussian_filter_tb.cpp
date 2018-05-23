@@ -73,7 +73,6 @@ int main(int argc, char **argv)
 
   cv::resize(cv_img_ref, cv_img_out, cvSize(cv_img_out.cols, cv_img_out.rows), 0, 0, CV_RESIZE_INTERPOLATION );
 
-  imwrite("cv_img_ref.jpg", cv_img_ref);
   imwrite("cv_img_out.jpg", cv_img_out);
 
 

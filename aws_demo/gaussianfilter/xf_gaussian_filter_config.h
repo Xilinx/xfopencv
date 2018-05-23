@@ -59,34 +59,21 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #if FILTER_SIZE_3                                            // Set Gaussian filter parameters depending on constant defined in xf_config_params.h
     //{
         #define FILTER_WIDTH (  3  )
-        #define FILTER       (  3  )
         #define SIGMA        ( 0.5f)
     //}
     #elif FILTER_SIZE_5
     //{
         #define FILTER_WIDTH (    5    )
-        #define FILTER       (    5    )
         #define SIGMA        ( 0.8333f )
     //}
     #elif FILTER_SIZE_7
     //{
         #define FILTER_WIDTH (     7    )
-        #define FILTER       (     7    )
         #define SIGMA        ( 1.16666f )
     //}
     #endif
 
-    #if NO
-    //{
-        #define NPC1 XF_NPPC1
-    //}
-    #endif
-
-    #if RO
-    //{
-        #define NPC1 XF_NPPC8
-    //}
-    #endif
+    #define NPC1 XF_NPPC1
 
     void gaussian_filter_accel(xf::Mat<XF_8UC1, ROWS_INP, COLS_INP, NPC1> &img_inp, xf::Mat<XF_8UC1, ROWS_OUT, COLS_OUT, NPC1> &img_out, float sigma);
 //}

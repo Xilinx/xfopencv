@@ -32,16 +32,15 @@ TARGET ?= hw_emu
 #                                      #
 ########################################
 
-XF_EXAMPLE_DIR = $(XFOPENCV)/examples/gaussianfilter
+HOST_SDx_SRC ?=  xcl2
 
-XCL2_LIB_DIR = $(SDACCEL_DIR)/examples/xilinx/libs/xcl2
-XCL_LIB_DIR  = $(SDACCEL_DIR)/examples/xilinx/libs/xcl
+SDx_LIB_DIR ?= $(SDACCEL_DIR)/examples/xilinx/libs/xcl2
 
 CXXFLAGS += -DSDX_PLATFORM=$(AWS_PLATFORM) -D__USE_XOPEN2K8 
 CXXFLAGS += -I$(XILINX_SDX)/runtime/include/1_2/ 
 CXXFLAGS += -I$(XILINX_SDX)/include/         
 CXXFLAGS += -I$(XFOPENCV)/include/  
-CXXFLAGS += -I$(XCL2_LIB_DIR)/
+CXXFLAGS += -I$(SDx_LIB_DIR)/
 CXXFLAGS += -I$(XILINX_HLS)/include
 CXXFLAGS += -O2 -Wall -c -fmessage-length=0 -std=c++14
 
@@ -72,24 +71,14 @@ LDFLAGS += -Wl,-rpath,$(XILINX_SDX_RUNTIME)
 
 #--- Specify objects ---#
 
-# TEST_NAME = gaussian_filter_test
-# 
-# HOST_AWS_SRC +=  xf_gaussian_filter_accel_aws
-# HOST_AWS_SRC +=  xf_gaussian_filter_tb
-# 
-# HOST_SDx_SRC +=  xcl2
-# 
-# HOST_XF_SRC  +=
-
 HOST_AWS_DIR = ./
 HOST_BLD_DIR = $(TARGET)/build/host
 HOST_RUN_DIR = $(TARGET)/run
 
 HOST_AWS_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_AWS_SRC)) )
 HOST_SDx_OBJ +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_SDx_SRC)) )
-HOST_XF_OBJ  +=  $(addsuffix .o, $(addprefix $(HOST_BLD_DIR)/, $(HOST_XF_SRC)) )
 
-HOST_OBJ = $(HOST_XF_OBJ) $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
+HOST_OBJ = $(HOST_AWS_OBJ) $(HOST_SDx_OBJ)
 
 HOST_EXE ?= $(HOST_RUN_DIR)/$(TEST_NAME)
 
@@ -101,8 +90,6 @@ BUILD_SUBDIRS += $(HOST_BLD_DIR)
 #            Kernel section            #
 #                                      #
 ########################################
-
-# KERNEL = xf_gaussian_filter
 
 XOCC_OPTS += --platform $(AWS_PLATFORM) 
 XOCC_OPTS += --save-temps  
@@ -186,7 +173,7 @@ $(HOST_AWS_OBJ): $(HOST_BLD_DIR)/%.o : $(HOST_AWS_DIR)/%.cpp
 	$(SDX_CXX) $(CXXFLAGS) -o $(@) $(<)
 
 	
-$(HOST_SDx_OBJ): $(HOST_BLD_DIR)/%.o : $(XCL2_LIB_DIR)/%.cpp 
+$(HOST_SDx_OBJ): $(HOST_BLD_DIR)/%.o : $(SDx_LIB_DIR)/%.cpp 
 	@echo " "
 	@echo "================================================================"
 	@echo "Compilation of $< to $@"
@@ -195,16 +182,7 @@ $(HOST_SDx_OBJ): $(HOST_BLD_DIR)/%.o : $(XCL2_LIB_DIR)/%.cpp
 	@mkdir -p $(HOST_BLD_DIR)                                       
 	$(SDX_CXX) $(CXXFLAGS) -o $(@) $(<)
 
-$(HOST_XF_OBJ): $(HOST_BLD_DIR)/%.o : $(XF_EXAMPLE_DIR)/%.cpp 
-	@echo " "
-	@echo "================================================================"
-	@echo "Compilation of $< to $@"
-	@echo "================================================================"
-	@echo " "
-	@mkdir -p $(HOST_BLD_DIR)                                       
-	$(SDX_CXX) $(CXXFLAGS) -o ($@) ($<)
 
-	
 $(HOST_EXE): $(HOST_OBJ)
 	@echo " "
 	@echo "================================================================"
