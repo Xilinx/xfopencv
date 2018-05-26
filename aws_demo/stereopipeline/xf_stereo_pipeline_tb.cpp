@@ -27,8 +27,20 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
-#include "xf_headers.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+#include "opencv/cv.h"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/video/tracking.hpp"
+
+#include "common/xf_sw_utils.h" 
+
 #include "xf_stereo_pipeline_config.h"
+
 #include "cameraParameters.h"
 
 using namespace std;
@@ -57,15 +69,7 @@ int main(int argc, char** argv)
   int rows = cv_img_l.rows;
   int cols = cv_img_l.cols;
 
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxLMat(rows,cols);
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyLMat(rows,cols);
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxRMat(rows,cols);
-  xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyRMat(rows,cols);
-  
-  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftRemappedMat(rows,cols);
-  xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightRemappedMat(rows,cols);
-
-  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> xf_img_s(rows,cols);
+  xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> xf_img_d(rows,cols);
 
   // camera parameters for rectification
 
@@ -106,13 +110,13 @@ int main(int argc, char** argv)
   printf("starting the kernel...\n");
 
 
-  stereo_pipeline_accel(xf_img_l, xf_img_r, xf_img_s, mapxLMat, mapyLMat, mapxRMat, mapyRMat, leftRemappedMat, rightRemappedMat, bm_state, cameraMA_l_fix, cameraMA_r_fix, distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix, 9, 5);
+  stereo_pipeline_accel(xf_img_l, xf_img_r, xf_img_d, bm_state, cameraMA_l_fix, cameraMA_r_fix, distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix, 9, 5);
 
 
   cv::Mat out_disp_16(rows,cols,CV_16UC1);
   cv::Mat out_disp_08(rows,cols,CV_8UC1 );
 
-  out_disp_16.data = xf_img_s.copyFrom();
+  out_disp_16.data = xf_img_d.copyFrom();
 
   out_disp_16.convertTo(out_disp_08, CV_8U, (256.0/NO_OF_DISPARITIES)/(16.));
 

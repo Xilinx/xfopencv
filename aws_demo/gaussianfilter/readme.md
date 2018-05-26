@@ -37,7 +37,7 @@ Following constants in header files define kernel configuration
 ## Host Application ##
 Host application reads test image from file, process it with help of regular OpenCV library on host, perform same processing with help of FPGA kernel with function from xfOpenCV library and compare result.
 
-Input image of example is ***im0.jpg*** place in root folder of example. First filter applied to the image is **`xf::GaussianBlur()`**, next is **`xf::resize()`**. Both has analog with same name in OpenCV library. Application calculate difference between result images - images assumed equal if difference for each pixel not exceed 1. Result images will be stored into run folder. 
+Input image of example ***im0.jpg*** placed in root folder of example. First filter applied to the image is **`xf::GaussianBlur()`**, next is **`xf::resize()`**. Both has analog with same name in OpenCV library. Application calculate difference between result images - images assumed equal if difference for each pixel not exceed 1. Result images will be stored into run folder. 
 
 The following images will be in run folder after execution:
 
@@ -68,9 +68,25 @@ Example use modification of SDx xcl kernel driver v.2 for Amazon F1 instance. So
 
 ## Kernel ##
 
+To apply Gaussian filter and change size of processed image the kernel pipeline functions from xfOpenCV library as shown on the image below.<br/>
+
+![](./Gaussian_Filter_Diagram.png)
+
+The kernel has following parameters:
+
+| Parameter&nbsp;Name |Direction|Type | Description |
+| :-                  | :-      | :-  | :-          |
+| **`img_inp`** |Input  | **`XF_TNAME(XF_8UC1, NPC1) *`** | Pointer to input image buffer |
+| **`img_out`** |Output | **`XF_TNAME(XF_8UC1, NPC1) *`** | Pointer to output image buffer|
+| **`rows_inp`**| Input | **`int`**                       | Height of input image |
+| **`cols_inp`**| Input | **`int`**                       | Width of input image  |
+| **`sigma`**   | Input | **`float`**                     | Standard deviation of of Gaussian Filter |
+| **`rows_out`**| Input | **`int`**                       | Height of output image |
+| **`cols_out`**| Input | **`int`**                       | Width of output image  |
+
 During synthesis for FPGA kernel's parameters should be mapped to HW interfaces supported on Amazon F1 instance. To map kernel parameters **`HLS INTERFACE`** pragma should be used. Supported following interfaces: **`m_axi`** and **`s_axilite`**. For **`m_axi`** offset can be set through **`s_axilite`** port only.
 
-Because functions from xfOpenCV library operate with **`xf::Mat`** class as image container kernel's parameters should be packed back to variables of this class. To do this you need following: 
+Because functions from xfOpenCV library operate with **`xf::Mat`** class as image container kernel's parameters should be packed back to objects of this class. To do this you need following: 
 
 - Declare **`xf::Mat`** variable <br/> ***Note: due to XOCC issues use default constructor only - do not try initialize class members with help of non-default constructors***
 - Assign image size to **`rows`** and **`cols`** members

@@ -12,22 +12,16 @@ typedef xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> xf_BMSt
 
 void stereo_pipeline_accel
   (
-    xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_l       , xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_r, 
-                                                                    
-    xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_s       ,
-                                                                  
-    xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_x_l     , 
-    xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_y_l     , 
-                                                                       xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_x_r, 
-                                                                       xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_map_y_r, 
-    
-    xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_remaped_l    , xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_remaped_r,
+    //                      Left                              |                       Right
+    xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_l, xf::Mat<XF_8UC1 , XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_r, 
+                                                              
+    xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &xf_img_d,
 
     xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state, 
     
-    ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix, 
-    ap_fixed<32,12> *distC_l_fix   , ap_fixed<32,12> *distC_r_fix   , 
-    ap_fixed<32,12> *irA_l_fix     , ap_fixed<32,12> *irA_r_fix     , 
+    ap_fixed<32,12> *cameraMA_l_fix                           , ap_fixed<32,12> *cameraMA_r_fix, 
+    ap_fixed<32,12> *distC_l_fix                              , ap_fixed<32,12> *distC_r_fix   , 
+    ap_fixed<32,12> *irA_l_fix                                , ap_fixed<32,12> *irA_r_fix     , 
     
     int cm_size, 
     int dc_size
@@ -64,7 +58,7 @@ void stereo_pipeline_accel
     cl::Buffer buffer_dc_l(context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY ), dc_size   * 4, (void*)distC_l_fix   );          cl::Buffer buffer_dc_r(context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY), dc_size   * 4, (void*)distC_r_fix   );
     cl::Buffer buffer_ir_l(context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY ), cm_size   * 4, (void*)irA_l_fix     );          cl::Buffer buffer_ir_r(context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY), cm_size   * 4, (void*)irA_r_fix     );
 
-    cl::Buffer buffer_s   (context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY), pixel_qnt * 2, xf_img_s.data);                                                                                     
+    cl::Buffer buffer_d   (context, cl_mem_flags(CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY), pixel_qnt * 2, xf_img_d.data);                                                                                     
 
     std::vector<cl::Memory> kernel_wr_buf;
 
@@ -94,7 +88,7 @@ void stereo_pipeline_accel
 
     //----------- Launch the Kernel -----------//
                                                                                      
-    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_l, buffer_r, buffer_cm_l, buffer_cm_r, buffer_dc_l, buffer_dc_r, buffer_ir_l, buffer_ir_r, buffer_s, bm_state.preFilterType,
+    krnl(cl::EnqueueArgs(q, cl::NDRange(1,1,1), cl::NDRange(1,1,1)), buffer_l, buffer_r, buffer_cm_l, buffer_cm_r, buffer_dc_l, buffer_dc_r, buffer_ir_l, buffer_ir_r, buffer_d, bm_state.preFilterType,
                                                                                                                                                                                  bm_state.preFilterCap,
                                                                                                                                                                                  bm_state.minDisparity,
                                                                                                                                                                                  bm_state.textureThreshold,
@@ -108,7 +102,7 @@ void stereo_pipeline_accel
     //----------- Copy Result from Device Global Memory to Host Local Memory -----------//
     
     std::vector<cl::Memory> kernel_rd_buf;
-    kernel_rd_buf.push_back(buffer_s);
+    kernel_rd_buf.push_back(buffer_d);
 
     q.enqueueMigrateMemObjects(kernel_rd_buf, CL_MIGRATE_MEM_OBJECT_HOST);
 
