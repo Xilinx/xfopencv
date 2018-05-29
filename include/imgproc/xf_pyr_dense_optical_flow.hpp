@@ -293,7 +293,7 @@ const int ITCMP_INT    = FLOW_INT+12;
 	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT, USE_URAM>( strmFlowU_split, strmFlowU_scaled, strmFlowV_split, strmFlowV_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
 	
 	//Finding the Temporal and space gradients for the input set of images
-	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
+	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT, USE_URAM>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
 
 	//finding the hessian matrix
 	find_G_and_b_matrix<MAXHEIGHT, MAXWIDTH, WINSIZE, IT_WIDTH, IT_INT, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT>(strmIx, strmIy, strmIt_float,  sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, rows, cols, level);

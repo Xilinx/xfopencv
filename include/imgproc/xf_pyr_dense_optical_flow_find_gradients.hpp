@@ -98,7 +98,7 @@ ap_fixed<IT_WIDTH,IT_INT> findIntensity(unsigned char lineBuffer[NUM_LINES+1][MA
 	
 } // end findIntensity()
 
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int IT_WIDTH, int IT_INT, int ITCMP_WIDTH, int ITCMP_INT, int FLOW_WIDTH, int FLOW_INT, int RMAPPX_WIDTH, int RMAPPX_INT>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int IT_WIDTH, int IT_INT, int ITCMP_WIDTH, int ITCMP_INT, int FLOW_WIDTH, int FLOW_INT, int RMAPPX_WIDTH, int RMAPPX_INT, bool USE_URAM = false>
 void findGradients(unsigned char *currImg3, unsigned char *nextImg, hls::stream< ap_fixed<IT_WIDTH,IT_INT> > &strmIt, hls::stream< ap_int<9> > &strmIx, hls::stream< ap_int<9> > &strmIy,
 		unsigned int rows, unsigned int cols, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowUin, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowVin,
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowU_in1, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowV_in1, int level) {
@@ -133,10 +133,15 @@ sprintf(name,"gy_hw%d.txt",level);
 	unsigned int read_nxtimg = 0;
 	
 	unsigned char lineBuffer[NUM_LINES+1][MAXWIDTH];
-#pragma HLS array_partition variable=lineBuffer complete dim=1
+#pragma HLS array_reshape variable=lineBuffer complete dim=1
 
 	unsigned char curr_img_buf[2][MAXWIDTH];
-#pragma HLS array_partition variable=curr_img_buf complete dim=1
+#pragma HLS array_reshape variable=curr_img_buf complete dim=1
+
+if (USE_URAM) {	
+#pragma HLS RESOURCE variable=lineBuffer   core=XPM_MEMORY uram
+#pragma HLS RESOURCE variable=curr_img_buf core=XPM_MEMORY uram
+}
 
 	unsigned char effBufferedLines = std::min(NUM_LINES,(1<<(NUM_PYR_LEVELS - 1 - level))*(WINSIZE-1) + 1); /**** Change this appropriately in original function***/
 	ap_uint<8> totalLinesInBuffer = effBufferedLines + 1;
