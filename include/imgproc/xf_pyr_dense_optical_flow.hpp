@@ -303,8 +303,7 @@ const int ITCMP_INT    = FLOW_INT+12;
 	find_flow<MAXHEIGHT, MAXWIDTH, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT, FLOW_WIDTH, FLOW_INT, DET_WIDTH, DET_INT, DIVBY_WIDTH, DIVBY_INT, FLCMP_WIDTH, FLCMP_INT, WINSIZE>(sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, strmFlowU_in1, strmFlowV_in1, strmFlowU_fil, strmFlowV_fil, flagU, flagV, rows, cols,level,scale_up_flag,init_flag);
 	
 	//filtering the flow vectors using median blur
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT, USE_URAM> (strmFlowU_fil, strmFlowU_fil_out, flagU, WINDOW_SIZE,1,rows,cols);
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT, USE_URAM> (strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
+	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT, USE_URAM> (strmFlowU_fil, strmFlowU_fil_out, flagU, strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
 	
 	//stitching the U and V flow streams to a single flow stream
 	stitch_stream_fixed_int<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT>(strmFlowU_fil_out, strmFlowV_fil_out, strmFlow, rows, cols, level);
