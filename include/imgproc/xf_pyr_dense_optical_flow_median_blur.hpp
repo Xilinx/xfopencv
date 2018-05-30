@@ -132,24 +132,19 @@ void ProcessMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _src_mat,
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
 
-		if(row < img_height && col < img_width)
-			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
-		else
-			buf[row_ind[win_size-1]][col] = 0;
-
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 #pragma HLS UNROLL
-			if(	(row >(img_height-1)) && (copy_buf_var>(win_size-1-(row-(img_height-1)))))
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[win_size-1-(row-(img_height-1))])][col];
-			}
-			else
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[copy_buf_var])][col];
-			}
+			buf_cop[copy_buf_var] = buf[copy_buf_var][col];
 		}
+
+		if(row < img_height && col < img_width)
+			 buf_cop[row_ind[win_size-1]] = _src_mat.read(); // Read data
+		else buf_cop[row_ind[win_size-1]] = 0;
+
+		buf[row_ind[win_size-1]][col] = buf_cop[row_ind[win_size-1]];
+
 		
 		// if(NPC == AU_NPPC8)
 		// {
@@ -167,7 +162,9 @@ void ProcessMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _src_mat,
 	#pragma HLS UNROLL
 				if(col<img_width)
 				{
-					src_buf[extract_px][win_size-1] = buf_cop[extract_px];
+                   if((row >(img_height-1)) && (extract_px>(win_size-1-(row-(img_height-1)))))
+                        src_buf[extract_px][win_size-1] = buf_cop[(row_ind[win_size-1-(row-(img_height-1))])];
+                   else src_buf[extract_px][win_size-1] = buf_cop[(row_ind[extract_px])];
 				}
 				else
 				{
@@ -221,7 +218,7 @@ void ProcessMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ, int FLOW_WIDTH, int FLOW_INT>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ, int FLOW_WIDTH, int FLOW_INT, bool USE_URAM>
 void auMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_src_mat,
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_out_mat, hls::stream< bool > &flag, ap_uint<8> win_size,
 		uint16_t img_height, uint16_t img_width)
@@ -245,8 +242,14 @@ void auMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_src_mat,
 	ap_fixed<FLOW_WIDTH,FLOW_INT> P0;
 
 	ap_fixed<FLOW_WIDTH,FLOW_INT> buf[WIN_SZ][(COLS >> NPC)];
-#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+#pragma HLS ARRAY_RESHAPE variable=buf complete dim=1
+
+if (USE_URAM) {	
+#pragma HLS RESOURCE variable=buf core=XPM_MEMORY uram
+}
+else {
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
+}	
 
 //initializing row index
 	
@@ -311,7 +314,7 @@ void auMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, int FLOW_WIDTH, int FLOW_INT>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, int FLOW_WIDTH, int FLOW_INT, bool USE_URAM>
 void auMedianBlur(
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_src,
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &_dst, hls::stream< bool > &flag, ap_uint<8> win_size,
@@ -329,7 +332,7 @@ void auMedianBlur(
 	imgwidth = imgwidth >> NPC;
 
 
-	auMedian3x3< ROWS, COLS, DEPTH, NPC, WORDWIDTH, (COLS>>NPC)+(WIN_SZ>>1), WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT>(_src, _dst,flag,WIN_SZ,imgheight,imgwidth);
+	auMedian3x3< ROWS, COLS, DEPTH, NPC, WORDWIDTH, (COLS>>NPC)+(WIN_SZ>>1), WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT, USE_URAM>(_src, _dst,flag,WIN_SZ,imgheight,imgwidth);
 
 
 }
