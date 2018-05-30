@@ -71,6 +71,8 @@ ap_fixed<IT_WIDTH,IT_INT> findIntensity(unsigned char lineBuffer[NUM_LINES+1][MA
 
 		// Find which location in linebuffers to access
 		int lx0 = tmp_locj;
+		// AK,ZoTech: here out of bound of current level picture access may happen, thus workaround for bound padding suggested:
+		// int lx1 = lx0 + ((lx0<(cols-1)) ? 1:0);
 		int lx1 = lx0 + 1;
 
 		ap_fixed<ITCMP_WIDTH,ITCMP_INT> fracx = ap_fixed<ITCMP_WIDTH,ITCMP_INT>(tmp_locj - lx0);
