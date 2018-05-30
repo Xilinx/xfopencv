@@ -246,7 +246,7 @@ if (USE_URAM) {
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM = false>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM>
 void xFPyrDownGaussianBlur(
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_src,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_dst, ap_uint<8> win_size,

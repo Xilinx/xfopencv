@@ -100,7 +100,7 @@ ap_fixed<IT_WIDTH,IT_INT> findIntensity(unsigned char lineBuffer[NUM_LINES+1][MA
 	
 } // end findIntensity()
 
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int IT_WIDTH, int IT_INT, int ITCMP_WIDTH, int ITCMP_INT, int FLOW_WIDTH, int FLOW_INT, int RMAPPX_WIDTH, int RMAPPX_INT, bool USE_URAM = false>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int IT_WIDTH, int IT_INT, int ITCMP_WIDTH, int ITCMP_INT, int FLOW_WIDTH, int FLOW_INT, int RMAPPX_WIDTH, int RMAPPX_INT, bool USE_URAM>
 void findGradients(unsigned char *currImg3, unsigned char *nextImg, hls::stream< ap_fixed<IT_WIDTH,IT_INT> > &strmIt, hls::stream< ap_int<9> > &strmIx, hls::stream< ap_int<9> > &strmIy,
 		unsigned int rows, unsigned int cols, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowUin, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowVin,
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowU_in1, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &strmFlowV_in1, int level) {

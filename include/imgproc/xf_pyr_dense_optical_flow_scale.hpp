@@ -215,7 +215,7 @@ void process(ap_fixed<FLOW_WIDTH,FLOW_INT> buf[2][MAXWIDTH], ap_fixed<FLOW_WIDTH
 
 	} // end L3
 } // end process()
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int FLOW_WIDTH, int FLOW_INT, int SCCMP_WIDTH, int SCCMP_INT, int RMAPPX_WIDTH, int RMAPPX_INT, int SCALE_WIDTH, int SCALE_INT, bool USE_URAM = false>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int FLOW_WIDTH, int FLOW_INT, int SCCMP_WIDTH, int SCCMP_INT, int RMAPPX_WIDTH, int RMAPPX_INT, int SCALE_WIDTH, int SCALE_INT, bool USE_URAM>
 void scale_up( hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &inStrm0, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &outStrm0,
                hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &inStrm1, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &outStrm1,
 			unsigned short int inRows, unsigned short int inCols, unsigned short int outRows, unsigned short int outCols, int mul, const bool scale_up_flag, float scale_comp) {
