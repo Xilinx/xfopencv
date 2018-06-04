@@ -99,34 +99,31 @@ void xFPyrDownprocessgaussian(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
-
-        XF_TNAME(DEPTH,NPC) bufWord[WIN_SZ];
-#pragma HLS ARRAY_PARTITION variable=bufWord complete dim=1
-	    for (int k=0; k<WIN_SZ; k++) bufWord[k] = buf[k][col];
-		if(row < img_height && col < img_width)
-			bufWord[row_ind[win_size-1]] = _src_mat.read(); // Read data
-	    for (int k=0; k<WIN_SZ; k++) buf[k][col] = bufWord[k];
-
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 #pragma HLS UNROLL
-			if(	(row >(img_height-1)) && (copy_buf_var>(win_size-1-(row-(img_height-1)))))
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[win_size-1-(row-(img_height-1))])][col];
-			}
-			else
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[copy_buf_var])][col];
-			}
+           buf_cop[copy_buf_var] = buf[copy_buf_var][col];
 		}
+
+        if(row < img_height && col < img_width)
+            buf    [row_ind[win_size-1]][col] =
+            buf_cop[row_ind[win_size-1]]      = _src_mat.read(); // Read data
+
 		for(int extract_px=0;extract_px<WIN_SZ;extract_px++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 #pragma HLS UNROLL
 			if(col<img_width)
 			{
-				src_buf[extract_px][win_size-1] = buf_cop[extract_px];
+               if(	(row >(img_height-1)) && (extract_px>(win_size-1-(row-(img_height-1)))))
+               {
+                  src_buf[extract_px][win_size-1] = buf_cop[(row_ind[win_size-1-(row-(img_height-1))])];
+               }
+               else
+               {
+                  src_buf[extract_px][win_size-1] = buf_cop[(row_ind[extract_px])];
+               }
 			}
 			else
 			{
