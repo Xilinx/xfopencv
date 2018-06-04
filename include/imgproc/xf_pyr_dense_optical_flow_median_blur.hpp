@@ -113,29 +113,15 @@ void auMedianProc(
 }
 
 template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC, int WIN_SZ, int WIN_SZ_SQ, int FLOW_WIDTH, int FLOW_INT>
-void ProcessMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _src_mat,
+void ProcessMedian3x3(
 		hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _out_mat, hls::stream< bool > &flag,
-		ap_fixed<FLOW_WIDTH,FLOW_INT> buf[WIN_SZ][(COLS >> NPC)], ap_fixed<FLOW_WIDTH,FLOW_INT> src_buf[WIN_SZ][1+(WIN_SZ-1)], ap_fixed<FLOW_WIDTH,FLOW_INT> buf_cop[WIN_SZ],
+		ap_fixed<FLOW_WIDTH,FLOW_INT> src_buf[WIN_SZ][1+(WIN_SZ-1)], ap_fixed<FLOW_WIDTH,FLOW_INT> buf_cop[WIN_SZ],
 		ap_fixed<FLOW_WIDTH,FLOW_INT> OutputValues[1],
 		ap_fixed<FLOW_WIDTH,FLOW_INT> &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[WIN_SZ], ap_uint<13> row, ap_uint<16> col, ap_uint<8> win_size)
 {
 #pragma HLS INLINE
 
 	uint16_t npc = 1;
-
-		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
-#pragma HLS UNROLL
-			buf_cop[copy_buf_var] = buf[copy_buf_var][col];
-		}
-
-		if(row < img_height && col < img_width)
-			 buf_cop[row_ind[win_size-1]] = _src_mat.read(); // Read data
-		else buf_cop[row_ind[win_size-1]] = 0;
-
-		buf[row_ind[win_size-1]][col] = buf_cop[row_ind[win_size-1]];
-
 		
 		// if(NPC == AU_NPPC8)
 		// {
@@ -307,8 +293,29 @@ else {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
-		ProcessMedian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT>(_src_mat0, _out_mat0, flag0, buf[0], src_buf[0], buf_cop[0], OutputValues[0], P0, img_width, img_height, shift_x, row_ind, row,col,win_size);
-		ProcessMedian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT>(_src_mat1, _out_mat1, flag1, buf[1], src_buf[1], buf_cop[1], OutputValues[1], P0, img_width, img_height, shift_x, row_ind, row,col,win_size);
+
+		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
+#pragma HLS UNROLL
+			buf_cop[0][copy_buf_var] = buf[0][copy_buf_var][col];
+			buf_cop[1][copy_buf_var] = buf[1][copy_buf_var][col];
+		}
+
+		if(row < img_height && col < img_width) {
+			buf_cop[0][row_ind[win_size-1]] = _src_mat0.read(); // Read data
+			buf_cop[1][row_ind[win_size-1]] = _src_mat1.read(); // Read data
+        }
+		else {
+			buf_cop[0][row_ind[win_size-1]] = 0;
+			buf_cop[1][row_ind[win_size-1]] = 0;
+        }
+
+		buf[0][row_ind[win_size-1]][col] = buf_cop[0][row_ind[win_size-1]];
+		buf[1][row_ind[win_size-1]][col] = buf_cop[1][row_ind[win_size-1]];
+
+		ProcessMedian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT>(_out_mat0, flag0, src_buf[0], buf_cop[0], OutputValues[0], P0, img_width, img_height, shift_x, row_ind, row,col,win_size);
+		ProcessMedian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ, FLOW_WIDTH, FLOW_INT>(_out_mat1, flag1, src_buf[1], buf_cop[1], OutputValues[1], P0, img_width, img_height, shift_x, row_ind, row,col,win_size);
 	    } // Col_Loop
 	
 		//update indices
