@@ -134,6 +134,7 @@ sprintf(name,"gy_hw%d.txt",level);
 	unsigned int read_curimg = 0;
 	unsigned int read_nxtimg = 0;
 	
+    //AK,ZoTech: this buffer needs initialization as workaround to exclude "X" values in co-sim.
 	unsigned char lineBuffer[NUM_LINES+1][MAXWIDTH];
 #pragma HLS array_reshape variable=lineBuffer complete dim=1
 
