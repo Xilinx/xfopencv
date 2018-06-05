@@ -215,11 +215,13 @@ if (USE_URAM) {
 		for(col = 0; col < img_width; col++)
 		{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
+    #pragma HLS pipeline
+			XF_TNAME(DEPTH,NPC) const bufTemp = buf[row_ind[win_size>>1]][col];
 			for(int init_buf=0; init_buf < WIN_SZ>>1;init_buf++)
 			{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 	#pragma HLS UNROLL
-				buf[init_buf][col] = buf[row_ind[win_size>>1]][col];
+				buf[init_buf][col] = bufTemp;
 			}
 		}
 	
