@@ -44,7 +44,7 @@ void XFIntegralImageKernel(
 		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _in,
 		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _out, uint16_t height, uint16_t width)
 {
-#pragma hls inline
+#pragma HLS inline
 	XF_SNAME(XF_32UW) linebuff[COLS];
 
 	uint32_t cur_sum;

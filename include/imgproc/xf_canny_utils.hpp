@@ -487,7 +487,7 @@ void xFAngle(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst, uint16_t imgheight,
 		uint16_t imgwidth) {
-#pragma hls inline
+#pragma HLS inline
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 	xFAngleKernel<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC,
 	WORDWIDTH_DST, (COLS >> XF_BITSHIFT(NPC))>(_src1, _src2, _dst, imgheight,

@@ -40,7 +40,7 @@ namespace xf{
 template <unsigned int ROWS, unsigned int COLS, unsigned int NPC, unsigned int DEPTH>
 void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image, unsigned short in_rows, unsigned short in_cols)
 {
-#pragma INLINE OFF
+#pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
 	hls::stream< XF_TNAME(DEPTH,NPC) > _filter_in;
 	hls::stream< XF_TNAME(DEPTH,NPC) > _filter_out;
