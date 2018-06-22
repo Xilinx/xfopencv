@@ -1,0 +1,20 @@
+{
+    "example" : "resize - File I/O",
+    "overview" : "resize",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "resize",
+            "location" : "<LIBRARY>/include/imgproc/xf_resize.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

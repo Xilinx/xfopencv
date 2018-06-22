@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -49,3 +49,4 @@ void remap_accel(xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &inMat, xf::Mat<TY
 	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapxMat, xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &mapyMat);
 
 #endif
+

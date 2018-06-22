@@ -1,0 +1,20 @@
+{
+    "example" : "integralimg - File I/O",
+    "overview" : "integralimg",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "integral",
+            "location" : "<LIBRARY>/include/imgproc/xf_integral_image.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

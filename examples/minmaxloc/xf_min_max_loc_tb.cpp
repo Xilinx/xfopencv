@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -80,10 +80,10 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> in_8bit(in_img.rows,in_img.cols);
+	static xf::Mat<PTYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> in_8bit(in_img.rows,in_img.cols);
 
-	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPPC>(argv[1], 0);
+	in_8bit.copyTo(in_img.data);
 	
 #if T_8U
 	imgInput=in_8bit;

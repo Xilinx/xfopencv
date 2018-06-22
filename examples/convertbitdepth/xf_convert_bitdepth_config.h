@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -38,8 +38,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "imgproc/xf_convert_bitdepth.hpp"
 
 /* config width and height */
-#define WIDTH 	1920
-#define HEIGHT	1080
+#define WIDTH 	3840
+#define HEIGHT	2160
 
 #if RO
 #define _NPC XF_NPPC8

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -84,20 +84,16 @@ int main(int argc, char** argv) {
 	outputimg1.create(S1, CV_16UC1);
 	error_img1.create(S1, CV_16UC1);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_uv,newwidth_uv);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_uv,newwidth_uv);
 
-/*	imgInput0.copyTo(inputimg0.data);
+	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
-	imgInput2.copyTo(inputimg2.data);*/
-
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, NPC1>(argv[2],0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, NPC1>(argv[3],0);
+	imgInput2.copyTo(inputimg2.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -110,13 +106,11 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-/*
+
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_UV.png", outputimg1);
-*/
+
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_UV.png",imgOutput1);
 
@@ -135,11 +129,8 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);*/
-
-	xf::absDiff(refimage0, imgOutput0, error_img0);
-	xf::absDiff(refimage1, imgOutput1, error_img1);
+	absdiff(outputimg0,refimage0,error_img0);
+	absdiff(outputimg1,refimage1,error_img1);
 
 #endif
 #if IYUV2RGBA
@@ -179,19 +170,15 @@ int main(int argc, char** argv) {
 	error_img0.create(S,CV_8UC3);
 
 #if NO
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(inputimg0.rows,inputimg0.cols);
 
 	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
 	imgInput2.copyTo(inputimg2.data);
-
-/*	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1>(argv[2],0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1>(argv[3],0);*/
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -254,21 +241,17 @@ int main(int argc, char** argv) {
 	error_img2.create(S2,CV_8UC1);
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgInput2(inputimg2.rows,inputimg2.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u,newwidth_u);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_v,newwidth_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u,newwidth_u);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_v,newwidth_v);
 
-/*	imgInput0.copyTo(inputimg0.data);
+	imgInput0.copyTo(inputimg0.data);
 	imgInput1.copyTo(inputimg1.data);
-	imgInput2.copyTo(inputimg2.data);*/
-
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, NPC1>(argv[2],0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT/4, WIDTH, NPC1>(argv[3],0);
+	imgInput2.copyTo(inputimg2.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -279,15 +262,6 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-
-/*	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();
-
-
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
 
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
@@ -311,10 +285,6 @@ int main(int argc, char** argv) {
 		printf("unable to open image \n");
 		return(1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -354,18 +324,15 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1,CV_8UC1);
 	error_img2.create(S1,CV_8UC1);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-/*	imgInput0.copyTo(inputimg0.data);
-	imgInput1.copyTo((unsigned short int *)inputimg1.data);*/
-
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2>(argv[2],-1);
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int *)inputimg1.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -377,18 +344,6 @@ int main(int argc, char** argv) {
 #endif
 
 	
-
-/*
-	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();
-
-
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);
-*/
-
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
@@ -408,10 +363,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimg0,error_img0);
-	absdiff(outputimg1,refimg1,error_img1);
-	absdiff(outputimg2,refimg2,error_img2);*/
 
 	xf::absDiff(refimg0, imgOutput0, error_img0);
 	xf::absDiff(refimg1, imgOutput1, error_img1);
@@ -447,16 +398,13 @@ int main(int argc, char** argv) {
 	img_height = inputimg0.rows;
 
 #if NO
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
-//	imgInput0.copyTo(inputimg0.data);
-//	imgInput1.copyTo((unsigned short int*)inputimg1.data);
-
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1>(argv[2],-1);
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -515,17 +463,15 @@ int main(int argc, char** argv) {
 	img_height = inputimg0.rows; // + inputimg1.rows;
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-//	imgInput0.copyTo(inputimg0.data);
-//	imgInput1.copyTo((unsigned short int*)inputimg1.data);
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2>(argv[2],-1);
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 
 #if __SDSCC__
@@ -537,19 +483,10 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-/*
-	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();*/
-
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
 
-	/*imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);
-*/
 	refimage0 = cv::imread(argv[3],0);
 	if(!refimage0.data) {
 		printf("Failed to open Y reference image\n");
@@ -566,9 +503,6 @@ int main(int argc, char** argv) {
 		return (1);
 	}
 
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -605,18 +539,15 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1,CV_8UC1);
 	error_img2.create(S1,CV_8UC1);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-//	imgInput0.copyTo(inputimg0.data);
-//	imgInput1.copyTo((unsigned short int*)inputimg1.data);
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2>(argv[2],-1);
-
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -628,18 +559,10 @@ int main(int argc, char** argv) {
 #endif
 	
 
-/*	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();
-*/
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
-	/*
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);
-*/
+
 	refimage0 = cv::imread(argv[3],0);
 	if(!refimage0.data) {
 		printf("Failed to open Y reference image\n");
@@ -655,10 +578,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -686,15 +605,13 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 
 #if NO
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
-/*	imgInput0.copyTo(inputimg0.data);
-	imgInput1.copyTo((unsigned short int*)inputimg1.data);*/
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1>(argv[2],-1);
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -748,18 +665,15 @@ int main(int argc, char** argv) {
 	outputimg2.create(S1,CV_8UC1);
 	error_img2.create(S1,CV_8UC1);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput0(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgInput1(inputimg1.rows,inputimg1.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-//	imgInput0.copyTo(inputimg0.data);
-//	imgInput1.copyTo((unsigned short int*)inputimg1.data);
-	imgInput0 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput1 = xf::imread<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2>(argv[2],-1);
-
+	imgInput0.copyTo(inputimg0.data);
+	imgInput1.copyTo((unsigned short int*)inputimg1.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -770,18 +684,9 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-
-/*	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();*/
-
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
-
-/*	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
 
 	refimage0 = cv::imread(argv[3],0);
 	if(!refimage0.data) {
@@ -798,10 +703,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -836,11 +737,11 @@ int main(int argc, char** argv) {
 	cvtColor(inputimg,inputimg,CV_BGR2RGBA);
 
 #if NO
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 	imgInput.copyTo(inputimg.data);
 
 #if __SDSCC__
@@ -854,22 +755,12 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-
-/*	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();*/
-
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
 
 #endif
 
-
-
-/*	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
 
 	refimage0 = cv::imread(argv[2],0);
 	if(!refimage0.data) {
@@ -886,10 +777,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -922,10 +809,10 @@ int main(int argc, char** argv) {
 	cvtColor(inputimg,inputimg,CV_BGR2RGBA);
 
 #if NO
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, XF_NPPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
 	imgInput.copyTo(inputimg.data);
 
@@ -938,20 +825,11 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-
-//	outputimg0.data = imgOutput0.copyFrom();
-//	outputimg1.data = imgOutput1.copyFrom();
-//	outputimg2.data = imgOutput2.copyFrom();
-
 #endif
 
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
-
-/*	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
 
 	refimage0 = cv::imread(argv[2],0);
 	if(!refimage0.data) {
@@ -968,10 +846,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	xf::absDiff(refimage1, imgOutput1, error_img1);
@@ -1009,10 +883,10 @@ int main(int argc, char** argv) {
 
 #if NO
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
 
 	imgInput.copyTo(inputimg0.data);
 
@@ -1026,14 +900,12 @@ int main(int argc, char** argv) {
 #endif
 	
 
-	//outputimg0.data = imgOutput0.copyFrom();
-	//outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
+	outputimg0.data = imgOutput0.copyFrom();
+	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 
 	xf::imwrite("out_UV.png",imgOutput1);
 	xf::imwrite("out_Y.png",imgOutput0);
 
-	//imwrite("out_UV.png", outputimg1);
-	//imwrite("out_y.png", outputimg0);
 #endif
 
 	refimage0 = cv::imread(argv[2],0);
@@ -1050,10 +922,8 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	//absdiff(outputimg0,refimage0,error_img0);
-	//absdiff(outputimg1,refimage1,error_img1);
-	xf::absDiff(refimage0, imgOutput0, error_img0);
-	xf::absDiff(refimage1, imgOutput1, error_img1);
+	absdiff(outputimg0,refimage0,error_img0);
+	absdiff(outputimg1,refimage1,error_img1);
 
 #endif
 
@@ -1081,13 +951,13 @@ int main(int argc, char** argv) {
 
 #if NO
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg0.rows,inputimg0.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, XF_NPPC1> imgOutput1(newheight_uv,newwidth_uv);
 
 	imgInput.copyTo(inputimg0.data);
-	//imgInput = xf::imread<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1>(argv[1],1);
+
 #if __SDSCC__
 	hw_ctr.start();
 #endif
@@ -1097,14 +967,12 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-	//outputimg0.data = imgOutput0.copyFrom();
-	//outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
+	outputimg0.data = imgOutput0.copyFrom();
+	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 #endif
 
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_VU.png",imgOutput1);
-	//imwrite("out_Y.png", outputimg0);
-	//imwrite("out_VU.png", outputimg1);
 
 	refimage0 = cv::imread(argv[2],0);
 	if(!refimage0.data)
@@ -1120,10 +988,8 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-	//absdiff(outputimg0,refimage0,error_img0);
-	//absdiff(outputimg1,refimage1,error_img1);
-	xf::absDiff(refimage0, imgOutput0, error_img0);
-	xf::absDiff(refimage1, imgOutput1, error_img1);
+	absdiff(outputimg0,refimage0,error_img0);
+	absdiff(outputimg1,refimage1,error_img1);
 
 #endif
 
@@ -1148,14 +1014,13 @@ int main(int argc, char** argv) {
 	error_img2.create(S1, CV_8UC1);
 
 
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT / 4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-	//imgInput.copyTo((unsigned short int*)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, NPC1>(argv[1],-1);
+	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -1170,11 +1035,7 @@ int main(int argc, char** argv) {
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = imgOutput1.copyFrom();
 	outputimg2.data = imgOutput2.copyFrom();
-	/*
 
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
@@ -1194,12 +1055,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*
-	absdiff(outputimg0, refimage0, error_img0);
-	absdiff(outputimg1, refimage1, error_img1);
-	absdiff(outputimg2, refimage2, error_img2);
-*/
 
 	xf::absDiff(refimage0, imgOutput0, error_img0);
 	imwrite("out_Y_error.png", error_img0);
@@ -1236,13 +1091,12 @@ int main(int argc, char** argv) {
 	img_height = inputimg.rows;
 
 
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
 
-	//imgInput.copyTo((unsigned short int*)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, NPC1>(argv[1], -1);
+	imgInput.copyTo((unsigned short int*)inputimg.data);
 	
 #if __SDSCC__
 	hw_ctr.start();
@@ -1256,11 +1110,6 @@ int main(int argc, char** argv) {
 
 	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
-
-
-
-//	imwrite("out_UV.png", outputimg1);
-//	/imwrite("out_Y.png", outputimg0);
 
 	xf::imwrite("out_UV.png",imgOutput1);
 	xf::imwrite("out_Y.png",imgOutput0);
@@ -1280,24 +1129,8 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-//
-//	FILE *fp=fopen("cv.txt","w");
-//	FILE *fp1=fopen("xf.txt","w");
-//
-//	for(int i=0;i<(540);i++)
-//	{
-//		for(int j=0;j<(960);j++)
-//		{
-//		fprintf(fp,"%d\n",(unsigned short)imgOutput1.data[i*960+j]);
-//		fprintf(fp1,"%d\n",refimage1.at<unsigned short>(i,j));
-//		}
-//	}
-//	fclose(fp);
-//	fclose(fp1);
-//	absdiff(outputimg0,refimage0,error_img0);
-//	absdiff(outputimg1,refimage1,error_img1);
-	xf::absDiff(refimage0,imgOutput0, error_img0);
-	xf::absDiff(refimage1,imgOutput1, error_img1);
+	absdiff(outputimg0,refimage0,error_img0);
+	absdiff(outputimg1,refimage1,error_img1);
 #endif
 #if UYVY2RGBA
 
@@ -1314,12 +1147,11 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 #if NO
 
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
-	//imgInput.copyTo((unsigned short int *)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], -1);
+	imgInput.copyTo((unsigned short int *)inputimg.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -1371,14 +1203,13 @@ int main(int argc, char** argv) {
 	img_width = inputimg.cols;
 	img_height = inputimg.rows;
 
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
-	xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT/4, WIDTH, NPC1> imgOutput2(newheight_u_v,newwidth_u_v);
 
-	//imgInput.copyTo((unsigned short int*)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, NPC1>(argv[1], -1);
+	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -1389,16 +1220,6 @@ int main(int argc, char** argv) {
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-
-/*	outputimg0.data = imgOutput0.copyFrom();
-	outputimg1.data = imgOutput1.copyFrom();
-	outputimg2.data = imgOutput2.copyFrom();
-
-
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_U.png", outputimg1);
-	imwrite("out_V.png", outputimg2);*/
-
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_U.png",imgOutput1);
 	xf::imwrite("out_V.png",imgOutput2);
@@ -1418,10 +1239,6 @@ int main(int argc, char** argv) {
 		printf("Failed to open V reference image\n");
 		return (1);
 	}
-
-/*	absdiff(outputimg0,refimage0,error_img0);
-	absdiff(outputimg1,refimage1,error_img1);
-	absdiff(outputimg2,refimage2,error_img2);*/
 
 	xf::absDiff(refimage0,imgOutput0, error_img0);
 	xf::absDiff(refimage1,imgOutput1, error_img1);
@@ -1452,13 +1269,12 @@ int main(int argc, char** argv) {
 	img_height = inputimg.rows;
 
 
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
-	xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput0(newheight_y,newwidth_y);
+	static xf::Mat<XF_8UC2, HEIGHT/2, WIDTH/2, NPC2> imgOutput1(newheight_u_v,newwidth_u_v);
 
-	//imgInput.copyTo((unsigned short int*)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, NPC1>(argv[1], -1);
+	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
 	hw_ctr.start();
@@ -1470,13 +1286,9 @@ int main(int argc, char** argv) {
 #endif
 	
 
-	/*outputimg0.data = imgOutput0.copyFrom();
+	outputimg0.data = imgOutput0.copyFrom();
 	outputimg1.data = (unsigned char*)imgOutput1.copyFrom();
 
-
-
-	imwrite("out_Y.png", outputimg0);
-	imwrite("out_UV.png", outputimg1);*/
 
 	xf::imwrite("out_Y.png",imgOutput0);
 	xf::imwrite("out_UV.png",imgOutput1);
@@ -1494,11 +1306,8 @@ int main(int argc, char** argv) {
 		return -1;
 	}
 
-/*	absdiff(outputimg0, refimage0, error_img0);
-	absdiff(outputimg1, refimage1, error_img1);*/
-
-	xf::absDiff(refimage0,imgOutput0, error_img0);
-	xf::absDiff(refimage1,imgOutput1, error_img1);
+	absdiff(outputimg0, refimage0, error_img0);
+	absdiff(outputimg1, refimage1, error_img1);
 
 	imwrite("error_Y.png", error_img0);
 	imwrite("error_UV.png", error_img1);
@@ -1517,12 +1326,11 @@ int main(int argc, char** argv) {
 	outputimg0.create(S0,CV_8UC4);
 
 #if NO
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
+	static xf::Mat<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(inputimg.rows,inputimg.cols);
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput0(newheight,newwidth);
 
-	//imgInput.copyTo((unsigned short int*)inputimg.data);
-	imgInput = xf::imread<XF_16UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], -1);
+	imgInput.copyTo((unsigned short int*)inputimg.data);
 
 #if __SDSCC__
 	hw_ctr.start();

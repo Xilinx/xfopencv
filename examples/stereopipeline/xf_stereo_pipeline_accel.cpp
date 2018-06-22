@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -35,11 +35,18 @@ void stereopipeline_accel(xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> &leftM
 	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> &bm_state, ap_fixed<32,12> *cameraMA_l_fix, ap_fixed<32,12> *cameraMA_r_fix, ap_fixed<32,12> *distC_l_fix, ap_fixed<32,12> *distC_r_fix, 
 	ap_fixed<32,12> *irA_l_fix, ap_fixed<32,12> *irA_r_fix, int _cm_size, int _dc_size)
 {
+#pragma HLS INTERFACE m_axi depth=9 port=cameraMA_l_fix offset=direct bundle=cameraMA
+#pragma HLS INTERFACE m_axi depth=9 port=cameraMA_r_fix offset=direct bundle=cameraMA
+#pragma HLS INTERFACE m_axi depth=9 port=distC_l_fix offset=direct bundle=distC
+#pragma HLS INTERFACE m_axi depth=9 port=distC_r_fix offset=direct bundle=distC
+#pragma HLS INTERFACE m_axi depth=9 port=irA_l_fix offset=direct bundle=irA
+#pragma HLS INTERFACE m_axi depth=9 port=irA_r_fix offset=direct bundle=irA
+
 	xf::InitUndistortRectifyMapInverse<XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(cameraMA_l_fix,distC_l_fix,irA_l_fix,mapxLMat,mapyLMat,_cm_size,_dc_size);
 	xf::remap<XF_REMAP_BUFSIZE,XF_INTERPOLATION_BILINEAR,XF_8UC1,XF_32FC1,XF_8UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(leftMat,leftRemappedMat,mapxLMat,mapyLMat);
-	
+
 	xf::InitUndistortRectifyMapInverse<XF_CAMERA_MATRIX_SIZE,XF_DIST_COEFF_SIZE,XF_32FC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(cameraMA_r_fix,distC_r_fix,irA_r_fix,mapxRMat,mapyRMat,_cm_size,_dc_size);
 	xf::remap<XF_REMAP_BUFSIZE,XF_INTERPOLATION_BILINEAR,XF_8UC1,XF_32FC1,XF_8UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(rightMat,rightRemappedMat,mapxRMat,mapyRMat);
+
 	xf::StereoBM<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS,XF_8UC1,XF_16UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(leftRemappedMat, rightRemappedMat, dispMat, bm_state);
 }
-

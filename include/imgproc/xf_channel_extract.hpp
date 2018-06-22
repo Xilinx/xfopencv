@@ -46,18 +46,17 @@ namespace xf{
  *	_dst	  :	 destination image as stream
  * 	_channel :  enumeration specified in < xf_channel_extract_e >
  ****************************************************************************/
-template <int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int TC>
+template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int TC>
 void xfChannelExtractKernel(
-		hls::stream< XF_TNAME(DEPTH_SRC, NPC) >&   _src,
-		hls::stream< XF_TNAME(DEPTH_DST, NPC) >& _dst,
-		uint16_t _channel,uint16_t height,uint16_t width)
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
+		uint16_t _channel, uint16_t height,uint16_t width)
 {
 #define XF_STEP 8
 
 	ap_uint<13> i,j,k;
-	XF_TNAME(DEPTH_SRC, NPC) in_pix;
-	XF_TNAME(DEPTH_DST, NPC) out_pix;
-	ap_uint<XF_PIXELDEPTH(DEPTH_DST)> result;
+	XF_TNAME(SRC_T, NPC) in_pix;
+	XF_TNAME(DST_T, NPC) out_pix;
+	ap_uint<XF_PIXELDEPTH(DST_T)> result;
 	int shift = 0;
 
 	if(_channel==XF_EXTRACT_CH_0 | _channel==XF_EXTRACT_CH_R | _channel==XF_EXTRACT_CH_Y)
@@ -88,7 +87,7 @@ void xfChannelExtractKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 			int y;
-			in_pix = (XF_TNAME(DEPTH_SRC, NPC))(_src.read());
+			in_pix = (XF_TNAME(SRC_T, NPC))(_src_mat.data[i*width+j]);
 
 			ProcLoop:
 			for( k = 0; k < (8<<XF_BITSHIFT(NPC)); k += XF_STEP)
@@ -99,36 +98,9 @@ void xfChannelExtractKernel(
 				out_pix.range(k+(XF_STEP-1), k) = result;
 			}
 
-			_dst.write((XF_TNAME(DEPTH_DST, NPC))out_pix);
+			_dst_mat.data[i*width+j] = (XF_TNAME(DST_T, NPC))out_pix;
 		}//ColLoop
 	}//RowLoop
-}
-//xfChannelExtractKernel
-
-template <int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC>
-void xfChannelExtract(
-		hls::stream< XF_TNAME(DEPTH_SRC, NPC) > & _src,
-		hls::stream< XF_TNAME(DEPTH_DST, NPC) >& _dst,
-		uint16_t _channel, uint16_t height, uint16_t width)
-{
-	assert(((_channel == XF_EXTRACT_CH_0) || (_channel == XF_EXTRACT_CH_1) || (_channel == XF_EXTRACT_CH_2) ||
-		    (_channel == XF_EXTRACT_CH_3) || (_channel == XF_EXTRACT_CH_R) || (_channel == XF_EXTRACT_CH_G) ||
-		    (_channel == XF_EXTRACT_CH_B) || (_channel == XF_EXTRACT_CH_A) || (_channel == XF_EXTRACT_CH_Y) ||
-		    (_channel == XF_EXTRACT_CH_U) || (_channel == XF_EXTRACT_CH_V)) && "Invalid Channel Value. See xf_channel_extract_e enumerated type");
-
-	width=width>>XF_BITSHIFT(NPC);
-
-	if ((NPC==XF_NPPC4))
-	{
-		xfChannelExtractKernel<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC,(COLS>>XF_BITSHIFT(NPC))>
-		(_src, _dst, _channel, height, width);
-
-	}
-	else
-	{
-		xfChannelExtractKernel<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, (COLS>>XF_BITSHIFT(NPC))>
-		(_src, _dst, _channel, height, width);
-	}
 }
 
 //#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
@@ -141,38 +113,20 @@ void xfChannelExtract(
 template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
 void extractChannel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat, uint16_t _channel)
 {
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
+	assert(((_channel == XF_EXTRACT_CH_0) || (_channel == XF_EXTRACT_CH_1) || (_channel == XF_EXTRACT_CH_2) ||
+		    (_channel == XF_EXTRACT_CH_3) || (_channel == XF_EXTRACT_CH_R) || (_channel == XF_EXTRACT_CH_G) ||
+		    (_channel == XF_EXTRACT_CH_B) || (_channel == XF_EXTRACT_CH_A) || (_channel == XF_EXTRACT_CH_Y) ||
+		    (_channel == XF_EXTRACT_CH_U) || (_channel == XF_EXTRACT_CH_V)) && "Invalid Channel Value. See xf_channel_extract_e enumerated type");
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((_dst_mat.rows <= ROWS ) && (_dst_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert((SRC_T == XF_8UC4) && (DST_T == XF_8UC1) && "Source image should be of 4 channels and destination image of 1 channel");
+	assert(((NPC == XF_NPPC1)) && "NPC must be XF_NPPC1");
+
+	short width=_src_mat.cols>>XF_BITSHIFT(NPC);
 
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
 
-	Read_Mat_Loop:
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
-
-	xfChannelExtract<ROWS, COLS, SRC_T, DST_T, NPC>(_src, _dst, _channel, _src_mat.rows, _src_mat.cols);
-
-	Write_Mat_Loop:
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			XF_TNAME(DST_T,NPC) outpix = _dst.read();
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = outpix;
-		}
-	}
+	xfChannelExtractKernel<ROWS, COLS, SRC_T, DST_T, NPC, (COLS>>XF_BITSHIFT(NPC))>(_src_mat, _dst_mat, _channel, _src_mat.rows, width);
 }
 }
 

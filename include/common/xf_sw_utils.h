@@ -54,43 +54,8 @@ namespace xf{
 	template <int _PTYPE, int _ROWS, int _COLS, int _NPC>
 	void imwrite(const char *str, xf::Mat<_PTYPE, _ROWS, _COLS, _NPC> &output){
 
-		int _PTYPE_CV;
-		if(_PTYPE == XF_8UC3)
-		{
-			_PTYPE_CV = CV_8UC3;
-		}
-		else if(_PTYPE == XF_8UC1)
-		{
-			_PTYPE_CV = CV_8UC1;
-		}
-		else if(_PTYPE == XF_16UC1|| _PTYPE == XF_8UC2)
-		{
-			_PTYPE_CV = CV_16UC1;
-		}
-		else if(_PTYPE == XF_16UC3)
-		{
-			_PTYPE_CV = CV_16UC3;
-		}
-		else if(_PTYPE == XF_16SC1)
-		{
-			_PTYPE_CV = CV_16SC1;
-		}
-		else if(_PTYPE == XF_8UC4 )
-		{
-			_PTYPE_CV = CV_8UC4;
-		}
-		else if(_PTYPE == XF_32UC1)
-		{
-			_PTYPE_CV = CV_32SC1;
-		}
-		else if(_PTYPE == XF_32SC1)
-		{
-			_PTYPE_CV = CV_32SC1;
-		}
-		else if(_PTYPE == XF_32FC1)
-		{
-			_PTYPE_CV = CV_32FC1;
-		}
+		int list_ptype[] = {CV_8UC1, CV_16UC1, CV_16SC1, CV_32SC1, CV_32FC1,  CV_32SC1, CV_16UC1, CV_32SC1, CV_8UC1, CV_8UC3, CV_16UC3, CV_16SC3};
+		int _PTYPE_CV = list_ptype[_PTYPE];
 
 			cv::Mat input(output.rows, output.cols, _PTYPE_CV);
 			input.data = output.copyFrom();
@@ -103,13 +68,15 @@ namespace xf{
 		assert((cv_img.rows == xf_img.rows) && (cv_img.cols == xf_img.cols) && "Sizes of cv and xf images should be same");
 		assert((xf_img.rows == diff_img.rows) && (xf_img.cols == diff_img.cols) && "Sizes of xf and diff images should be same");
 		assert(((_NPC == XF_NPPC8) || (_NPC == XF_NPPC4) || (_NPC == XF_NPPC1)) && "Only XF_NPPC1, XF_NPPC4, XF_NPPC8 are supported");
+		//assert(((_PTYPE == XF_8UC3) ) && (_NPC == XF_NPPC8) && "Multi-pixel parallelism not supported for multi-channel images");
+		assert((cv_img.channels() == XF_CHANNELS(_PTYPE, _NPC)) && "Number of channels of cv and xf images does not match");
 
 		int STEP = XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC));
 
 		for(int i=0; i<cv_img.rows;++i){
 			XF_TNAME(_PTYPE,_NPC) diff_pix = 0;
 			XF_TNAME(_PTYPE,_NPC) xf_pix = 0;
-			for(int j=0,l=0,shift=0; j<cv_img.cols;++j){
+			for(int j=0,l=0,byteindex1=0,byteindex2=0,shift=0; j<cv_img.cols;++j){
 
 				if(_NPC == XF_NPPC8 ){	//If 8PPC
 					if( j%8==0){		//then read only once for 8 pixels
@@ -117,9 +84,8 @@ namespace xf{
 						l++;			//j loops till 1920, hence using variable l as we need  only 240 iterations in 8PPC mode
 						shift=0;
 					}
-					int cv_pix = cv_img.at<ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))>>(i,j);//cv_img.data[i*cv_img.cols+j];
-					diff_img.at<ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))>>(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
-					//diff_img.data[i*diff_img.cols+j] = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
+					int cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
+					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
 					shift = shift+STEP;
 				}
 
@@ -129,21 +95,46 @@ namespace xf{
 						l++;			//j loops till 1920, hence using variable l as we need  only 480 iterations in 4PPC mode
 						shift=0;
 					}
-					ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> cv_pix = cv_img.at<ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))>>(i,j);//cv_img.data[i*cv_img.cols+j];
-					//diff_img.data[i*diff_img.cols+j] = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
-					diff_img.at<ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))>>(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
+					ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
+					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
 					shift = shift+STEP;
 				}
 
 				else if(_NPC == XF_NPPC1){
-					xf_pix = xf_img.data[i*xf_img.cols+j];
-					XF_TNAME(_PTYPE,_NPC) cv_pix = cv_img.at<XF_TNAME(_PTYPE,_NPC)>(i,j);//data[i*cv_img.cols+j];
+									xf_pix = xf_img.data[i*xf_img.cols+j];
+									XF_TNAME(_PTYPE,_NPC) cv_pix = 0;
+									int mul_val=0, nbytes =0;
 
-					diff_pix.range(STEP-1,0) = abs(cv_pix.range(STEP-1,0) - xf_pix.range(STEP-1,0));
+									if(cv_img.depth()==CV_8U){
+										mul_val = 8;
+										nbytes = 1;
+									}
+									else if(cv_img.depth()==CV_16S || cv_img.depth()==CV_16U){
+										mul_val = 16;
+										nbytes = 2;
+									}
+									else if(cv_img.depth()==CV_32S || cv_img.depth()==CV_32F){
+										mul_val = 32;
+										nbytes = 4;
+									}
+									else{
+										assert("OpenCV image's depth not supported");
+									}
 
-					//diff_img.data[i*diff_img.cols+j]= diff_pix;
-					diff_img.at<XF_TNAME(_PTYPE,_NPC)>(i,j)= diff_pix;
-				}
+									for(int k=0; k< XF_CHANNELS(_PTYPE, _NPC)*mul_val; ++byteindex1,k+=8){
+
+										unsigned char pix_temp = cv_img.data[i*cv_img.cols*XF_CHANNELS(_PTYPE, _NPC)*nbytes+byteindex1];
+										 cv_pix.range(k+7,k) = pix_temp;
+										 pix_temp = 0;
+									}
+
+									diff_pix = std::abs(cv_pix - xf_pix);
+
+									for(int k=0; k< XF_CHANNELS(_PTYPE, _NPC)*mul_val; ++byteindex2,k+=8){
+										diff_img.data[i*cv_img.cols*XF_CHANNELS(_PTYPE, _NPC)*nbytes+byteindex2] = diff_pix.range(k+7,k);
+									}
+
+								}
 
 			}
 		}

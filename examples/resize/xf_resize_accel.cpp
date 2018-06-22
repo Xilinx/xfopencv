@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_resize_config.h"
 
-void resize_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, NEWHEIGHT, NEWWIDTH, NPC1> &_dst)
+void resize_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<TYPE, NEWHEIGHT, NEWWIDTH, NPC1> &_dst)
 {	
-	xf::resize <INTERPOLATION, XF_8UC1, HEIGHT, WIDTH, NEWHEIGHT, NEWWIDTH, NPC1> (_src, _dst);
+	xf::resize <INTERPOLATION, TYPE, HEIGHT, WIDTH, NEWHEIGHT, NEWWIDTH, NPC1, MAXDOWNSCALE> (_src, _dst);
 }

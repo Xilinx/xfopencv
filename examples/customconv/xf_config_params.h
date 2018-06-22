@@ -1,7 +1,7 @@
 /*  specify the filter height and filter width  */
 
 #define  FILTER_HEIGHT  3
-#define  FILTER_WIDTH   3
+#define  FILTER_WIDTH  	3
 
 
 /*  set the optimization type  */

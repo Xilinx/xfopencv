@@ -2,28 +2,28 @@
 Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
@@ -37,7 +37,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "hls_stream.h"
 #include "common/xf_common.h"
-
+#ifndef XF_IN_STEP
+#define XF_IN_STEP  8
+#endif
 /**
  *  xfLUTKernel: The Table Lookup Image Kernel.
  *  This kernel uses each pixel in an image to index into a LUT
@@ -47,8 +49,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 namespace xf {
 
-template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
-int WORDWIDTH_DST, int COLS_TRIP>
+template <int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST, int COLS_TRIP>
 void xFLUTKernel(
 		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,
 		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _dst,
@@ -64,17 +65,17 @@ void xFLUTKernel(
 		_lut[i]=_lutptr.read();
 	}
 
-	uchar_t lut[npc][256];
+	uchar_t lut[npc*PLANES][256];
 
-	if(NPC)
+	if((NPC!=0) || (PLANES==3) )
 	{
 #pragma HLS ARRAY_PARTITION variable=lut complete dim=1
 	}
 
 	// creating a temporary buffers for Resource Optimization and Performance optimization
-	if(NPC)
+	if((NPC!=0) || (PLANES==3))
 	{
-		for( i = 0; i < npc; i++)
+		for( i = 0; i < (npc *PLANES); i++)
 		{
 			for( j = 0; j < 256; j++)
 			{
@@ -101,26 +102,25 @@ void xFLUTKernel(
 			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src.read());  // read the data from the input stream
 
 			uchar_t l = 0;
-
+			int c=0;
 			procLoop:
-			for ( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
-					k += XF_PIXELDEPTH(DEPTH))
+			for ( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));k += XF_IN_STEP)
 			{
 #pragma HLS unroll
 				XF_PTNAME(DEPTH) p;
-				p = val_src.range(k + (XF_PIXELDEPTH(DEPTH)-1), k);     	// Get bits from certain range of positions.
+				p = val_src.range(k + (XF_IN_STEP-1), k);     	// Get bits from certain range of positions.
 
 				// for Normal operation
-				if(NPC == XF_NPPC1)
+				if((NPC == XF_NPPC1) && (PLANES==1))
 				{
-					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = _lut[p];	// Set bits in a range of positions.
+					val_dst.range(k + (XF_IN_STEP-1), k) = _lut[p];	// Set bits in a range of positions.
 				}
 
 				// resource optimization and performance optimization
 				else
 				{
-					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = lut[l][p];	// Set bits in a range of positions.
-					l++;				
+					val_dst.range(k + (XF_IN_STEP-1), k) = lut[l][p];	// Set bits in a range of positions.
+					l++;
 				}
 
 			}
@@ -131,24 +131,27 @@ void xFLUTKernel(
 
 
 
-template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
+template <int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
 void LUT_kernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst,hls::stream< unsigned char >& _lut,uint16_t height,uint16_t width)
 {
 
 
-	assert((DEPTH == XF_8UP) && "Depth must be AU_8UP");
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be AU_NPPC1 or AU_NPPC8");
-	assert(((WORDWIDTH_SRC == XF_8UW) || (WORDWIDTH_SRC == XF_64UW)) &&
-			"WORDWIDTH_SRC must be AU_8UW or AU_64UW ");
-	assert(((WORDWIDTH_DST == XF_8UW) || (WORDWIDTH_DST == XF_64UW)) &&
-			"WORDWIDTH_DST must be AU_8UW or AU_64UW");
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
+//	assert((DEPTH == XF_8UP ) && "Depth must be XF_8UP");
+//	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+//			"NPC must be AU_NPPC1 or AU_NPPC8");
+//	assert(((WORDWIDTH_SRC == XF_8UW) || (WORDWIDTH_SRC == XF_64UW)) &&
+//			"WORDWIDTH_SRC must be AU_8UW or AU_64UW ");
+//	assert(((WORDWIDTH_DST == XF_8UW) || (WORDWIDTH_DST == XF_64UW)) &&
+//			"WORDWIDTH_DST must be AU_8UW or AU_64UW");
+//	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
 
-	xFLUTKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst, _lut, height, width);
+	xFLUTKernel<ROWS,COLS,PLANES,DEPTH,NPC,WORDWIDTH_SRC, WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst, _lut, height, width);
+//	xFLUTKernel<ROWS,COLS,PLANES,NPC>(_src, _dst, _lut, height, width);
 }
+#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover(_lut:AXIDMA_SIMPLE)
 
-								
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
 #pragma SDS data access_pattern(_lut:SEQUENTIAL)
@@ -158,7 +161,7 @@ void LUT_kernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src,hls::stream< XF_SNA
 #pragma SDS data copy(_lut[0:256])
 
 template <int SRC_T, int ROWS, int COLS,int NPC=1>
-void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst,unsigned char* _lut)
+void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst,unsigned char *_lut)
 {
 
 	hls::stream< XF_TNAME(SRC_T,NPC)> _src_stream;
@@ -188,7 +191,7 @@ void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC>
 		_lut_stream.write(*(_lut + i));
 	}
 
-	LUT_kernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _dst_stream, _lut_stream, _src.rows, _src.cols);
+	LUT_kernel<ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _dst_stream, _lut_stream, _src.rows, _src.cols);
 
 	for(int i=0; i<_dst.rows;i++)
 	{

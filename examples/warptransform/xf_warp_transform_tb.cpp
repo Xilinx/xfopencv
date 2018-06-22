@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -110,19 +110,24 @@ cv::RNG rng;
 	}
 
 	cv::Mat image_input,image_output;
+
 	image_input = cv::imread(argv[1],0);
+	image_output.create(image_input.rows,image_input.cols,image_input.depth());
+	cv::Mat diff_img;
+	diff_img.create(image_input.rows,image_input.cols,image_input.depth());
+
 	if(image_input.data==NULL)
 	{
 		printf("Failed to load the image ... %s\n!",argv[1]);
 		return -1;
 	}
 	cv::imwrite("input.png",image_input);
-	image_output.create(image_input.rows,image_input.cols,image_input.depth());
 
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _src(image_input.rows,image_input.cols);
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> _dst(image_input.rows,image_input.cols);
+	static xf::Mat<TYPE,HEIGHT,WIDTH,XF_NPPC1> _src(image_input.rows,image_input.cols);
+	static xf::Mat<TYPE,HEIGHT,WIDTH,XF_NPPC1> _dst(image_input.rows,image_input.cols);
 
-	_src = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+	//_src = xf::imread<TYPE, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+	_src.copyTo(image_input.data);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -135,7 +140,11 @@ cv::RNG rng;
 	#endif
 
 	xf::imwrite("hls_out.jpg",_dst);
-								
+
+	cv::imwrite("output.png",image_output);
+
+	image_output.data = _dst.copyFrom();
+
 	cv::Mat opencv_image;
 	opencv_image.create(HEIGHT,WIDTH,image_input.depth());
 	for(int I1=0;I1<opencv_image.rows; I1++)
@@ -163,28 +172,25 @@ cv::RNG rng;
 	char output_opencv[]= "opencv_output.png";
 	cv::imwrite(output_opencv,opencv_image);
 
-	cv::Mat diff_img;
-	diff_img.create(image_input.rows,image_input.cols,image_input.depth());
 	ap_uint8_t temp_px1=0,temp_px2=0,max_err=0,min_err=255;
 	int num_errs=0,num_errs1=0;
 	for(i=0;i<image_output.rows; i++)
 	{
 		for(j=0;j<image_output.cols; j++)
 		{
-			if(_dst.data[i*image_output.cols +j] == opencv_image.at<ap_uint8_t>(i,j))
+			if(image_output.at<ap_uint8_t>(i,j) == opencv_image.at<ap_uint8_t>(i,j))
 			{
 				diff_img.at<ap_uint8_t>(i,j) = 0;
 			}
 			else
 			{
-				if(_dst.data[i*image_output.cols +j] > opencv_image.at<ap_uint8_t>(i,j))
+				if(image_output.at<ap_uint8_t>(i,j) > opencv_image.at<ap_uint8_t>(i,j))
 				{
-					diff_img.at<ap_uint8_t>(i,j) = _dst.data[i*image_output.cols +j] - opencv_image.at<ap_uint8_t>(i,j);
+					diff_img.at<ap_uint8_t>(i,j) = image_output.at<ap_uint8_t>(i,j) - opencv_image.at<ap_uint8_t>(i,j);
 				}
 				else
 				{
-					diff_img.at<ap_uint8_t>(i,j) = -_dst.data[i*image_output.cols +j] + opencv_image.at<ap_uint8_t>(i,j);
-					//diff_img.at<ap_uint8_t>(i,j) = -_dst.data[i*image_output.cols +j] + opencv_image.at<ap_uint8_t>(i,j);
+					diff_img.at<ap_uint8_t>(i,j) = -image_output.at<ap_uint8_t>(i,j) + opencv_image.at<ap_uint8_t>(i,j);
 				}
 				num_errs = num_errs+1;
 				if(max_err < diff_img.at<ap_uint8_t>(i,j))
@@ -209,8 +215,8 @@ cv::RNG rng;
 	cv::imwrite("diff_image.png",diff_img);
 	char output_image_name[]= "output.png";
 	//cv::imwrite(output_image_name,image_output);
-	
-	if(num_errs > 5000)
+
+	if(num_errs > 10000)
 	{
 		return -1;
 	}

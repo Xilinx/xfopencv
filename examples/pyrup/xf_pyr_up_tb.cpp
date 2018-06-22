@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -34,12 +34,7 @@ int main(int argc, char *argv[]){
 	cv::Mat input_image, output_image, output_xf, output_diff_xf_cv;
 	
 	input_image = cv::imread(argv[1],0);
-	if(input_image.data == NULL)
-	{
-		std::cout << "Input image was not read" << std::endl;
-		return 1;
-	}
-	
+	int channels=input_image.channels();
 	unsigned short input_height = input_image.rows;
 	unsigned short input_width = input_image.cols;
 
@@ -52,12 +47,14 @@ int main(int argc, char *argv[]){
 
 	output_xf.create(output_height,output_width,CV_8UC1);
 	output_diff_xf_cv.create(output_height,output_width,CV_8UC1);
+
 	
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(input_image.rows,input_image.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(output_height,output_width);
-//	imgInput.copyTo(input_image.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
-	
+	static xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> imgInput(input_image.rows,input_image.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> imgOutput(output_height,output_width);
+
+	//imgInput = xf::imread<TYPE, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+	imgInput.copyTo(input_image.data);
+
 	#if __SDSCC__
 	perf_counter hw_ctr;		
 	hw_ctr.start();
@@ -69,31 +66,39 @@ int main(int argc, char *argv[]){
 		hw_ctr.stop();
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	//output_xf.data = imgOutput.copyFrom();
-	xf::imwrite("hls_out.jpg",imgOutput);
+		xf::imwrite("hls_out.jpg",imgOutput);
 	
 	int num_errors_xf = 0;
 	unsigned char max_error = 0;
 	unsigned char min_error = 255;
-	
-	for(int i=2;i<output_height-2;i++)
+	FILE *fp=fopen("hls.txt","w");
+	FILE *fp1=fopen("cv.txt","w");
+
+	output_xf.data=(unsigned char*)imgOutput.copyFrom();
+	for(int i=(2*channels);i<output_height-2;i++)
 	{
-		for(int j=2;j<output_width-2;j++)
+		for(int j=(2*channels);j<output_width-2;j++)
 		{
-			if(imgOutput.data[i*output_width +j] == output_image.at<unsigned char>(i,j))
+			if(output_xf.at<unsigned char>(i,j) == output_image.at<unsigned char>(i,j))
 			{
 				output_diff_xf_cv.at<unsigned char>(i,j) = 0;
+				fprintf(fp,"%d \n",output_xf.at<unsigned char>(i,j ));
+				fprintf(fp1,"%d \n",output_image.at<unsigned char>(i,j));
+
 			}
 			else
 			{
 				output_diff_xf_cv.at<unsigned char>(i,j) = 255;
 				
-				unsigned char temp1 = imgOutput.data[i*output_width +j];
+				unsigned char temp1 = output_xf.at<unsigned char>(i,j);
 				unsigned char temp2 = output_image.at<unsigned char>(i,j);
 				unsigned char temp = std::abs(temp1-temp2);
+				fprintf(fp,"%d \n",temp1 );
+				fprintf(fp1,"%d \n",temp2 );
 				if(temp>max_error)
 				{
 					max_error = temp;
+
 				}
 				else if(temp < min_error)
 				{
@@ -106,11 +111,13 @@ int main(int argc, char *argv[]){
 			}
 		}
 	}
+	fclose(fp);
+	fclose(fp1);
 	std::cout << "number of differences between opencv and xf: " << num_errors_xf << std::endl;
 	std::cout << "Max Error between opencv and xf: " << (unsigned int)max_error << std::endl;
 	std::cout << "Min Error between opencv and xf: " << (unsigned int)min_error << std::endl;
 	cv::imwrite("xf_cv_diff_image.png", output_diff_xf_cv);
-//	cv::imwrite("xf_image.png", output_xf);
+	cv::imwrite("xf_image.png", output_xf);
 	
 	if(max_error > 0)
 	{

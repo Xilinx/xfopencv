@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -29,7 +29,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_custom_convolution_config.h"
 
-void Filter2d_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift)
+void Filter2d_accel(xf::Mat<INTYPE, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift)
 {	
-	xf::filter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,OUTTYPE,HEIGHT, WIDTH,NPC1>(_src,_dst,filter_ptr,shift);
+#pragma HLS INTERFACE m_axi depth=9 port=filter_ptr offset=direct bundle=filter_ptr
+
+
+	xf::filter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,INTYPE,OUTTYPE,HEIGHT, WIDTH,NPC1>(_src,_dst,filter_ptr,shift);
 }

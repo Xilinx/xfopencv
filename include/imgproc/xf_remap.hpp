@@ -39,34 +39,34 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
-#define HLS_INTER_TAB_SIZE 32
-#define HLS_INTER_BITS     5
+#define HLS_INTER_TAB_SIZE 256
+#define HLS_INTER_BITS     8
 
 namespace xf{
 
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int SRC_T, int DST_T, int MAP_T, int WIN_ROW, int ROWS, int COLS, int NPC>
 void xFRemapNNI(
-		hls::stream< SRC_T >   &src,
-		hls::stream< DST_T >   &dst,
-		hls::stream< MAP_T >   &mapx,
-		hls::stream< MAP_T >   &mapy,
+		xf::Mat<SRC_T, ROWS, COLS, NPC>  &src,
+		xf::Mat<DST_T, ROWS, COLS, NPC>  &dst,
+		xf::Mat<MAP_T, ROWS, COLS, NPC>  &mapx,
+		xf::Mat<MAP_T, ROWS, COLS, NPC>  &mapy,
 		uint16_t rows, uint16_t cols
 )
 {
-	DST_T buf[WIN_ROW][COLS];
+	XF_TNAME(DST_T,NPC) buf[WIN_ROW][COLS];
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 
-	SRC_T s;
-	DST_T d;
-	MAP_T mx_fl;
-	MAP_T my_fl;
+	XF_TNAME(SRC_T, NPC) s;
+	XF_TNAME(DST_T, NPC) d;
+	XF_TNAME(MAP_T, NPC) mx_fl;
+	XF_TNAME(MAP_T, NPC) my_fl;
 
 	assert(rows <= ROWS);
 	assert(cols <= COLS);
 	int ishift=WIN_ROW/2;
 	int r[WIN_ROW] = {};
 	int row_tripcount = ROWS+WIN_ROW;
-
+	int read_pointer_src = 0, read_pointer_map = 0, write_pointer = 0;
 	loop_height: for( int i=0; i< rows+ishift; i++)
 	{
 #pragma HLS LOOP_FLATTEN OFF
@@ -80,25 +80,26 @@ void xFRemapNNI(
 
 			if(i<rows&& j<cols)
 			{
-				src >> s;
+				s = src.data[read_pointer_src++];
 			}
 			buf[i % WIN_ROW][j] = s;
 			r[i % WIN_ROW] = i;
 
 			if(i>=ishift)
 			{
-				mapx >> mx_fl;
-				mapy >> my_fl;
-				int x = (int)mx_fl;
-				int y = (int)my_fl;
+				mx_fl = mapx.data[read_pointer_map];
+				my_fl = mapy.data[read_pointer_map++];
+				int x = (int)(mx_fl+0.5f);
+				int y = (int)(my_fl+0.5f);
 
 				bool in_range = (y>=0 && y<rows && r[y%WIN_ROW] == y && x>=0 && x<cols);
+				//bool in_range = (y>=0 && my_fl<=(rows-1) && r[y%WIN_ROW] == y && x>=0 && mx_fl<=(cols-1));
 				if(in_range)
 					d = buf[y%WIN_ROW][x];
 				else
 					d = 0;
 
-				dst << d;
+				dst.data[write_pointer++] = d;
 			}
 		}
 	}
@@ -106,22 +107,23 @@ void xFRemapNNI(
 
 
 #define TWO_POW_16 65536
-template <int WIN_ROW, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
+template <int SRC_T, int DST_T, int MAP_T, int WIN_ROW, int ROWS, int COLS, int NPC>
 void xFRemapLI(
-		hls::stream< SRC_T >   &src,
-		hls::stream< DST_T >   &dst,
-		hls::stream< MAP_T >   &mapx,
-		hls::stream< MAP_T >   &mapy,
+		xf::Mat<SRC_T, ROWS, COLS, NPC>   &src,
+		xf::Mat<DST_T, ROWS, COLS, NPC>   &dst,
+		xf::Mat<MAP_T, ROWS, COLS, NPC>   &mapx,
+		xf::Mat<MAP_T, ROWS, COLS, NPC>  &mapy,
 		uint16_t rows, uint16_t cols
 )
 {
 	// Add one to always get zero for boundary interpolation. Maybe need initialization here?
-	DST_T buf[WIN_ROW/2+1][2][COLS/2+1][2];
+	XF_TNAME(DST_T,NPC) buf[WIN_ROW/2+1][2][COLS/2+1][2];
 #pragma HLS array_partition complete variable=buf dim=2
 #pragma HLS array_partition complete variable=buf dim=4
-	SRC_T s;
-	MAP_T mx;
-	MAP_T my;
+	XF_TNAME(SRC_T,NPC) s;
+	XF_TNAME(MAP_T,NPC) mx;
+	XF_TNAME(MAP_T,NPC) my;
+	int read_pointer_src = 0, read_pointer_map = 0, write_pointer = 0;
 
 	assert(rows <= ROWS);
 	assert(cols <= COLS);
@@ -143,20 +145,17 @@ void xFRemapLI(
 
 			if(i<rows&& j<cols)
 			{
-				src >> s;
+				s = src.data[read_pointer_src++];
 			}
-			if((i % WIN_ROW) % 2) {
-				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
-			} else {
-				buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
-			}
+
+			buf[(i % WIN_ROW)/2][(i % WIN_ROW) % 2][j/2][j%2] = s;
 			r1[i % WIN_ROW] = i;
 			r2[i % WIN_ROW] = i;
 
 			if(i>=ishift)
 			{
-				mapx >> mx;
-				mapy >> my;
+				mx = mapx.data[read_pointer_map];
+				my = mapy.data[read_pointer_map++];
 				float x_fl = mx;
 				float y_fl = my;
 
@@ -176,11 +175,12 @@ void xFRemapLI(
 				// Note that the range here is larger than expected by 1 horizontal and 1 vertical pixel, to allow
 				// Interpolating at the edge of the image
 				bool in_range = (y>=0 && y<rows && r1[y%WIN_ROW] == y && r2[ynext%WIN_ROW] == ynext && x>=0 && x<cols);
+				//bool in_range = (y>=0 && y_fl<=(rows-1) && r1[y%WIN_ROW]==y && r2[ynext%WIN_ROW]==ynext && x>=0 && x_fl<=(cols-1));
 
 				int xa0, xa1, ya0, ya1;
 				// The buffer is essentially cyclic partitioned, but we have
 				// to do this manually because HLS can't figure it out.
-				// The code below is wierd, but it is this code expanded.
+				// The code below is weird, but it is this code expanded.
 				//  if ((y % WIN_ROW) % 2) {
 				//                     // Case 1, where y hits in bank 1 and ynext in bank 0
 				//                     ya0 = (ynext%WIN_ROW)/2;
@@ -197,7 +197,7 @@ void xFRemapLI(
 				ya0 = (y/2 + y%2)%(WIN_ROW/2);
 				ya1 = (y/2)%(WIN_ROW/2);
 
-				DST_T d00, d01, d10, d11;
+				XF_TNAME(DST_T,NPC) d00, d01, d10, d11;
 				d00=buf[ya0][0][xa0][0];
 				d01=buf[ya0][0][xa1][1];
 				d10=buf[ya1][1][xa0][0];
@@ -211,41 +211,27 @@ void xFRemapLI(
 					std::swap(d00,d10);
 					std::swap(d01,d11);
 				}
+				if(x == (cols-1)) {
+					d01 = 0;
+					d11 = 0;
+				}
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k01 = (1-iv)*(  iu); // iu-iu*iv
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k10 = (  iv)*(1-iu); // iv-iu*iv
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k11 = (  iv)*(  iu); // iu*iv
 				ap_ufixed<2*HLS_INTER_BITS + 1, 1> k00 = 1-iv-k01; //(1-iv)*(1-iu) = 1-iu-iv+iu*iv = 1-iv-k01
+				ap_ufixed<2*HLS_INTER_BITS + 1, 1> round_val = 0.5f;
 				assert( k00 + k01 + k10 + k11 == 1);
 
-				DST_T d;
+				XF_TNAME(DST_T,NPC) d;
 
 				if(in_range)
-					d = d00 * k00 + d01 * k01 + d10 * k10 + d11 * k11;
+					d = ((XF_TNAME(DST_T,NPC))((d00*k00 + d01*k01 + d10*k10 + d11*k11) + round_val));
 				else
 					d = 0;
 
-				dst<< d;
+				dst.data[write_pointer++] = d;
 			}
 		}
-	}
-}
-
-template <int WIN_ROW, int INTERPOLATION_TYPE, int ROWS, int COLS, typename SRC_T, typename DST_T, typename MAP_T>
-void xFRemapKernel(
-		hls::stream< SRC_T >    &src,
-		hls::stream< DST_T >   &dst,
-		hls::stream< MAP_T >   &mapx,
-		hls::stream< MAP_T >   &mapy,
-		uint16_t rows, uint16_t cols
-)
-{
-	if(INTERPOLATION_TYPE == XF_INTERPOLATION_NN) {
-		xFRemapNNI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
-	} else if(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR) {
-		xFRemapLI<WIN_ROW,ROWS,COLS>(src, dst, mapx, mapy,rows,cols);
-	}
-	else {
-		assert (((INTERPOLATION_TYPE == XF_INTERPOLATION_NN)||(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR)) && "The INTERPOLATION_TYPE must be either XF_INTERPOLATION_NN or XF_INTERPOLATION_BILINEAR");
 	}
 }
 
@@ -265,54 +251,19 @@ void remap (xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS
 //	assert ((DST_T == XF_8UC1) && "The DST_T must be XF_8UC1");
 	assert ((NPC == XF_NPPC1) && "The NPC must be XF_NPPC1");
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(MAP_T,NPC)> _mapx;
-	hls::stream< XF_TNAME(MAP_T,NPC)> _mapy;
-	hls::stream< XF_TNAME(DST_T,NPC)> _remapped;
-
 	int depth_est = WIN_ROWS*_src_mat.cols;
 
 	uint16_t rows = _src_mat.rows;
 	uint16_t cols = _src_mat.cols;
 
-	int loop_count = (rows*cols);
-	int TC=(ROWS*COLS);
-
-	int ishift = WIN_ROWS/2;
-	int row_tripcount = ROWS+WIN_ROWS;
-
-	xfremap_rows_loop:
-	for (int i = 0; i < rows+ishift; i++)
-	{
-#pragma HLS LOOP_FLATTEN OFF
-#pragma HLS LOOP_TRIPCOUNT min=1 max=row_tripcount
-
-		xfremap_cols_loop:
-		for (int j = 0; j < cols; j++)
-		{
-#pragma HLS pipeline ii=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
-
-			if (i < rows) {
-				_src.write(*(_src_mat.data + i*cols + j));
-			}
-
-			if (i >= ishift) {
-				_mapx.write(*(_mapx_mat.data + (i-ishift)*cols + j));
-				_mapy.write(*(_mapy_mat.data + (i-ishift)*cols + j));
-			}
+	if(INTERPOLATION_TYPE == XF_INTERPOLATION_NN) {
+			xFRemapNNI<SRC_T, DST_T, MAP_T, WIN_ROWS, ROWS, COLS, NPC>(_src_mat, _remapped_mat, _mapx_mat, _mapy_mat,rows,cols);
+		} else if(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR) {
+			xFRemapLI<SRC_T, DST_T, MAP_T, WIN_ROWS,ROWS,COLS, NPC>(_src_mat, _remapped_mat, _mapx_mat, _mapy_mat,rows,cols);
 		}
-	}
-
-	xFRemapKernel <WIN_ROWS,INTERPOLATION_TYPE,ROWS,COLS> (_src, _remapped, _mapx, _mapy, rows, cols);
-
-	xfremap_output_loop:
-	for (int i = 0; i < loop_count; i++)
-	{
-#pragma HLS pipeline ii=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-		_remapped_mat.data[i] = _remapped.read();
-	}
+		else {
+			assert (((INTERPOLATION_TYPE == XF_INTERPOLATION_NN)||(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR)) && "The INTERPOLATION_TYPE must be either XF_INTERPOLATION_NN or XF_INTERPOLATION_BILINEAR");
+		}
 }
 }
 

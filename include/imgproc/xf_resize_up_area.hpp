@@ -68,7 +68,7 @@ static void CoreProcessUpArea(uchar_t A0,uchar_t B0,uchar_t A1,uchar_t B1,uint32
  * Processes the 8 pixel block
  * outputs 8 pixles packed into 64-bit
  */
-template<int DEPTH,int NPC,int WORDWIDTH>
+template<int DEPTH,int NPC,int WORDWIDTH,int PLANES>
 static XF_TNAME(DEPTH,NPC) ProcessBlockAreaUp(ap_uint<13> Offset[],uint32_t Weight[],uint32_t Yweight,XF_TNAME(DEPTH,NPC) *D0,XF_TNAME(DEPTH,NPC) *D1,ap_uint<13> blockstart,ap_uint<13> indoffset)
 {
 #pragma HLS INLINE
@@ -81,8 +81,8 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockAreaUp(ap_uint<13> Offset[],uint32_t Weig
 
 	for(i=0;i<2;i++){
 #pragma HLS unroll
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line0,D0[i],i<<XF_BITSHIFT(NPC));
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line1,D1[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line0,D0[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line1,D1[i],i<<XF_BITSHIFT(NPC));
 	}
 
 	XF_TNAME(DEPTH,NPC) val = 0;
@@ -100,9 +100,21 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockAreaUp(ap_uint<13> Offset[],uint32_t Weig
 		{
 			input_read = Offset[indoffset+i] - block_start_ind;
 		}
-		CoreProcessUpArea(line0[input_read],line0[input_read+1],line1[input_read],line1[input_read+1],Weight[indoffset+i],Yweight,&Pixels);
-		shift = i<<XF_BITSHIFT(NPC);
-		val.range(shift+7,shift) = Pixels;
+		for(ap_uint<5> c=0,k=0;c<3;c++,k+=8)
+		{
+
+		if(PLANES!=1)
+		{
+			CoreProcessUpArea(line0[input_read].range(k+7,k),line0[input_read+1].range(k+7,k),line1[input_read].range(k+7,k),line1[input_read+1].range(k+7,k),Weight[indoffset+i],Yweight,&Pixels);
+			val.range(k+7,k) = Pixels;
+		}
+		else
+		{
+			CoreProcessUpArea(line0[input_read],line0[input_read+1],line1[input_read],line1[input_read+1],Weight[indoffset+i],Yweight,&Pixels);
+			shift = i<<XF_BITSHIFT(NPC);
+			val.range(shift+7,shift) = Pixels;
+		}
+		}
 	}
 	return val;
 }
@@ -116,8 +128,8 @@ static uint64_t xFUDivAreaUp (uint64_t in_n, unsigned short in_d)
 /**
  * Upscaling - Area Interpolation
  */
-template<int SRC_ROWS,int SRC_COLS,int DEPTH,int NPC,int WORDWIDTH,int DST_ROWS,int DST_COLS,int SRC_TC,int DST_TC>
-void xFResizeAreaUpScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::stream <XF_TNAME(DEPTH,NPC)> &resize_out, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
+template<int SRC_ROWS,int SRC_COLS,int PLANES,int DEPTH,int NPC,int WORDWIDTH,int DST_ROWS,int DST_COLS,int SRC_TC,int DST_TC>
+void xFResizeAreaUpScale(xf::Mat<DEPTH, SRC_ROWS, SRC_COLS, NPC> &stream_in, xf::Mat<DEPTH, DST_ROWS, DST_COLS, NPC> &resize_out, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
 {
 	XF_TNAME(DEPTH,NPC) lbuf_in0[SRC_COLS>>XF_BITSHIFT(NPC)];		// input buffers (ping pong)
 	XF_TNAME(DEPTH,NPC) lbuf_in1[SRC_COLS>>XF_BITSHIFT(NPC)];		// input buffers (ping pong)
@@ -139,6 +151,7 @@ if (NPC!=XF_NPPC1)
 	uint32_t Xscale,Yscale,Yweight;
 	uint64_t inv_Xscale,inv_Yscale;
 	int64_t Xtemp = 0,Ytemp = 0;
+	int read_index = 0, write_index = 0;
 	//float Xscale_float,Yscale_float,inv_Xscale_float,inv_Yscale_float;
 	XF_TNAME(DEPTH,NPC) D0[2],D1[2];			// Holds the packed pixels required for processing
 
@@ -222,14 +235,14 @@ if (NPC!=XF_NPPC1)
 	for (x=0;x<width;x++){
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=1 max = SRC_TC
-		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.read();
+		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.data[read_index++];
 		lbuf_in0[x] = tmp_in;
 	}
 	out_j++;
 	for (x=0;x<width;x++){
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=1 max = SRC_TC
-		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.read();
+		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.data[read_index++];
 		lbuf_in1[x] = tmp_in;
 	}
 	out_j++;
@@ -303,7 +316,7 @@ if (NPC!=XF_NPPC1)
 			{
 				if(read_into==0)
 				{
-					lbuf_in0[i>>XF_BITSHIFT(NPC)] = stream_in.read();
+					lbuf_in0[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -321,7 +334,7 @@ if (NPC!=XF_NPPC1)
 				}
 				else if(read_into==1)
 				{
-					lbuf_in1[i>>XF_BITSHIFT(NPC)] = stream_in.read();
+					lbuf_in1[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -339,7 +352,7 @@ if (NPC!=XF_NPPC1)
 				}
 				else
 				{
-					lbuf_in2[i>>XF_BITSHIFT(NPC)] = stream_in.read();
+					lbuf_in2[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -395,8 +408,8 @@ if (NPC!=XF_NPPC1)
 					}
 				}
 			}
-			XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockAreaUp<DEPTH,NPC,WORDWIDTH>(Hoffset,Hweight,Yweight,D0,D1,block_start,i);
-			resize_out.write(out_pix);
+			XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockAreaUp<DEPTH,NPC,WORDWIDTH,PLANES>(Hoffset,Hweight,Yweight,D0,D1,block_start,i);
+			resize_out.data[write_index++] = (out_pix);
 		}
 	}
 }

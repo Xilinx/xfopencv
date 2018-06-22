@@ -66,6 +66,7 @@ template<> struct StreamType<XF_2UW> { typedef ap_uint<2> name; static const int
 template<> struct StreamType<XF_32FW> { typedef float name; static const int bitdepth = 32; };
 template<> struct StreamType<XF_24UW>  { typedef ap_uint<24>  name; static const int bitdepth = 24;  };
 template<> struct StreamType<XF_48UW>  { typedef ap_uint<48>  name; static const int bitdepth = 48;  };
+template<> struct StreamType<XF_48SW>  { typedef ap_int<48>  name; static const int bitdepth = 48;  };
 
 
 template<int T> struct PixelType      { };
@@ -138,8 +139,8 @@ template<> struct DataType<XF_2UC1,XF_NPPC4>   { typedef ap_uint<8>      name; t
 
 template<> struct DataType<XF_2UC1,XF_NPPC8>   { typedef ap_uint<16>      name; typedef ap_uint<2>  uname; typedef ap_uint<2>  cname; typedef unsigned char sname; static const int bitdepth = 2; static const int pixeldepth = XF_2UP;static const int wordwidth = XF_16UW;  static const int channel = 1;};
 template<> struct DataType<XF_8UC3,XF_NPPC1>   { typedef ap_uint<24>      name; typedef ap_uint<24>  uname; typedef ap_uint<8>  cname; typedef unsigned char sname; typedef unsigned int wname; static const int bitdepth = 24; static const int pixeldepth = XF_24UP;static const int wordwidth = XF_24UW;static const int channel = 3; };
-template<> struct DataType<XF_16UC3,XF_NPPC1>   { typedef ap_uint<48>      name; typedef ap_uint<24>  uname; typedef ap_uint<16>  cname; typedef unsigned char sname; typedef unsigned int wname; static const int bitdepth = 48; static const int pixeldepth = XF_16UP;static const int wordwidth = XF_48UW;static const int channel = 3; };
-
+template<> struct DataType<XF_16UC3,XF_NPPC1>   { typedef ap_uint<48>      name; typedef ap_uint<24>  uname; typedef ap_uint<16>  cname; typedef unsigned short int sname; typedef unsigned int wname; static const int bitdepth = 48; static const int pixeldepth = XF_16UP;static const int wordwidth = XF_48UW;static const int channel = 3; };
+template<> struct DataType<XF_16SC3,XF_NPPC1>   { typedef ap_int<48>      name; typedef ap_int<24>  uname; typedef ap_int<16>  cname; typedef short int sname; typedef short int wname; static const int bitdepth = 48; static const int pixeldepth = XF_48SP;static const int wordwidth = XF_48SW;static const int channel = 3; };
 
 #define TC(TYPE) TC##TYPE
 

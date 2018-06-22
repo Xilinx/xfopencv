@@ -37,7 +37,7 @@
 
 namespace xf{
 
-template<int NPC,int DEPTH, int WIN_SZ, int WIN_SZ_SQ>
+template<int PLANES,int NPC,int DEPTH, int WIN_SZ, int WIN_SZ_SQ>
 void xFMedianProc(
 		XF_PTUNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
 		XF_PTUNAME(DEPTH) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
@@ -45,8 +45,9 @@ void xFMedianProc(
 		)
 {
 #pragma HLS INLINE
-
+	XF_PTUNAME(DEPTH) out_val;
 	XF_PTUNAME(DEPTH) array[WIN_SZ_SQ];
+	XF_PTUNAME(DEPTH) array_channel[WIN_SZ_SQ];
 #pragma HLS ARRAY_PARTITION variable=array complete dim=1
 		
 		int array_ptr=0;
@@ -63,6 +64,16 @@ void xFMedianProc(
 				array_ptr++;
 			}
 		}
+for(int channel=0,k=0;channel<PLANES;channel++,k+=8)
+{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=PLANES
+#pragma HLS UNROLL
+	for(int p=0;p<WIN_SZ_SQ;p++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ_SQ
+#pragma HLS UNROLL
+	array_channel[p]=array[p].range(k+7,k);
+	}
 
 		xFApplyMaskLoop:
 		for(int16_t j = 0; j <=WIN_SZ_SQ-1; j++)
@@ -80,11 +91,11 @@ void xFMedianProc(
 					int c = (i*2);
 					int c1 = (c + 1);
 
-					if(array[c] < array[c1])
+					if(array_channel[c] < array_channel[c1])
 					{
-						XF_PTUNAME(DEPTH) temp = array[c];
-						array[c] = array[c1];
-						array[c1] = temp;
+						XF_PTUNAME(DEPTH) temp = array_channel[c];
+						array_channel[c] = array_channel[c1];
+						array_channel[c1] = temp;
 					}
 				}
 			}
@@ -98,30 +109,35 @@ void xFMedianProc(
 					int c = (i*2);
 					int c1 = (c + 1);
 					int c2 = (c + 2);
-					if(array[c1] < array[c2])
+					if(array_channel[c1] < array_channel[c2])
 					{
-						XF_PTUNAME(DEPTH) temp = array[c1];
-						array[c1] = array[c2];
-						array[c2] = temp;
+						XF_PTUNAME(DEPTH) temp = array_channel[c1];
+						array_channel[c1] = array_channel[c2];
+						array_channel[c2] = temp;
 					}
 				}
 			}
 		}
-		
-		OutputValues[0] = array[(WIN_SZ_SQ)>>1];
+
+		out_val.range(k+7,k)=array_channel[(WIN_SZ_SQ)>>1];
+}
+
+
+
+		OutputValues[0] = out_val;
 		return;
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC, int WIN_SZ, int WIN_SZ_SQ>
-void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
-		hls::stream< XF_TNAME(DEPTH,NPC) > & _out_mat,
-		XF_TNAME(DEPTH,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))], XF_PTUNAME(DEPTH) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
-		XF_PTUNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
-		XF_TNAME(DEPTH,NPC) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[WIN_SZ], ap_uint<13> row, ap_uint<8> win_size)
+template<int ROWS, int COLS,int PLANES, int TYPE, int NPC, int WORDWIDTH, int TC, int WIN_SZ, int WIN_SZ_SQ>
+void ProcessMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, ROWS, COLS, NPC> & _out_mat,
+		XF_TNAME(TYPE,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))], XF_PTUNAME(TYPE) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
+		XF_PTUNAME(TYPE) OutputValues[XF_NPIXPERCYCLE(NPC)],
+		XF_TNAME(TYPE,NPC) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[WIN_SZ], ap_uint<13> row,
+		ap_uint<8> win_size, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 
-	XF_TNAME(DEPTH,NPC) buf_cop[WIN_SZ];
+	XF_TNAME(TYPE,NPC) buf_cop[WIN_SZ];
 #pragma HLS ARRAY_PARTITION variable=buf_cop complete dim=1
 	
 	uint16_t npc = XF_NPIXPERCYCLE(NPC);
@@ -144,17 +160,19 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 			src_buf[extract_px][ext_copy] = 0;
 		}
 	}
-				
+
 	Col_Loop:
 	for(ap_uint<13> col = 0; col < ((img_width)>>XF_BITSHIFT(NPC)) + col_loop_var; col++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
-		if(row < img_height && col < (img_width>>XF_BITSHIFT(NPC)))
-			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
+		if(row < img_height && col < (img_width>>XF_BITSHIFT(NPC))){
+			buf[row_ind[win_size-1]][col] = _src_mat.data[rd_ind];//.data[(row*img_width>>XF_BITSHIFT(NPC)) + col]; // Read data
+			rd_ind++;
+		}
 
-		
+
 		if(NPC == XF_NPPC8)
 		{
 			for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
@@ -175,15 +193,16 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 				}
 			}
 			
-			XF_PTUNAME(DEPTH) src_buf_temp_copy[WIN_SZ][XF_NPIXPERCYCLE(NPC)];
-			XF_PTUNAME(DEPTH) src_buf_temp_copy_extract[XF_NPIXPERCYCLE(NPC)];
+			XF_PTUNAME(TYPE) src_buf_temp_copy[WIN_SZ][XF_NPIXPERCYCLE(NPC)];
+			XF_PTUNAME(TYPE) src_buf_temp_copy_extract[XF_NPIXPERCYCLE(NPC)];
 			
 			for(int extract_px=0;extract_px<WIN_SZ;extract_px++)
 			{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 	#pragma HLS unroll
-				XF_TNAME(DEPTH,NPC) toextract = buf_cop[extract_px];
-				xfExtractPixels<NPC, XF_WORDWIDTH(DEPTH,NPC), DEPTH>(src_buf_temp_copy_extract, toextract, 0);
+				XF_TNAME(TYPE,NPC) toextract = buf_cop[extract_px];
+
+				xfExtractPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(src_buf_temp_copy_extract, toextract, 0);
 				for(int ext_copy=0; ext_copy<npc; ext_copy++)
 				{
 	#pragma HLS unroll
@@ -221,7 +240,7 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 				}
 			}
 			
-			XF_PTUNAME(DEPTH) src_buf_temp_med_apply[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)];
+			XF_PTUNAME(TYPE) src_buf_temp_med_apply[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)];
 			for(int applymedian = 0; applymedian < npc; applymedian++)
 			{
 	#pragma HLS UNROLL
@@ -230,16 +249,17 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 						src_buf_temp_med_apply[copyi][copyj] = src_buf[copyi][copyj+applymedian];
 					}
 				}
-				XF_PTUNAME(DEPTH) OutputValues_percycle[XF_NPIXPERCYCLE(NPC)];
-				xFMedianProc<NPC, DEPTH, WIN_SZ, WIN_SZ_SQ>(OutputValues_percycle,src_buf_temp_med_apply, WIN_SZ);
+				XF_PTUNAME(TYPE) OutputValues_percycle[XF_NPIXPERCYCLE(NPC)];
+				xFMedianProc<PLANES,NPC, TYPE, WIN_SZ, WIN_SZ_SQ>(OutputValues_percycle,src_buf_temp_med_apply, WIN_SZ);
 				OutputValues[applymedian] = OutputValues_percycle[0];
 			}
 			if(col>=1)
 			{
 				shift_x = 0;
 				P0 = 0;
-				xfPackPixels<NPC, XF_WORDWIDTH(DEPTH,NPC), DEPTH>(OutputValues, P0, 0, npc, shift_x);
-				_out_mat.write(P0);
+				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(OutputValues, P0, 0, npc, shift_x);
+				_out_mat.data[wr_ind] = P0;
+				wr_ind++;
 			}
 			
 			
@@ -294,10 +314,11 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 					src_buf[extract_px][win_size-1] = src_buf[extract_px][win_size-2];
 				}
 			}
-			xFMedianProc<NPC, DEPTH, WIN_SZ, WIN_SZ_SQ>(OutputValues,src_buf, win_size);
+			xFMedianProc<PLANES,NPC, TYPE, WIN_SZ, WIN_SZ_SQ>(OutputValues,src_buf, win_size);
 			if(col >= (WIN_SZ>>1))
 			{
-				_out_mat.write(OutputValues[0]);
+				_out_mat.data[wr_ind] = OutputValues[0];
+				wr_ind++;
 			}
 			for(int wrap_buf=0;wrap_buf<WIN_SZ;wrap_buf++)
 			{
@@ -319,31 +340,31 @@ void ProcessMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 			}
 		}
 	} // Col_Loop
+
 }
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ>
-void xFMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
-		hls::stream< XF_TNAME(DEPTH,NPC) > &_out_mat, ap_uint<8> win_size,
-		uint16_t img_height, uint16_t img_width)
+template<int ROWS, int COLS,int PLANES, int TYPE, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ>
+void xFMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst,
+		ap_uint<8> win_size, uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind[WIN_SZ];
 #pragma HLS ARRAY_PARTITION variable=row_ind complete dim=1
 	
 	uint16_t shift_x = 0;
 	ap_uint<13> row, col;
-	XF_PTUNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
+	XF_PTUNAME(TYPE) OutputValues[XF_NPIXPERCYCLE(NPC)];
 #pragma HLS ARRAY_PARTITION variable=OutputValues complete dim=1
 
 
-	XF_PTUNAME(DEPTH) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)];
+	XF_PTUNAME(TYPE) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)];
 #pragma HLS ARRAY_PARTITION variable=src_buf complete dim=1
 #pragma HLS ARRAY_PARTITION variable=src_buf complete dim=2
 // src_buf1 et al merged 
-	XF_TNAME(DEPTH,NPC) P0;
+	XF_TNAME(TYPE,NPC) P0;
 
-	XF_TNAME(DEPTH,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))];
+	XF_TNAME(TYPE,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))];
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 
@@ -355,6 +376,7 @@ void xFMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 		row_ind[init_row_ind] = init_row_ind; 
 	}
 	
+	int rd_ind = 0;
 	read_lines:
 	for(int init_buf=row_ind[win_size>>1]; init_buf <row_ind[win_size-1] ;init_buf++)
 	{
@@ -364,10 +386,11 @@ void xFMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
 	#pragma HLS pipeline
 	#pragma HLS LOOP_FLATTEN OFF
-			buf[init_buf][col] = _src_mat.read();
+			buf[init_buf][col] = _src.data[rd_ind];//.data[(init_buf*(img_width>>XF_BITSHIFT(NPC))) + col];
+			rd_ind++;
 		}
 	}
-	
+
 	//takes care of top borders
 		for(col = 0; col < img_width>>XF_BITSHIFT(NPC); col++)
 		{
@@ -380,13 +403,15 @@ void xFMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 			}
 		}
 	
+	int wr_ind = 0;
 	Row_Loop:
 	for(row = (win_size>>1); row < img_height+(win_size>>1); row++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 		
 		P0 = 0;
-		ProcessMedian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ>(_src_mat, _out_mat, buf, src_buf,OutputValues, P0, img_width, img_height, shift_x, row_ind, row,win_size);
+		ProcessMedian3x3<ROWS, COLS,PLANES, TYPE, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ>
+		(_src, _dst, buf, src_buf,OutputValues, P0, img_width, img_height, shift_x, row_ind, row,win_size, rd_ind, wr_ind);
 	
 		//update indices
 		ap_uint<13> zero_ind = row_ind[0];
@@ -400,65 +425,25 @@ void xFMedian3x3(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH, int WIN_SZ>
-void xFmedianBlurKernel(
-		hls::stream< XF_TNAME(DEPTH,NPC) > &_src,
-		hls::stream< XF_TNAME(DEPTH,NPC) > &_dst,
-		int _border_type,uint16_t imgheight,uint16_t imgwidth)
-{
-	assert(_border_type == XF_BORDER_REPLICATE && "Only XF_BORDER_REPLICATE is supported");
-
-	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	xFMedian3x3<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ*WIN_SZ>(_src, _dst,WIN_SZ,imgheight,imgwidth);
-
-}
-
-
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
-//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
-template<int FILTER_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC> 
+template<int FILTER_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC=1>
 void medianBlur (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
-	unsigned short input_height = _src.rows;
-	unsigned short input_width = _src.cols;
-	unsigned short output_height = _dst.rows;
-	unsigned short output_width = _dst.cols;
-			
-	hls::stream< XF_TNAME(TYPE,NPC) > in_image;
-	hls::stream< XF_TNAME(TYPE,NPC) > out_image;
 
-	for(int i=0;i<input_height;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0;j<input_width>>XF_BITSHIFT(NPC);j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_FLATTEN OFF
-			in_image.write( *(_src.data + i*(input_width>>XF_BITSHIFT(NPC)) + j) );
-		}
-	}
+	unsigned short imgheight = _src.rows;
+	unsigned short imgwidth = _src.cols;
+			
+	assert(BORDER_TYPE == XF_BORDER_REPLICATE && "Only XF_BORDER_REPLICATE is supported");
+
+	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
 	
-	xFmedianBlurKernel<ROWS, COLS, TYPE, NPC, 0, FILTER_SIZE>(in_image, out_image, BORDER_TYPE, input_height, input_width);
+	xFMedian3x3<ROWS, COLS,XF_CHANNELS(TYPE,NPC), TYPE, NPC, 0, (COLS>>XF_BITSHIFT(NPC))+(FILTER_SIZE>>1),FILTER_SIZE, FILTER_SIZE*FILTER_SIZE>
+	(_src, _dst, FILTER_SIZE, imgheight, imgwidth);
 	
-	for(int i=0;i<output_height;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0;j<output_width>>XF_BITSHIFT(NPC);j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_FLATTEN OFF
-			*(_dst.data + i*(output_width>>XF_BITSHIFT(NPC)) + j) = out_image.read();
-		}
-	}
 	return;
 }
 }

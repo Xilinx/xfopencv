@@ -1,0 +1,21 @@
+{
+    "example" : "customconv - File I/O",
+    "overview" : "customconv",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "filter2D",
+            "location" : "<LIBRARY>/include/imgproc/xf_custom_convolution.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

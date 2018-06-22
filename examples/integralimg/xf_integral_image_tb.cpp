@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -30,7 +30,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_headers.h"
 #include "xf_integral_image_config.h"
 
-// Declaration of top function
 
 int main(int argc, char** argv)
 {
@@ -51,8 +50,6 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	//cvtColor(in_img,in_gray,CV_BGR2GRAY);
-//	imwrite("input.jpg", in_img);
 
 	// create memory for output images
 	ocv_ref.create(in_img.rows,in_img.cols,CV_32S);
@@ -79,11 +76,10 @@ int main(int argc, char** argv)
 	uint16_t height = in_img.rows;
 	uint16_t width = in_img.cols;
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_32UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_32UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_img.rows,in_img.cols);
 
-	//imgInput.copyTo(in_img.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
+	imgInput.copyTo(in_img.data);
 	
 
 	#if __SDSCC__
@@ -99,14 +95,13 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	out_img.data = imgOutput.copyFrom();
 
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
-	//imwrite("out_hls.jpg", out_img);
+
 	// Compute absolute difference image
-	//absdiff(ocv_ref1, out_img, diff);
 	xf::absDiff(ocv_ref1, imgOutput, diff);
+
 	// Save the difference image 
 	imwrite("diff.png", diff); 
 

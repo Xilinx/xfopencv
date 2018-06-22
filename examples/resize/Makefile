@@ -1,20 +1,18 @@
-APPSOURCES = xf_resize_tb.cpp xf_resize_accel.cpp
+APPSOURCES =  xf_resize_accel.cpp  xf_resize_tb.cpp 
 EXECUTABLE = resize.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::resize <2, 0, 1080, 1920, 480, 640, 1>" xf_resize_accel.cpp -files ../../include/imgproc/xf_resize.hpp -clkid 2 -sds-end -dmclkid 2
-
-CC = sds++ ${SDSCC_FLAGS}
+-sds-hw "xf::resize <2,  0, 2160, 3840,1080,1920, 1, 2>"  xf_resize_accel.cpp -files ../../include/imgproc/xf_resize.hpp -clkid 2 -sds-end -dmclkid 2
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
-
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
+CC = sds++ ${SDSCC_FLAGS}
 
 LLIBS = -lopencv_imgcodecs -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann 
 #LLIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs 
 #OLEVEL = -ggdb
-CFLAGS = -O3 -Wall ${OLEVEL} -c ${IDIRS} -DHLS_NO_XIL_FPO_LIB
+CFLAGS =  -O0 -Wall ${OLEVEL} -c ${IDIRS} -DHLS_NO_XIL_FPO_LIB -mstrict-align -hls-target 1
 LFLAGS = ${OLEVEL} ${LDIRS} ${LLIBS}
 
 SOURCES := $(patsubst %,./%,$(APPSOURCES))
@@ -31,6 +29,3 @@ clean:
 	${RM} ${EXECUTABLE} ${OBJECTS}
 ultraclean: clean
 	${RM} -rf _sds sd_card ${EXECUTABLE}.bit ${EXECUTABLE} ${OBJECTS}
-copy:
-	/bin/cp -prf ${XLNX_SRC_PATH}/resize/example .
-	/bin/cp -prf ${XLNX_SRC_PATH}/resize/src .

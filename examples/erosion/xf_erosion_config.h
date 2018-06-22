@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -43,19 +43,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //////////////  To set the parameters in Top and Test bench //////////////////
 
 /* config width and height */
-#define WIDTH 	1920
-#define HEIGHT	1080
+#define WIDTH 	3840
+#define HEIGHT	2160
+
+
 
 /*  define the input and output types  */
 #if NO
 #define NPC1 XF_NPPC1
-#define IMTYPE XF_8UC1
 #endif
 
 #if RO
 #define NPC1 XF_NPPC8
 #endif
 
-void erosion_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst);
+
+#define TYPE XF_8UC1
+
+void erosion_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst);
 
 #endif // _XF_EROSION_CONFIG_H_

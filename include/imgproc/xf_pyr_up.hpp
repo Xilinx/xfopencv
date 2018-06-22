@@ -37,7 +37,7 @@
 
 namespace xf{
 
-template <unsigned int ROWS, unsigned int COLS, unsigned int NPC, unsigned int DEPTH>
+template <unsigned int ROWS, unsigned int COLS, unsigned int NPC, unsigned int DEPTH,int PLANES>
 void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image, unsigned short in_rows, unsigned short in_cols)
 {
 #pragma HLS INLINE OFF
@@ -67,7 +67,7 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 			_filter_in.write(read_input);
 		}
 	}
-	xFPyrUpGaussianBlur<ROWS,COLS, DEPTH, NPC, 0, 0,5,25>(_filter_in, _filter_out, 5, XF_BORDER_REPLICATE,output_height,output_width);
+	xFPyrUpGaussianBlur<ROWS,COLS, DEPTH, NPC, 0, 0,5,25,PLANES>(_filter_in, _filter_out, 5, XF_BORDER_REPLICATE,output_height,output_width);
 	
 	
 	for(int i=0;i<output_height;i++)
@@ -88,20 +88,20 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 }
 
 
-#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
 //#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
-template<int TYPE, int ROWS, int COLS, int NPC> 
+template<int TYPE, int ROWS, int COLS, int NPC=1>
 void pyrUp (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 	unsigned short input_height = _src.rows;
 	unsigned short input_width = _src.cols;
 	
-	xFpyrUpKernel<ROWS, COLS, NPC, TYPE>(_src.data, _dst.data, input_height, input_width);
+	xFpyrUpKernel<ROWS, COLS, NPC, TYPE,XF_CHANNELS(TYPE,NPC)>(_src.data, _dst.data, input_height, input_width);
 	
 	return;
 }

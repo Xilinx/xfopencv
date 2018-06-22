@@ -1,0 +1,21 @@
+{
+    "example" : "svm - File I/O",
+    "overview" : "svm",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "SVM",
+            "location" : "<LIBRARY>/include/imgproc/xf_svm.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

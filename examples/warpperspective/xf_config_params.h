@@ -20,8 +20,8 @@
 #define XBL 			-50				// X-coordinate Bottom Left
 #define YBL 			1130			// Y-coordinate Bottom Left
 
-#define WIDTH 			1920
-#define HEIGHT 			1080
+#define WIDTH 			3840
+#define HEIGHT 			2160
 
 
 

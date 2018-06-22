@@ -69,7 +69,7 @@ static void weightsghcalculation3x3(float sigma, unsigned char *weights) {
 	sum = 1. / sum;
 	for (int i = 0; i < n; i++) {
 		cf[i] = (float) (cf[i] * sum);
-		weights[i] = cf[i] * 256;
+		weights[i] =((cf[i] * 256)+0.5);
 	}
 }
 
@@ -168,46 +168,67 @@ XF_PTNAME(DEPTH)xFapplygaussian3x3(XF_PTNAME(DEPTH) D1, XF_PTNAME(DEPTH) D2, XF_
 	out_pix = (XF_PTNAME(DEPTH))val;
 
 	return out_pix;
-		}
+//	for(int i=0,k=0;i<3;i++,k+=8)
+//	{
+//
+//		ap_uint<8> _D4=D4.range(k+7,k);ap_uint<8> _D5=D5.range(k+7,k);ap_uint<8> _D6=D6.range(k+7,k);
+//		ap_uint<8> _D3=D3.range(k+7,k);ap_uint<8> _D2=D2.range(k+7,k);ap_uint<8> _D7=D7.range(k+7,k);
+//		ap_uint<8> _D8=D8.range(k+7,k);ap_uint<8> _D1=D1.range(k+7,k);ap_uint<8> _D9=D9.range(k+7,k);
+//
+//	sum2 = (_D4+_D6) * weights[0] + _D5 * weights[1];
+//
+//	ap_uint<15> sumvalue0 = _D1+_D3+_D7+_D9;
+//
+//	ap_uint<15> sumvalue1 = _D2+_D8;
+//
+//	unsigned int value1 = sumvalue0*weights[0] + sumvalue1*weights[1];
+//
+//	sum = (value1)*weights[0] + sum2*weights[1];
+//
+//	unsigned char val = (sum)>>16; //(sum + 32768)>>16;
+//
+////	out_pix = (XF_PTNAME(DEPTH))val;
+//	out_val.range(k+7,k)=val;
+//	}
+//	return out_val;
+}
 
-template<int DEPTH,bool FOR_IMAGE_PYRAMID>
-XF_PTNAME(DEPTH) xfapplygaussian5x5(XF_PTNAME(DEPTH) D1,  XF_PTNAME(DEPTH) D2,  XF_PTNAME(DEPTH) D3,  XF_PTNAME(DEPTH) D4,  XF_PTNAME(DEPTH) D5,
-		XF_PTNAME(DEPTH) D6,  XF_PTNAME(DEPTH) D7,  XF_PTNAME(DEPTH) D8,  XF_PTNAME(DEPTH) D9,  XF_PTNAME(DEPTH) D10,
-		XF_PTNAME(DEPTH) D11, XF_PTNAME(DEPTH) D12, XF_PTNAME(DEPTH) D13, XF_PTNAME(DEPTH) D14, XF_PTNAME(DEPTH) D15,
-		XF_PTNAME(DEPTH) D16, XF_PTNAME(DEPTH) D17, XF_PTNAME(DEPTH) D18, XF_PTNAME(DEPTH) D19, XF_PTNAME(DEPTH) D20,
-		XF_PTNAME(DEPTH) D21, XF_PTNAME(DEPTH) D22, XF_PTNAME(DEPTH) D23, XF_PTNAME(DEPTH) D24, XF_PTNAME(DEPTH) D25,unsigned char weights[5])
-		{
+template<int PLANES,int DEPTH,bool FOR_IMAGE_PYRAMID>
+XF_PTNAME(DEPTH) xfapplygaussian5x5(XF_PTNAME(DEPTH) *src_buf1,  XF_PTNAME(DEPTH) *src_buf2,  XF_PTNAME(DEPTH) *src_buf3,  XF_PTNAME(DEPTH) *src_buf4,  XF_PTNAME(DEPTH) *src_buf5,
+unsigned char weights[5])
+{
 #pragma HLS INLINE OFF
-	unsigned int sum = 0.0;
+	unsigned int sum = 0.0,sumval=0;
+	unsigned char value=0;
+	unsigned short int val =0;
 	XF_PTNAME(DEPTH) out_pix = 0;
 
 	ap_uint<10> tmp[10] = {0,0,0,0,0,0,0,0,0,0};
+//	src_buf1[j],src_buf2[j],src_buf3[j],src_buf4[j], src_buf5[j]
+for(int i=0,k=0;i<PLANES;i++,k+=8)
+{
+	tmp[0] = src_buf1[0].range(k+7,k) +  src_buf1[4].range(k+7,k);
+	tmp[1] = src_buf2[0].range(k+7,k) + src_buf2[4].range(k+7,k);
+	tmp[2] = src_buf3[0].range(k+7,k) + src_buf3[4].range(k+7,k);
+	tmp[3] = src_buf4[0].range(k+7,k) + src_buf4[4].range(k+7,k);
+	tmp[4] = src_buf5[0].range(k+7,k) + src_buf5[4].range(k+7,k);
 
-	tmp[0] = D1 + D5;
-	tmp[1] = D6 + D10;
-	tmp[2] = D11 + D15;
-	tmp[3] = D16 + D20;
-	tmp[4] = D21 + D25;
-
-	tmp[5] = D2 + D4;
-	tmp[6] = D7 + D9;
-	tmp[7] = D12 + D14;
-	tmp[8] = D17 + D19;
-	tmp[9] = D22 + D24;
+	tmp[5] = src_buf1[1].range(k+7,k) + src_buf1[3].range(k+7,k);
+	tmp[6] = src_buf2[1].range(k+7,k) + src_buf2[3].range(k+7,k);
+	tmp[7] = src_buf3[1].range(k+7,k) + src_buf3[3].range(k+7,k);
+	tmp[8] = src_buf4[1].range(k+7,k) + src_buf4[3].range(k+7,k);
+	tmp[9] = src_buf5[1].range(k+7,k) + src_buf5[3].range(k+7,k);
 
 	ap_uint<24> tmp_sum[5] = {0,0,0,0,0};
 
 
-	tmp_sum[0] = (ap_uint<24>)(tmp[0]+tmp[4])*weights[0] + (ap_uint<24>)(tmp[5]+tmp[9])*weights[1] + (ap_uint<24>)(D3+D23) * weights[2];
-	tmp_sum[1] = (ap_uint<24>)(tmp[1]+tmp[3])*weights[0] + (ap_uint<24>)(tmp[6]+tmp[8])*weights[1] + (ap_uint<24>)(D8+D18) * weights[2];
-	tmp_sum[2] = (ap_uint<24>)tmp[2] * weights[0] + (ap_uint<24>)tmp[7]*weights[1] + (ap_uint<24>)D13 *weights[2];
+	tmp_sum[0] = (ap_uint<24>)(tmp[0]+tmp[4])*weights[0] + (ap_uint<24>)(tmp[5]+tmp[9])*weights[1] + (ap_uint<24>)(src_buf1[2].range(k+7,k)+src_buf5[2].range(k+7,k)) * weights[2];
+	tmp_sum[1] = (ap_uint<24>)(tmp[1]+tmp[3])*weights[0] + (ap_uint<24>)(tmp[6]+tmp[8])*weights[1] + (ap_uint<24>)(src_buf2[2].range(k+7,k)+src_buf4[2].range(k+7,k)) * weights[2];
+	tmp_sum[2] = (ap_uint<24>)tmp[2] * weights[0] + (ap_uint<24>)tmp[7]*weights[1] + (ap_uint<24>)src_buf3[2].range(k+7,k) *weights[2];
 
-	unsigned int sumval = (unsigned int)tmp_sum[0]*weights[0] + tmp_sum[1]*weights[1] +tmp_sum[2]*weights[2];
+	sumval = (unsigned int)tmp_sum[0]*weights[0] + tmp_sum[1]*weights[1] +tmp_sum[2]*weights[2];
 
-	unsigned short int val = (unsigned short int)((sumval)>>16);//(unsigned short int)((sumval +32768)>>16);
-
-	unsigned char value;
-
+	val = (unsigned short int)((sumval)>>16);//(unsigned short int)((sumval +32768)>>16);
 	if(val >= 255)
 	{
 		value=255;
@@ -217,33 +238,49 @@ XF_PTNAME(DEPTH) xfapplygaussian5x5(XF_PTNAME(DEPTH) D1,  XF_PTNAME(DEPTH) D2,  
 		value = val;
 	}
 
-	out_pix = (XF_PTNAME(DEPTH))value;
+	out_pix.range(k+7,k) = (XF_PTNAME(DEPTH))value;
 
-
+}
 	return out_pix;
 		}
 
 
-template<int DEPTH>
+template<int PLANES,int DEPTH>
 XF_PTNAME(DEPTH) xfapplygaussian7x7(XF_PTNAME(DEPTH)*src_buf1,XF_PTNAME(DEPTH) *src_buf2,XF_PTNAME(DEPTH)*src_buf3,XF_PTNAME(DEPTH) *src_buf4,XF_PTNAME(DEPTH)*src_buf5,XF_PTNAME(DEPTH) *src_buf6,XF_PTNAME(DEPTH) *src_buf7,unsigned char weights[7])
 {
 #pragma HLS INLINE OFF
 
 	XF_PTNAME(DEPTH) out_pix = 0;
-
+	unsigned long long int sum_val=0;
+	unsigned short val=0;
+	for(int c=0,k=0;c <PLANES ;c++,k+=8)
+	{
+//	out_pix = 0;
+//		sum_val =0;
+//		val=0;
+		unsigned long long int sum_value=0;
+		unsigned short val=0;
 	unsigned int sum = 0.0,sum1=0.0,sum2=0.0,sum3=0.0,sum4=0.0,sum5=0.0,sum6=0.0;
 
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf1[0].range(k+7,k),(unsigned char)src_buf1[1].range(k+7,k),(unsigned char)src_buf1[2].range(k+7,k),(unsigned char)src_buf1[3].range(k+7,k),(unsigned char)src_buf1[4].range(k+7,k),(unsigned char)src_buf1[5].range(k+7,k),(unsigned char)src_buf1[6].range(k+7,k),(unsigned char)src_buf1[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf2[0].range(k+7,k),(unsigned char)src_buf2[1].range(k+7,k),(unsigned char)src_buf2[2].range(k+7,k),(unsigned char)src_buf2[3].range(k+7,k),(unsigned char)src_buf2[4].range(k+7,k),(unsigned char)src_buf2[5].range(k+7,k),(unsigned char)src_buf2[6].range(k+7,k),(unsigned char)src_buf2[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf3[0].range(k+7,k),(unsigned char)src_buf3[1].range(k+7,k),(unsigned char)src_buf3[2].range(k+7,k),(unsigned char)src_buf3[3].range(k+7,k),(unsigned char)src_buf3[4].range(k+7,k),(unsigned char)src_buf3[5].range(k+7,k),(unsigned char)src_buf3[6].range(k+7,k),(unsigned char)src_buf3[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf4[0].range(k+7,k),(unsigned char)src_buf4[1].range(k+7,k),(unsigned char)src_buf4[2].range(k+7,k),(unsigned char)src_buf4[3].range(k+7,k),(unsigned char)src_buf4[4].range(k+7,k),(unsigned char)src_buf4[5].range(k+7,k),(unsigned char)src_buf4[6].range(k+7,k),(unsigned char)src_buf4[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf5[0].range(k+7,k),(unsigned char)src_buf5[1].range(k+7,k),(unsigned char)src_buf5[2].range(k+7,k),(unsigned char)src_buf5[3].range(k+7,k),(unsigned char)src_buf5[4].range(k+7,k),(unsigned char)src_buf5[5].range(k+7,k),(unsigned char)src_buf5[6].range(k+7,k),(unsigned char)src_buf5[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf6[0].range(k+7,k),(unsigned char)src_buf6[1].range(k+7,k),(unsigned char)src_buf6[2].range(k+7,k),(unsigned char)src_buf6[3].range(k+7,k),(unsigned char)src_buf6[4].range(k+7,k),(unsigned char)src_buf6[5].range(k+7,k),(unsigned char)src_buf6[6].range(k+7,k),(unsigned char)src_buf6[7].range(k+7,k));
+//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf7[0].range(k+7,k),(unsigned char)src_buf7[1].range(k+7,k),(unsigned char)src_buf7[2].range(k+7,k),(unsigned char)src_buf7[3].range(k+7,k),(unsigned char)src_buf7[4].range(k+7,k),(unsigned char)src_buf7[5].range(k+7,k),(unsigned char)src_buf7[6].range(k+7,k),(unsigned char)src_buf7[7].range(k+7,k));
 
-	sum3 = (src_buf4[0] + src_buf4[6])*weights[0] + (src_buf4[1] + src_buf4[5])*weights[1] + (src_buf4[2] +src_buf4[4])*weights[2] +  src_buf4[3]*weights[3];
+	sum3 = (unsigned int)(src_buf4[0].range(k+7,k) + src_buf4[6].range(k+7,k))*weights[0] + (src_buf4[1].range(k+7,k) + src_buf4[5].range(k+7,k))*weights[1] + (src_buf4[2].range(k+7,k) +src_buf4[4].range(k+7,k))*weights[2] +  src_buf4[3].range(k+7,k)*weights[3];
 
-	sum  = (src_buf1[0] + src_buf1[6] + src_buf7[0]+ src_buf7[6])*weights[0] + (src_buf1[1] + src_buf1[5]+src_buf7[1] + src_buf7[5])*weights[1] + (src_buf1[2] +src_buf1[4]+src_buf7[2] +src_buf7[4])*weights[2] + (src_buf1[3]+src_buf7[3])*weights[3];
-	sum1 = (src_buf2[0] + src_buf2[6] + src_buf6[0] + src_buf6[6])*weights[0]+ (src_buf2[1] + src_buf2[5]+src_buf6[1] + src_buf6[5])*weights[1] + (src_buf2[2] +src_buf2[4]+src_buf6[2] +src_buf6[4])*weights[2] + (src_buf2[3]+src_buf6[3])*weights[3];
-	sum2 = (src_buf3[0] + src_buf3[6] + src_buf5[0] + src_buf5[6])*weights[0] + (src_buf3[1] + src_buf3[5]+src_buf5[1] + src_buf5[5])*weights[1] +(src_buf3[2] +src_buf3[4]+src_buf5[2] +src_buf5[4])*weights[2] + (src_buf3[3]+src_buf5[3])*weights[3];
+	sum  = (unsigned int)(src_buf1[0].range(k+7,k) + src_buf1[6].range(k+7,k) + src_buf7[0].range(k+7,k)+ src_buf7[6].range(k+7,k))*weights[0] + (src_buf1[1].range(k+7,k) + src_buf1[5].range(k+7,k)+src_buf7[1].range(k+7,k) + src_buf7[5].range(k+7,k))*weights[1] + (src_buf1[2].range(k+7,k) +src_buf1[4].range(k+7,k)+src_buf7[2].range(k+7,k) +src_buf7[4].range(k+7,k))*weights[2] + (src_buf1[3].range(k+7,k)+src_buf7[3].range(k+7,k))*weights[3];
+	sum1 = (unsigned int)(src_buf2[0].range(k+7,k) + src_buf2[6].range(k+7,k) + src_buf6[0].range(k+7,k) + src_buf6[6].range(k+7,k))*weights[0]+ (src_buf2[1].range(k+7,k) + src_buf2[5].range(k+7,k)+src_buf6[1].range(k+7,k) + src_buf6[5].range(k+7,k))*weights[1] + (src_buf2[2].range(k+7,k) +src_buf2[4].range(k+7,k)+src_buf6[2].range(k+7,k) +src_buf6[4].range(k+7,k))*weights[2] + (src_buf2[3].range(k+7,k)+src_buf6[3].range(k+7,k))*weights[3];
+	sum2 = (unsigned int)(src_buf3[0].range(k+7,k) + src_buf3[6].range(k+7,k) + src_buf5[0].range(k+7,k) + src_buf5[6].range(k+7,k))*weights[0] + (src_buf3[1].range(k+7,k) + src_buf3[5].range(k+7,k)+src_buf5[1].range(k+7,k) + src_buf5[5].range(k+7,k))*weights[1] +(src_buf3[2].range(k+7,k) +src_buf3[4].range(k+7,k)+src_buf5[2].range(k+7,k) +src_buf5[4].range(k+7,k))*weights[2] + (src_buf3[3].range(k+7,k)+src_buf5[3].range(k+7,k))*weights[3];
 
-	unsigned long long int sum_value = (sum)*weights[0] + (sum1)*weights[1] + (sum2)*weights[2] +sum3*weights[3];
+	 sum_value = (sum)*weights[0] + (sum1)*weights[1] + (sum2)*weights[2] +(sum3)*weights[3];
 
-	unsigned short val = (unsigned short)((sum_value)>>16);//(unsigned short)((sum_value+32768)>>16);
+	 val = (unsigned short)((sum_value)>>16);//(unsigned short)((sum_value+32768)>>16);
 
+//	printf("the final sum values are %lu\t%lu\t%lu\t%lu\t%d\t%d\n",sum,sum1,sum2,sum3,sum_value,val);
 	unsigned char value;
 
 	if(val >= 255)
@@ -256,12 +293,13 @@ XF_PTNAME(DEPTH) xfapplygaussian7x7(XF_PTNAME(DEPTH)*src_buf1,XF_PTNAME(DEPTH) *
 	}
 
 
-	out_pix = (uchar_t)value;
-
+	out_pix.range(k+7,k) = (uchar_t)value;
+	}
 	return out_pix;
+
 }
 
-template<int NPC, int DEPTH>
+template<int NPC, int DEPTH,int PLANES>
 void auGaussian3x3(
 		XF_PTNAME(DEPTH)*OutputValues,
 		XF_PTNAME(DEPTH) *src_buf1,
@@ -269,25 +307,45 @@ void auGaussian3x3(
 		XF_PTNAME(DEPTH) *src_buf3,unsigned char weights[3])
 {
 #pragma HLS INLINE
-
+int p=0;
+ap_uint<24> val;
 	Compute_Grad_Loop:
-	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++)
+	for(ap_uint<5> j = 0; j < (XF_NPIXPERCYCLE(NPC)); j++)
 	{
 #pragma HLS UNROLL
-		OutputValues[j] = xFapplygaussian3x3<DEPTH>(
-				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
-				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
-				src_buf3[j], src_buf3[j+1], src_buf3[j+2],weights);
+		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+		{
+#pragma HLS UNROLL
+//		ap_uint<8> srcbuf10 =src_buf1[0].range(k+7,k);
+//		ap_uint<8> srcbuf11 =src_buf1[1].range(k+7,k);
+//		ap_uint<8> srcbuf12 =src_buf1[2].range(k+7,k);
+//		ap_uint<8> srcbuf20 =src_buf2[0].range(k+7,k);
+//		ap_uint<8> srcbuf21 =src_buf2[1].range(k+7,k);
+//		ap_uint<8> srcbuf22 =src_buf2[2].range(k+7,k);
+//		ap_uint<8> srcbuf30 =src_buf3[0].range(k+7,k);
+//		ap_uint<8> srcbuf31 =src_buf3[1].range(k+7,k);
+//		ap_uint<8> srcbuf32 =src_buf3[2].range(k+7,k);
+		val.range(k+7,k)= xFapplygaussian3x3<DEPTH>(src_buf1[j].range(k+7,k), src_buf1[j+1].range(k+7,k), src_buf1[j+2].range(k+7,k),src_buf2[j].range(k+7,k), src_buf2[j+1].range(k+7,k), src_buf2[j+2].range(k+7,k),src_buf3[j].range(k+7,k), src_buf3[j+1].range(k+7,k), src_buf3[j+
+																																																																					 2].range(k+7,k),weights);
+		}
+		OutputValues[p]=val;
+		p++;
+//		OutputValues[j] = xFapplygaussian3x3<DEPTH>(
+//				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
+//				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
+//				src_buf3[j], src_buf3[j+1], src_buf3[j+2],weights);
 	}
+
+
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void ProcessGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void ProcessGaussian3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _out_mat,
 		XF_SNAME(WORDWIDTH) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
-		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width, uint16_t img_height, uint16_t &shift_x, ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row,unsigned char *weights)
+		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width, uint16_t img_height, uint16_t &shift_x, ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row,unsigned char *weights, int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 
@@ -301,7 +359,7 @@ void ProcessGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom][col] = _src_mat.read(); // Read data
+			buf[bottom][col] = _src_mat.data[read_index++]; // Read data
 		else
 			buf[bottom][col] = 0;
 
@@ -325,7 +383,7 @@ void ProcessGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 		}
 
 
-		auGaussian3x3<NPC, DEPTH>(OutputValues,src_buf1, src_buf2, src_buf3,weights);
+		auGaussian3x3<NPC, DEPTH,PLANES>(OutputValues,src_buf1, src_buf2, src_buf3,weights);
 
 		if(col == 0)
 		{
@@ -352,7 +410,7 @@ void ProcessGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 				P0 = OutputValues[0];
 			}
 
-			_out_mat.write(P0);
+			_out_mat.data[write_index++] = (P0);
 
 			shift_x = 0;
 			P0 = 0;
@@ -377,20 +435,21 @@ void ProcessGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 	} // Col_Loop
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void xfGaussianFilter3x3(hls::stream< XF_SNAME(WORDWIDTH)> &_src_mat,hls::stream< XF_SNAME(WORDWIDTH) > &_out_mat,uint16_t img_height, uint16_t img_width,unsigned char *weights)
+template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void xfGaussianFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<SRC_T, ROWS, COLS, NPC> &_out_mat,uint16_t img_height, uint16_t img_width,unsigned char *weights)
 {
 	ap_uint<13> row_ind;
 	ap_uint<2> tp, mid, bottom;
 	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
 	uint16_t shift_x = 0;
 	ap_uint<13> row, col;
+	int read_index = 0, write_index = 0;
 
 	XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
 
 #pragma HLS ARRAY_PARTITION variable=OutputValues complete dim=1
 
-	XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2], src_buf2[XF_NPIXPERCYCLE(NPC)+2],src_buf3[XF_NPIXPERCYCLE(NPC)+2];
+	XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2]={0}, src_buf2[XF_NPIXPERCYCLE(NPC)+2]={0},src_buf3[XF_NPIXPERCYCLE(NPC)+2]={0};
 #pragma HLS ARRAY_PARTITION variable=src_buf1 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=src_buf2 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=src_buf3 complete dim=1
@@ -409,7 +468,7 @@ void xfGaussianFilter3x3(hls::stream< XF_SNAME(WORDWIDTH)> &_src_mat,hls::stream
 #pragma HLS pipeline
 		//#pragma HLS LOOP_FLATTEN off
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -436,25 +495,26 @@ void xfGaussianFilter3x3(hls::stream< XF_SNAME(WORDWIDTH)> &_src_mat,hls::stream
 
 		P0 = 0;
 
-		ProcessGaussian3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC>
-		(_src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row,weights);
+		ProcessGaussian3x3<SRC_T, ROWS, COLS,PLANES, DEPTH, NPC, WORDWIDTH, TC>(_src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row,weights, read_index, write_index);
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
 		{
 
-			OutputValues[0] = xFapplygaussian3x3<DEPTH>(
-					src_buf1[buf_size-2],src_buf1[buf_size-1], 0,
-					src_buf2[buf_size-2],src_buf2[buf_size-1], 0,
-					src_buf3[buf_size-2],src_buf3[buf_size-1], 0,weights);
+			OutputValues[0] = xFapplygaussian3x3<DEPTH>(src_buf1[buf_size-2],src_buf1[buf_size-1], 0,src_buf2[buf_size-2],src_buf2[buf_size-1], 0,src_buf3[buf_size-2],src_buf3[buf_size-1], 0,weights);
 
 		}
 		else
 		{
-			OutputValues[0] = xFapplygaussian3x3<DEPTH>(
-					src_buf1[buf_size-3], src_buf1[buf_size-2], 0,
-					src_buf2[buf_size-3], src_buf2[buf_size-2], 0,
-					src_buf3[buf_size-3], src_buf3[buf_size-2], 0,weights);
+			ap_uint<24> out_val1;
+			for(int i=0,k=0;i<PLANES;i++,k+=8){
+				ap_uint<8> srcbuf10=src_buf1[buf_size-3].range(k+7,k);ap_uint<8> srcbuf11=src_buf1[buf_size-2].range(k+7,k);
+				ap_uint<8> srcbuf20=src_buf2[buf_size-3].range(k+7,k);ap_uint<8> srcbuf21=src_buf2[buf_size-2].range(k+7,k);
+				ap_uint<8> srcbuf30=src_buf3[buf_size-3].range(k+7,k);ap_uint<8> srcbuf31=src_buf3[buf_size-2].range(k+7,k);
+//			OutputValues[0] = xFapplygaussian3x3<DEPTH>(src_buf1[buf_size-3], src_buf1[buf_size-2], 0,src_buf2[buf_size-3], src_buf2[buf_size-2], 0, src_buf3[buf_size-3], src_buf3[buf_size-2], 0,weights);
+				out_val1.range(k+7,k)=xFapplygaussian3x3<DEPTH>(srcbuf10, srcbuf11, 0,srcbuf20, srcbuf21, 0, srcbuf30, srcbuf31, 0,weights);
 
+			}
+			OutputValues[0]=out_val1;
 		}
 
 		if(NPC == XF_NPPC8)
@@ -467,7 +527,7 @@ void xfGaussianFilter3x3(hls::stream< XF_SNAME(WORDWIDTH)> &_src_mat,hls::stream
 			P0 = OutputValues[0];
 		}
 
-		_out_mat.write(P0);
+		_out_mat.data[write_index++] = (P0);
 
 		shift_x = 0;
 		P0 = 0;
@@ -480,7 +540,7 @@ void xfGaussianFilter3x3(hls::stream< XF_SNAME(WORDWIDTH)> &_src_mat,hls::stream
 	} // Row_Loop
 }
 
-template<int NPC,int DEPTH, bool FOR_IMAGE_PYRAMID>
+template<int NPC,int DEPTH, int PLANES, bool FOR_IMAGE_PYRAMID>
 void xFGaussian5x5(
 		XF_PTNAME(DEPTH) *OutputValues,
 		XF_PTNAME(DEPTH)  *src_buf1,
@@ -490,28 +550,31 @@ void xFGaussian5x5(
 		XF_PTNAME(DEPTH)  *src_buf5,unsigned char weights[5])
 {
 #pragma HLS INLINE
-
+	XF_PTNAME(DEPTH) val=0,p=0;
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++ )
 	{
-#pragma HLS LOOP_TRIPCOUNT min=8 max=8
-#pragma HLS UNROLL
-		OutputValues[j] = xfapplygaussian5x5<DEPTH,FOR_IMAGE_PYRAMID>(src_buf1[j],   src_buf1[j+1], src_buf1[j+2], src_buf1[j+3],	src_buf1[j+4],
-				src_buf2[j],   src_buf2[j+1], src_buf2[j+2], src_buf2[j+3], src_buf2[j+4],
-				src_buf3[j],   src_buf3[j+1], src_buf3[j+2], src_buf3[j+3],	src_buf3[j+4],
-				src_buf4[j],   src_buf4[j+1], src_buf4[j+2], src_buf4[j+3], src_buf4[j+4],
-				src_buf5[j],   src_buf5[j+1], src_buf5[j+2], src_buf5[j+3],	src_buf5[j+4],weights);
+//#pragma HLS LOOP_TRIPCOUNT min=8 max=8
+//#pragma HLS PIPELINE
+//		for(ap_uint<5> c=0,k=0; c<PLANES; c++,k+=8)
+//		{
+//#pragma HLS loop flatten off
+//#pragma HLS UNROLL
+		OutputValues[j] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(&src_buf1[j],&src_buf2[j],&src_buf3[j],&src_buf4[j], &src_buf5[j], weights);
+//		}
+//		OutputValues[p]=val;
+//		p++;
 	}
 }
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,bool FOR_IMAGE_PYRAMID>
-void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC,bool FOR_IMAGE_PYRAMID>
+void ProcessGaussian5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _out_mat,
 		XF_SNAME(WORDWIDTH) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf4[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf5[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
 		XF_SNAME(WORDWIDTH) &inter_valx, uint16_t img_width, uint16_t img_height, uint16_t &shift_x,
-		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row,unsigned char weights[5])
+		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row,unsigned char weights[5], int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 	XF_SNAME(WORDWIDTH)  buf0, buf1, buf2, buf3, buf4;
@@ -526,7 +589,7 @@ void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::strea
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom2][col] = _src_mat.read();
+			buf[bottom2][col] = _src_mat.data[read_index++];
 		else
 			buf[bottom2][col] = 0;
 
@@ -554,7 +617,7 @@ void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::strea
 
 		}
 
-		xFGaussian5x5<NPC, DEPTH, FOR_IMAGE_PYRAMID>(OutputValues, src_buf1, src_buf2, src_buf3,src_buf4, src_buf5,weights);
+		xFGaussian5x5<NPC, DEPTH,PLANES, FOR_IMAGE_PYRAMID>(OutputValues, src_buf1, src_buf2, src_buf3,src_buf4, src_buf5,weights);
 
 		for(ap_uint<4> i = 0; i < 4; i++)
 		{
@@ -592,7 +655,7 @@ void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::strea
 				{
 					inter_valx = OutputValues[0];
 				}
-				_out_mat.write(inter_valx);
+				_out_mat.data[write_index++] = (inter_valx);
 
 				shift_x = 0;
 				inter_valx = 0;
@@ -610,7 +673,7 @@ void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::strea
 				if(col >= 2)
 				{
 					inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
-					_out_mat.write(inter_valx);
+					_out_mat.data[write_index++] = (inter_valx);
 
 				}
 			}
@@ -618,10 +681,10 @@ void ProcessGaussian5x5(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,hls::strea
 	} // Col_Loop
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,
+template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC,
 bool FOR_IMAGE_PYRAMID>
-void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+void xFGaussianFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _out_mat,
 		uint16_t img_height, uint16_t img_width,unsigned char weights[5] )
 {
 
@@ -635,6 +698,7 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 	ap_uint<9> max_loop = XF_WORDDEPTH(WORDWIDTH);
 	uint16_t shift_x = 0;
 	ap_uint<8> npc = XF_NPIXPERCYCLE(NPC);
+	int read_index = 0, write_index = 0;
 
 	XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
 
@@ -667,7 +731,7 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 #pragma HLS pipeline
 		buf[0][col] = 0;
 		buf[1][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 
 	row_ind++;
@@ -678,7 +742,7 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -718,8 +782,8 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 
 		inter_valx = 0;
 
-		ProcessGaussian5x5<ROWS, COLS, DEPTH,NPC, WORDWIDTH, TC , FOR_IMAGE_PYRAMID>( _src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, OutputValues,
-				inter_valx,img_width, img_height, shift_x, tp1, tp2, mid, bottom1, bottom2, row,weights);
+		ProcessGaussian5x5<SRC_T, ROWS, COLS,PLANES, DEPTH,NPC, WORDWIDTH, TC , FOR_IMAGE_PYRAMID>( _src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, OutputValues,
+				inter_valx,img_width, img_height, shift_x, tp1, tp2, mid, bottom1, bottom2, row,weights, read_index, write_index);
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
 		{
@@ -734,49 +798,56 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 				src_buf5[buf_size+i-(XF_NPIXPERCYCLE(NPC))+2] = 0;
 			}
 
-			OutputValues[0] = xfapplygaussian5x5<DEPTH,FOR_IMAGE_PYRAMID>(
-					src_buf1[0], src_buf1[1], src_buf1[2], src_buf1[3], 0,
-					src_buf2[0], src_buf2[1], src_buf2[2], src_buf2[3], 0,
-					src_buf3[0], src_buf3[1], src_buf3[2], src_buf3[3], 0,
-					src_buf4[0], src_buf4[1], src_buf4[2], src_buf4[3], 0,
-					src_buf5[0], src_buf5[1], src_buf5[2], src_buf5[3], 0,weights);
+			OutputValues[0] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+					&src_buf1[0],
+					&src_buf2[0],
+					&src_buf3[0],
+					&src_buf4[0],
+					&src_buf5[0],weights);
 
-			OutputValues[1] = xfapplygaussian5x5<DEPTH,FOR_IMAGE_PYRAMID>(
-					src_buf1[1], src_buf1[2], src_buf1[3], 0, 0,
-					src_buf2[1], src_buf2[2], src_buf2[3], 0, 0,
-					src_buf3[1], src_buf3[2], src_buf3[3], 0, 0,
-					src_buf4[1], src_buf4[2], src_buf4[3], 0, 0,
-					src_buf5[1], src_buf5[2], src_buf5[3], 0, 0,weights);
+			OutputValues[1] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+					&src_buf1[0],
+					&src_buf2[0],
+					&src_buf3[0],
+					&src_buf4[0],
+					&src_buf5[0],weights);
 
 			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 2, shift_x);
 
-			_out_mat.write(inter_valx);
+			_out_mat.data[write_index++] = (inter_valx);
 
 		}
 		else
 		{
 #pragma HLS ALLOCATION instances=xfapplygaussian5x5 limit=1
-			OutputValues[0] = xfapplygaussian5x5<DEPTH,FOR_IMAGE_PYRAMID>(
-					src_buf1[buf_size-5], src_buf1[buf_size-4], src_buf1[buf_size-3], src_buf1[buf_size-2], 0,
-					src_buf2[buf_size-5], src_buf2[buf_size-4], src_buf2[buf_size-3], src_buf2[buf_size-2], 0,
-					src_buf3[buf_size-5], src_buf3[buf_size-4], src_buf3[buf_size-3], src_buf3[buf_size-2], 0,
-					src_buf4[buf_size-5], src_buf4[buf_size-4], src_buf4[buf_size-3], src_buf4[buf_size-2], 0,
-					src_buf5[buf_size-5], src_buf5[buf_size-4], src_buf5[buf_size-3], src_buf5[buf_size-2], 0,weights);
+			for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
+			{
+#pragma HLS UNROLL
+			OutputValues[0].range(k+7,k) = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+					&src_buf1[0],
+					&src_buf2[0],
+					&src_buf3[0],
+					&src_buf4[0],
+					&src_buf5[0],weights);
 
-			inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
+			}
+//			inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
+			ap_uint<24> inter_valx1=OutputValues[0];
+			_out_mat.data[write_index++] = (inter_valx1);
+			for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
+			{
+#pragma HLS UNROLL
+			OutputValues[0].range(k+7,k) = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+					&src_buf1[0],
+					&src_buf2[0],
+					&src_buf3[0],
+					&src_buf4[0],
+					&src_buf5[0],weights);
 
-			_out_mat.write(inter_valx);
-
-			OutputValues[0] = xfapplygaussian5x5<DEPTH,FOR_IMAGE_PYRAMID>(
-					src_buf1[buf_size-4], src_buf1[buf_size-3], src_buf1[buf_size-2], 0, 0,
-					src_buf2[buf_size-4], src_buf2[buf_size-3], src_buf2[buf_size-2], 0, 0,
-					src_buf3[buf_size-4], src_buf3[buf_size-3], src_buf3[buf_size-2], 0, 0,
-					src_buf4[buf_size-4], src_buf4[buf_size-3], src_buf4[buf_size-2], 0, 0,
-					src_buf5[buf_size-4], src_buf5[buf_size-3], src_buf5[buf_size-2], 0, 0,weights);
-
-			inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
-
-			_out_mat.write(inter_valx);
+			}
+		//	inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
+			ap_uint<24> inter_valx2=OutputValues[0];
+			_out_mat.data[write_index++] = (inter_valx2);
 
 		}
 		row_ind++;
@@ -788,7 +859,7 @@ void xFGaussianFilter5x5(hls::stream< XF_SNAME(WORDWIDTH)> & _src_mat,
 	} // Row_Loop
 }
 
-template<int NPC, int DEPTH>
+template<int NPC, int DEPTH,int PLANES>
 void xFGaussian7x7(XF_PTNAME(DEPTH)* OutputValues,
 		XF_PTNAME(DEPTH) *src_buf1, XF_PTNAME(DEPTH) *src_buf2,
 		XF_PTNAME(DEPTH) *src_buf3, XF_PTNAME(DEPTH) *src_buf4,
@@ -800,21 +871,24 @@ void xFGaussian7x7(XF_PTNAME(DEPTH)* OutputValues,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 #pragma HLS UNROLL
-		OutputValues[j] = xfapplygaussian7x7<DEPTH>(&src_buf1[j], &src_buf2[j],
+//		for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
+//		{
+		OutputValues[j] = xfapplygaussian7x7<PLANES,DEPTH>(&src_buf1[j], &src_buf2[j],
 				&src_buf3[j], &src_buf4[j], &src_buf5[j], &src_buf6[j],
 				&src_buf7[j],weights);
+//		}
 	}
 }
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int TC>
-void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+template<int SRC_T, int ROWS, int COLS, int PLANES,int DEPTH, int NPC, int WORDWIDTH,int TC>
+void ProcessGaussian7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _out_mat,
 		XF_SNAME(WORDWIDTH) buf[7][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf4[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf5[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH) src_buf6[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf7[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
 		XF_SNAME(WORDWIDTH) &inter_valx, uint16_t img_width, uint16_t img_height, uint16_t &shiftx,
-		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> tp3, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<4> bottom3, ap_uint<13> row_index,unsigned char weights[7])
+		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> tp3, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<4> bottom3, ap_uint<13> row_index,unsigned char weights[7], int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 	XF_SNAME(WORDWIDTH) buf0, buf1, buf2, buf3, buf4, buf5, buf6;
@@ -827,7 +901,7 @@ void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row_index  < img_height)
-			buf[bottom3][col] = _src_mat.read();
+			buf[bottom3][col] = _src_mat.data[read_index++];
 		else
 			buf[bottom3][col] = 0;
 
@@ -857,7 +931,7 @@ void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 		}
 
 
-		xFGaussian7x7<NPC, DEPTH>(OutputValues,
+		xFGaussian7x7<NPC, DEPTH,PLANES>(OutputValues,
 				src_buf1, src_buf2, src_buf3, src_buf4,
 				src_buf5, src_buf6, src_buf7,weights);
 
@@ -881,7 +955,7 @@ void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 3, shiftx);
 
 
-				_out_mat.write(inter_valx);
+				_out_mat.data[write_index++] = (inter_valx);
 
 				shiftx = 0;
 
@@ -896,9 +970,17 @@ void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 			{
 				if(col >=3 )
 				{
+					if(PLANES==1)
+					{
 					inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
+					_out_mat.data[write_index++] = (inter_valx);
+					}
+					else
+					{
+						_out_mat.data[write_index++] = (OutputValues[0]);
+					}
 
-					_out_mat.write(inter_valx);
+
 
 				}
 			}
@@ -906,9 +988,9 @@ void ProcessGaussian7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 	}// Col_Loop
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int TC>
-void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+template<int SRC_T, int ROWS, int COLS, int PLANES,int DEPTH, int NPC, int WORDWIDTH,int TC>
+void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _out_mat,
 		uint16_t img_height, uint16_t img_width,unsigned char weights[7])
 {
 
@@ -917,6 +999,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 	ap_uint<5> i;
 	ap_uint<8> buf_size = (XF_NPIXPERCYCLE(NPC)+6);
 	ap_uint<10> max_loop = XF_WORDDEPTH(WORDWIDTH);
+	int read_index = 0, write_index = 0;
 
 
 	XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
@@ -952,7 +1035,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 		buf[0][col] = 0;
 		buf[1][col] = 0;
 		buf[2][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -962,7 +1045,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -972,7 +1055,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -1022,8 +1105,8 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 			src_buf7[i] = 0;
 		}
 		inter_valx =  0;
-		ProcessGaussian7x7<ROWS, COLS, DEPTH,NPC, WORDWIDTH, TC>( _src_mat, _out_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	OutputValues,
-				inter_valx,img_width, img_height, shiftx, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row,weights);
+		ProcessGaussian7x7<SRC_T, ROWS, COLS,PLANES, DEPTH,NPC, WORDWIDTH, TC>( _src_mat, _out_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	OutputValues,
+				inter_valx,img_width, img_height, shiftx, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row,weights,read_index, write_index);
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
 		{
@@ -1045,7 +1128,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=3 max=3
 #pragma HLS unroll
 
-				OutputValues[i] = xfapplygaussian7x7<DEPTH>(
+				OutputValues[i] = xfapplygaussian7x7<PLANES,DEPTH>(
 						&src_buf1[i], &src_buf2[i], &src_buf3[i],
 						&src_buf4[i], &src_buf5[i], &src_buf6[i],
 						&src_buf7[i],weights);
@@ -1056,7 +1139,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 3, shiftx);
 
 
-			_out_mat.write(inter_valx);
+			_out_mat.data[write_index++] = (inter_valx);
 
 			shiftx =  0;
 			inter_valx = 0;
@@ -1077,7 +1160,7 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS unroll
 #pragma HLS ALLOCATION instances=xfapplygaussian7x7 limit=1
 
-				OutputValues[0] = xfapplygaussian7x7<DEPTH>(
+				OutputValues[0] = xfapplygaussian7x7<PLANES,DEPTH>(
 						&src_buf1[0], &src_buf2[0], &src_buf3[0],
 						&src_buf4[0], &src_buf5[0], &src_buf6[0],
 						&src_buf7[0],weights);
@@ -1086,11 +1169,16 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 
 				xfCopyData<NPC, DEPTH>(src_buf1, src_buf2, src_buf3, src_buf4,
 						src_buf5, src_buf6, src_buf7);
-
+				if(PLANES==1)
+				{
 				inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
 
-				_out_mat.write(inter_valx);
-
+				_out_mat.data[write_index++] = (inter_valx);
+				}
+				else
+				{
+					_out_mat.data[write_index++] = ( OutputValues[0]);
+				}
 			}
 		}
 		row_ind++;
@@ -1100,39 +1188,15 @@ void xFGaussianFilter7x7(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 		}
 	}//Row_Loop ends here
 
-}
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
+}/*
+template<int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH>
 void xFGaussianFilter(hls::stream< XF_SNAME(WORDWIDTH)> &_src, hls::stream< XF_SNAME(WORDWIDTH) > &_dst, int _filter_width, int _border_type, uint16_t imgheight, uint16_t imgwidth, float sigma)
 {
 
 
-	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 
-	if (_filter_width == XF_FILTER_3X3)
-	{
-		unsigned char weights[3];
-#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
-		weightsghcalculation3x3(sigma,weights);
-		xfGaussianFilter3x3<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst, imgheight, imgwidth,weights);
-	}
-	else if (_filter_width == XF_FILTER_5X5)
-	{
-		unsigned char weights[5];
-#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
-		weightsghcalculation5x5(sigma,weights);
-		xFGaussianFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC)),false>(_src, _dst,imgheight,imgwidth,weights);
-	}
-	else if (_filter_width == XF_FILTER_7X7)
-	{
-		unsigned char weights[7];
-#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
-		weightsghcalculation7x7(sigma,weights);
-		xFGaussianFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst,imgheight,imgwidth,weights);
-	}
+}*/
 
-}
-//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 #pragma SDS data access_pattern("_dst.data":SEQUENTIAL)
@@ -1143,40 +1207,31 @@ void GaussianBlur(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, C
 {
 #pragma HLS inline off
 
-#pragma HLS dataflow
 
-	hls::stream<XF_TNAME(SRC_T,NPC)>src;
-	hls::stream< XF_TNAME(SRC_T,NPC)> dst;
+	int imgwidth = _src.cols >> XF_BITSHIFT(NPC);
 
-	/********************************************************/
-
-	Read_yuyv_Loop:
-	for(int i=0; i<_src.rows;i++)
+	if (FILTER_SIZE == XF_FILTER_3X3)
 	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			src.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
+		unsigned char weights[3];
+#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
+		weightsghcalculation3x3(sigma,weights);
+		xfGaussianFilter3x3<SRC_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>(_src, _dst, _src.rows, imgwidth,weights);
+	}
+	else if (FILTER_SIZE == XF_FILTER_5X5)
+	{
+		unsigned char weights[5];
+#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
+		weightsghcalculation5x5(sigma,weights);
+		xFGaussianFilter5x5<SRC_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC)),false>(_src, _dst,_src.rows,imgwidth,weights);
+	}
+	else if (FILTER_SIZE == XF_FILTER_7X7)
+	{
+		unsigned char weights[7];
+#pragma HLS ARRAY_PARTITION variable=weights complete dim=1
+		weightsghcalculation7x7(sigma,weights);
+		xFGaussianFilter7x7<SRC_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>(_src, _dst,_src.rows,imgwidth,weights);
 	}
 
-	xFGaussianFilter< ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(src, dst, FILTER_SIZE, BORDER_TYPE, _src.rows,_src.cols,sigma);
-
-	for(int i=0; i<_dst.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			*(_dst.data + i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) = dst.read();
-
-		}
-	}
 }
 }
 #endif //_XF_GAUSSIAN_HPP_

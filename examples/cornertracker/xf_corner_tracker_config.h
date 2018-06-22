@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -41,5 +41,5 @@
 #include "imgproc/xf_corner_update.hpp"
 #include "imgproc/xf_corner_img_to_list.hpp"
 
-void cornerTracker(xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS] , xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS] , xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &inHarris, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &outHarris, unsigned int *list, ap_uint<64> *listfixed, int pyr_h[NUM_LEVELS], int pyr_w[NUM_LEVELS], unsigned int *num_corners, unsigned int harrisThresh, bool *harris_flag);
+void cornerTracker(xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow, xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1> & flow_iter, xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr1[NUM_LEVELS] , xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1> mat_imagepyr2[NUM_LEVELS] , xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &inHarris, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &outHarris, unsigned int *list, unsigned long *listfixed, int pyr_h[NUM_LEVELS], int pyr_w[NUM_LEVELS], unsigned int *num_corners, unsigned int harrisThresh, bool *harris_flag);
 #endif

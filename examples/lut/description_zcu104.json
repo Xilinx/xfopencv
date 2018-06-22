@@ -1,0 +1,20 @@
+{
+    "example" : "lut - File I/O",
+    "overview" : "lut",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "LUT",
+            "location" : "<LIBRARY>/include/imgproc/xf_lut.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

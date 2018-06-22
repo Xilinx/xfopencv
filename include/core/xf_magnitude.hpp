@@ -57,12 +57,11 @@ namespace xf{
  *  Depending on NPC, 16 or 8 pixels are read and gradient values are
  *  calculated.
  */
-template <int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC,
+template <int SRC_T, int DST_T, int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC,
 int WORDWIDTH_SRC, int WORDWIDTH_DST, int COLS_TRIP>
 void xFMagnitudeKernel(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _dst,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<DST_T, ROWS, COLS, NPC> & _src2,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
 		int _norm_type,uint16_t &imgheight,uint16_t &imgwidth)
 {
 
@@ -85,8 +84,8 @@ void xFMagnitudeKernel(
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read());
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read());
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*imgwidth+j]);
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*imgwidth+j]);
 
 			int proc_loop = XF_WORDDEPTH(WORDWIDTH_DST),
 					step  = XF_PIXELDEPTH(DEPTH_DST);
@@ -115,7 +114,7 @@ void xFMagnitudeKernel(
 				}
 				val_dst.range(k + (step - 1), k) = result;
 			}
-			_dst.write(val_dst);		// writing into the output stream
+			_dst_mat.data[i*imgwidth+j] = (val_dst);		// writing into the output stream
 		}
 	}
 }
@@ -135,9 +134,6 @@ void xFMagnitudeComputation(
 		int _norm_type,uint16_t imgheight,uint16_t imgwidth)
 {
 
-#pragma HLS inline
-
-	imgwidth=imgwidth>>XF_BITSHIFT(NPC);
 
 	xFMagnitudeKernel<ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC, WORDWIDTH_SRC,
 	WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(src1,src2,_dst,_norm_type,imgheight,imgwidth);
@@ -158,41 +154,20 @@ template<int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
 void magnitude(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
 {
 	
+	assert(((_src_matx.rows <= ROWS ) && (_src_matx.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((_src_maty.rows <= ROWS ) && (_src_maty.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((_src_matx.rows == _src_maty.rows ) && (_src_matx.cols == _src_maty.cols)) && "Both input images should have same size");
+	assert(((_src_matx.rows == _dst_mat.rows ) && (_src_matx.cols == _dst_mat.cols)) && "Input and output image should be of same size");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) && "NPC must be XF_NPPC1, XF_NPPC8 ");
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src1;
-	hls::stream< XF_TNAME(DST_T,NPC)> _src2;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
-#pragma HLS INLINE off
-#pragma HLS DATAFLOW
+#pragma HLS inline
 
-	for(int i=0; i<_src_matx.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_matx.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
-			_src1.write( *(_src_matx.data + i*(_src_matx.cols>>(XF_BITSHIFT(NPC))) +j) );
-			_src2.write( *(_src_maty.data + i*(_src_maty.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
+	uint16_t imgwidth=_src_matx.cols>>XF_BITSHIFT(NPC);
+	uint16_t height=_src_matx.rows;
 
 
-
-	xFMagnitudeComputation<ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC)>(_src1,_src2,_dst,NORM_TYPE,_src_matx.rows,_src_matx.cols);
-
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-		}
-	}
+	xFMagnitudeKernel<SRC_T, DST_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS>>XF_BITSHIFT(NPC))>
+	(_src_matx,_src_maty,_dst_mat,NORM_TYPE,height, imgwidth);
 
 }
 }

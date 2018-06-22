@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -63,8 +63,8 @@ int main(int argc, char **argv)
 	uint16_t channel = XF_EXTRACT_CH_R;
 
 
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_rgba.rows,in_rgba.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_rgba.rows,in_rgba.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_rgba.rows,in_rgba.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_rgba.rows,in_rgba.cols);
 
 	imgInput.copyTo(in_rgba.data);
 	 #if __SDSCC__
@@ -78,7 +78,6 @@ int main(int argc, char **argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	 #endif
-	//out_img.data = imgOutput.copyFrom();
 
 	xf::imwrite("hls_out.png",imgOutput);
 
@@ -87,12 +86,11 @@ int main(int argc, char **argv)
 	cv::split( in_src, bgr_planes );
 	// write output and OpenCV reference image
 	cv::imwrite("out_ocv.png",bgr_planes[2]);
-	//cv::imwrite("out_hls.jpg", out_img);
 
 	cv::Mat diff;
 	diff.create(in_src.rows, in_src.cols, CV_8U);
+
 	// Check with the correct channel. Keep 2 for R, 1 for G and 0 for B in index of bgr_planes
-//	absdiff(out_img, bgr_planes[2], diff);
 	xf::absDiff(bgr_planes[2], imgOutput, diff);
 	cv::imwrite("diff.jpg", diff);
 

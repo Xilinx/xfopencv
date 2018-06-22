@@ -1,0 +1,20 @@
+{
+    "example" : "channelextract - File I/O",
+    "overview" : "channelextract",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "extractChannel",
+            "location" : "<LIBRARY>/include/imgproc/xf_channel_extract.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

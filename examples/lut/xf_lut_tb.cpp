@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,6 +48,7 @@ int main(int argc, char** argv)
 
 	/*  reading in the color image  */
 	in_img = cv::imread(argv[1],0);
+
 	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
@@ -58,25 +59,21 @@ int main(int argc, char** argv)
 #else
 	uchar_t*lut_ptr=(uchar_t*)malloc(256*sizeof(uchar_t));
 #endif
-	
+
 	for(int i=0;i<256;i++)
 	{
 		lut_ptr[i]=lut[i];
 	}
-	/*  convert to gray  */
-//	cvtColor(in_img,in_gray,CV_BGR2GRAY);
 
 	out_img.create(in_img.rows,in_img.cols,in_img.depth());
 	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
 	diff.create(in_img.rows,in_img.cols,in_img.depth());
 
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
+	imgInput.copyTo(in_img.data);
 
-	
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
-//	imgInput.copyTo(in_gray.data);
 	#if __SDSCC__
 		perf_counter hw_ctr; hw_ctr.start();
 	#endif
@@ -87,12 +84,10 @@ int main(int argc, char** argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-//	out_img.data = imgOutput.copyFrom();
-	
+
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
 
-//	imwrite("out_img.jpg", out_img);
 
 	///////////// OpenCV reference  /////////////
 	lut_mat = cv::Mat(1,256,CV_8UC1,lut);
@@ -100,8 +95,7 @@ int main(int argc, char** argv)
 
 
 	imwrite("ref_img.jpg",ocv_ref);     // save the reference image
-	//////////////// comparision /////////////
-//	absdiff(ocv_ref,out_img,diff);	  // Compute absolute difference image
+	//////////////// Comparison /////////////
 	xf::absDiff(ocv_ref,imgOutput, diff);
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 

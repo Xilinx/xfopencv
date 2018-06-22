@@ -1,29 +1,29 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+//Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
+Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
+1. Redistributions of source code must retain the above copyright notice,
 this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
 and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software
 without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  ***************************************************************************/
@@ -69,7 +69,7 @@ XF_PTNAME(DEPTH) xfapplydilate3x3(XF_PTNAME(DEPTH) D1, XF_PTNAME(DEPTH) D2, XF_P
 	return max;
 		}
 
-template<int NPC,int DEPTH>
+template<int NPC,int DEPTH,int PLANES>
 void xfDilate3x3(
 		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
 		XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
@@ -77,25 +77,28 @@ void xfDilate3x3(
 		XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2])
 {
 #pragma HLS INLINE
-
+	XF_PTNAME(DEPTH) out_val;
 	Compute_Grad_Loop:
-	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++)
+	for(ap_uint<5> j = 0; j < (XF_NPIXPERCYCLE(NPC)); j++)
 	{
+//#pragma HLS pipeline
+		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+		{
 #pragma HLS UNROLL
-		OutputValues[j] = xfapplydilate3x3<DEPTH>(
-				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
-				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
-				src_buf3[j], src_buf3[j+1],	src_buf3[j+2]);
+
+		out_val.range(k+7,k) = xfapplydilate3x3<DEPTH>(src_buf1[j].range(k+7,k), src_buf1[j+1].range(k+7,k), src_buf1[j+2].range(k+7,k),src_buf2[j].range(k+7,k), src_buf2[j+1].range(k+7,k), src_buf2[j+2].range(k+7,k)
+				,src_buf3[j].range(k+7,k), src_buf3[j+1].range(k+7,k), src_buf3[j+2].range(k+7,k));
+		}
+		OutputValues[j]=out_val;
 	}
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void ProcessDilate3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat, 
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,                
+template<int SRC_T, int ROWS, int COLS, int PLANES,int DEPTH, int NPC, int WORDWIDTH, int TC>
+void ProcessDilate3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
 		XF_SNAME(WORDWIDTH) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2], 
-		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)], 
-		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row)
+		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2],
+		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
+		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 
@@ -109,7 +112,7 @@ void ProcessDilate3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom][col] = _src_mat.read(); // Read data
+			buf[bottom][col] = _src_mat.data[rd_ind++]; // Read data
 		else
 			buf[bottom][col] = 0;
 
@@ -130,8 +133,7 @@ void ProcessDilate3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 			src_buf3[2] =  buf2;
 		}
 
-		xfDilate3x3<NPC, DEPTH>(OutputValues,
-				src_buf1, src_buf2, src_buf3);
+		xfDilate3x3<NPC, DEPTH,PLANES>(OutputValues,src_buf1, src_buf2, src_buf3);
 
 		if(col == 0)
 		{
@@ -149,7 +151,7 @@ void ProcessDilate3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 
 
 
-			_out_mat.write(P0);
+			_dst_mat.data[wr_ind++] = P0;
 
 			shift_x = 0;
 			P0 = 0;
@@ -170,9 +172,8 @@ void ProcessDilate3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > &_out_mat,
+template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void xfDilation3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
 		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind;
@@ -180,6 +181,7 @@ void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
 	uint16_t shift_x = 0;
 	ap_uint<13> row, col;
+	int rd_ind = 0, wr_ind = 0;
 
 	XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
 
@@ -204,7 +206,7 @@ void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.data[rd_ind++];
 	}
 	row_ind++;
 
@@ -231,8 +233,8 @@ void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 
 
 		P0 = 0;
-		ProcessDilate3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC>
-		(_src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row);
+		ProcessDilate3x3<SRC_T,ROWS, COLS,PLANES, DEPTH, NPC, WORDWIDTH, TC>
+		(_src_mat, _dst_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row, rd_ind, wr_ind);
 
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
@@ -247,18 +249,26 @@ void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 		}
 		else
 		{
-			OutputValues[0] = xfapplydilate3x3<DEPTH>(
-					src_buf1[buf_size-3], src_buf1[buf_size-2], 0,
-					src_buf2[buf_size-3], src_buf2[buf_size-2], 0,
-					src_buf3[buf_size-3], src_buf3[buf_size-2], 0);
+//			XF_PTNAME(DEPTH) out_val1;
+			for(ap_uint<5> i=0,k=0;i<PLANES;i++,k+=8)
+			{
+//				#pragma HLS LOOP_TRIPCOUNT min=PLANES max=PLANES
+				#pragma HLS UNROLL
+//				#pragma HLS pipeline
+				ap_uint<8> srcbuf10=src_buf1[buf_size-3].range(k+7,k);ap_uint<8> srcbuf11=src_buf1[buf_size-2].range(k+7,k);
+				ap_uint<8> srcbuf20=src_buf2[buf_size-3].range(k+7,k);ap_uint<8> srcbuf21=src_buf2[buf_size-2].range(k+7,k);
+				ap_uint<8> srcbuf30=src_buf3[buf_size-3].range(k+7,k);ap_uint<8> srcbuf31=src_buf3[buf_size-2].range(k+7,k);
 
+				OutputValues[0].range(k+7,k)=xfapplydilate3x3<DEPTH>(srcbuf10, srcbuf11, 0,srcbuf20, srcbuf21, 0, srcbuf30, srcbuf31, 0);
 
+			}
+	//		OutputValues[0]=out_val1;
 		}
 
 		xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 0, 1, shift_x);
 
 
-		_out_mat.write(P0);
+		_dst_mat.data[wr_ind++] = P0;
 
 
 		shift_x = 0;
@@ -272,69 +282,27 @@ void xfDilation3x3(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH>
-void xFDilation( 
-		hls::stream< XF_SNAME(WORDWIDTH) > &_src, 
-		hls::stream< XF_SNAME(WORDWIDTH) > &_dst, 
-		int _border_type,uint16_t imgheight,uint16_t imgwidth)
-{
-
-
-	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
-
-
-	xfDilation3x3<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src, _dst,imgheight,imgwidth);
-
-
-}
-
 
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
+
 
 template<int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
 void dilate(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
+	uint16_t imgwidth = _src_mat.cols >> XF_BITSHIFT(NPC);
+	uint16_t imgheight = _src_mat.rows;
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(SRC_T,NPC)> _dst;
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
 
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
+	xfDilation3x3<SRC_T,ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>
+	(_src_mat,_dst_mat,imgheight,imgwidth);
 
-
-	xFDilation<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(_src,_dst,BORDER_TYPE,_src_mat.rows,_src_mat.cols);
-
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-		}
-	}
 }
 }
 #endif //_XF_DILATION_HPP_

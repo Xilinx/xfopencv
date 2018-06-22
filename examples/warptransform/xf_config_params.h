@@ -2,9 +2,9 @@
 #define NO 	1			// 1 Pixel Processing
 
 //Number of rows in the input image
-#define HEIGHT 1080
+#define HEIGHT 2160
 //Number of columns in  in the input image
-#define WIDTH 1920
+#define WIDTH 3840
 
 //Number of rows of input image to be stored
 #define NUM_STORE_ROWS 100

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -67,16 +67,16 @@ int main(int argc, char **argv)
 	uint16_t width = in_gray1.cols;
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray2.rows,in_gray2.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput3(in_gray3.rows,in_gray3.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
-	xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray2.rows,in_gray2.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput3(in_gray3.rows,in_gray3.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
+	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[1], 0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[2], 0);
-	imgInput3 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[3], 0);
-	imgInput4 = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1>(argv[4], 0);
+	imgInput1.copyTo(in_gray1.data);
+	imgInput2.copyTo(in_gray2.data);
+	imgInput3.copyTo(in_gray3.data);
+	imgInput4.copyTo(in_gray4.data);
 
 #if __SDSCC__
 	perf_counter hw_ctr;

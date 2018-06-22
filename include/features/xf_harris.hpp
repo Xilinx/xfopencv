@@ -51,7 +51,7 @@ namespace xf{
 /************************************************************************
  * xFCornerHarrisDetector : CornerHarris function to find corners in the image
  ************************************************************************/
-template<int ROWS, int COLS, int IN_DEPTH, int NPC, int IN_WW,
+template<int ROWS, int COLS,int CHANNELINFO, int IN_DEPTH, int NPC, int IN_WW,
 int OUT_WW, int TC,int GRAD_WW, int DET_WW>
 void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream < XF_SNAME(IN_WW) > &_dst_mat, uint16_t img_height, uint16_t img_width,
@@ -79,7 +79,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream< XF_SNAME(DET_WW) > gradx_mat, grady_mat;
 		hls::stream< XF_SNAME(DET_WW) > gradx1_mat, grady1_mat;
 		hls::stream< XF_SNAME(DET_WW) > gradx2_mat, grady2_mat;
-		xFSobelFilter<ROWS, COLS, IN_DEPTH, XF_32SP, NPC, IN_WW, DET_WW>(_src_mat, gradx_mat, grady_mat, _filter_width,XF_BORDER_CONSTANT,img_height, img_width);
+		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_32SP, NPC, IN_WW, DET_WW>(_src_mat, gradx_mat, grady_mat, _filter_width,XF_BORDER_CONSTANT,img_height, img_width);
 
 		xFDuplicate<ROWS, COLS, XF_32SP, NPC, DET_WW,
 		TC>(gradx_mat, gradx1_mat, gradx2_mat, img_height,img_width);
@@ -100,7 +100,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream< XF_SNAME(GRAD_WW) > gradx1_mat, grady1_mat;
 		hls::stream< XF_SNAME(GRAD_WW) > gradx2_mat, grady2_mat;
 
-		xFSobelFilter<ROWS, COLS, IN_DEPTH, XF_16SP, NPC, IN_WW, GRAD_WW>(_src_mat, gradx_mat, grady_mat, _filter_width, XF_BORDER_CONSTANT,img_height, img_width);
+		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_16SP, NPC, IN_WW, GRAD_WW>(_src_mat, gradx_mat, grady_mat, _filter_width, XF_BORDER_CONSTANT,img_height, img_width);
 
 		xFDuplicate<ROWS, COLS, XF_16SP, NPC, GRAD_WW,
 		TC>(gradx_mat, gradx1_mat, gradx2_mat, img_height, img_width);
@@ -137,7 +137,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 ///**********************************************************************
 // * xFCornerHarrisTop :  Calls the Main Function depends on requirements
 // **********************************************************************/
-template<int ROWS, int COLS, int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS>
+template<int ROWS, int COLS, int CHANNELINFO,int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS>
 void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 		hls::stream < XF_SNAME(IN_WW) > & _dst_mat, uint16_t img_height, uint16_t img_width,
 		uint16_t _threshold, uint16_t val)
@@ -159,12 +159,12 @@ void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 
 	if(NPC == XF_NPPC8)
 	{
-		xFCornerHarrisDetector<ROWS, COLS, DEPTH, NPC, IN_WW, OUT_WW,
+		xFCornerHarrisDetector<ROWS, COLS,CHANNELINFO, DEPTH, NPC, IN_WW, OUT_WW,
 		(COLS>>XF_BITSHIFT(NPC)), XF_128UW, XF_256UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 	else if(NPC == XF_NPPC1)
 	{
-		xFCornerHarrisDetector<ROWS, COLS, DEPTH,	NPC, IN_WW, OUT_WW,
+		xFCornerHarrisDetector<ROWS, COLS, CHANNELINFO,DEPTH,NPC, IN_WW, OUT_WW,
 		(COLS>>XF_BITSHIFT(NPC)), XF_16UW, XF_32UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 }
@@ -203,7 +203,8 @@ void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,xf::Mat<SRC_T, ROWS, COL
 		}
 	}
 
-	xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
+	//xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
+	xFCornerHarrisDetection<ROWS, COLS, XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
 
 	for(int i=0; i<dst.rows;i++)
 	{

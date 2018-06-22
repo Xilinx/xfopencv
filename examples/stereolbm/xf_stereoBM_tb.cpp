@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -73,16 +73,14 @@ int main(int argc, char** argv)
 	imwrite("ocv_output.png",disp8);
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(left_img.rows,left_img.cols);
-	xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(left_img.rows,left_img.cols);
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat_out(left_img.rows,left_img.cols);
+	static xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftMat(left_img.rows,left_img.cols);
+	static xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightMat(left_img.rows,left_img.cols);
+	static xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat(left_img.rows,left_img.cols);
+	static xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> dispMat_out(left_img.rows,left_img.cols);
 
-//	leftMat.copyTo(left_img.data);
-//	rightMat.copyTo(right_img.data);
 
-	leftMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
-	rightMat = xf::imread<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[2], 0);
+	leftMat.copyTo(left_img.data);
+	rightMat.copyTo(right_img.data);
 
 	xf::xFSBMState<SAD_WINDOW_SIZE,NO_OF_DISPARITIES,PARALLEL_UNITS> bm_state;
 	bm_state.preFilterCap = 31;
@@ -90,65 +88,43 @@ int main(int argc, char** argv)
 	bm_state.textureThreshold = 20;
 	bm_state.minDisparity = 0;
 
-
 #if __SDSCC__
 	perf_counter hw_ctr;
-		hw_ctr.start();
+	hw_ctr.start();
 #endif
 	stereolbm_accel(leftMat, rightMat, dispMat, bm_state);
 #if __SDSCC__
-		hw_ctr.stop();
+	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
-	cv::Mat out_disp_16(left_img.rows,left_img.cols,CV_16UC1);
-	cv::Mat out_disp_img(left_img.rows,left_img.cols,CV_8UC1);
-	out_disp_16.data = dispMat.copyFrom();
-/*	for (int i=0; i<left_img.rows; i++)
-	{
-		for (int j=0; j<left_img.cols; j++)
-		{
-			out_disp_16.at<unsigned short>(i,j) = (unsigned short)dispMat.data[i*left_img.cols+j];
-		}
-	}*/
-	out_disp_16.convertTo(out_disp_img, CV_8U, (256.0/NO_OF_DISPARITIES)/(16.));
+	dispMat.convertTo(dispMat_out, XF_CONVERT_16U_TO_8U, (256.0/NO_OF_DISPARITIES)/(16.));
 
-//	dispMat.convertTo(dispMat_out, XF_CONVERT_16U_TO_8U, (256.0/NO_OF_DISPARITIES)/(16.));
-
-	//xf::imwrite("hls_out_16.jpg", dispMat);
-//	xf::imwrite("hls_out.jpg", dispMat_out);
-
-/*	FILE *fp = fopen("hls_out.txt","w");
-	FILE *fp1 = fopen("ocv_out.txt","w");
-	for (int i=0; i<left_img.rows; i++)
-		{
-			for (int j=0; j<left_img.cols; j++)
-			{
-				fprintf(fp, "%d ", (uchar )dispMat_out.data[i*dispMat_out.cols +j]);
-				fprintf(fp1, "%d ", disp8.at<unsigned char> (i,j));// = (unsigned short)dispMat.data[i*left_img.cols+j];
-			}
-			fprintf(fp,"\n");
-			fprintf(fp1,"\n");
-		}
-	fclose(fp);
-	fclose(fp1);*/
-
-	imwrite("hls_output.jpg",out_disp_16);
+	xf::imwrite("hls_out.jpg", dispMat_out);
 
 	int cnt=0, total = 0;
 
-	for(int i=SAD_WINDOW_SIZE; i<out_disp_img.rows-SAD_WINDOW_SIZE; i++)
-	{
-		for(int j=SAD_WINDOW_SIZE; j<out_disp_img.cols-SAD_WINDOW_SIZE; j++)
-		{
+	// changing the invalid value from negative to zero for validating the difference
+	for (int i=0; i<disp.rows; i++) {
+		for(int j=0; j<disp.cols; j++) {
+			if (disp.at<short> (i,j) < 0) {
+				disp.at<short> (i,j) = 0;
+			}
+		}
+	}
+
+	// error computation, removing off the border, different kind of border computations
+	for(int i=SAD_WINDOW_SIZE; i<dispMat_out.rows-SAD_WINDOW_SIZE; i++) {
+		for(int j=SAD_WINDOW_SIZE; j<dispMat_out.cols-SAD_WINDOW_SIZE; j++) {
 			total ++;
-			int diff = (disp8.at<unsigned char> (i,j))-(out_disp_img.data[i*out_disp_img.cols +j]);
+			int diff = (disp.at<unsigned short> (i,j))-(dispMat.data[i*dispMat.cols +j]);
 			if (diff < 0) diff = -diff;
 			if(diff > 1) {
 				cnt++;
 			}
 		}
 	}
+
 	float percentage = ((float)cnt / (float)total) * 100.0;
 	printf("Error Percentage = %f% \n", percentage);
 
@@ -158,3 +134,5 @@ int main(int argc, char** argv)
 	printf ("run complete !\n");
 	return 0;
 }
+
+

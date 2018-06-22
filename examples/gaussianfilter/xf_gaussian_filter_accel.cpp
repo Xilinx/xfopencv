@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -30,7 +30,7 @@
 
 #include "xf_gaussian_filter_config.h"
 
-void gaussian_filter_accel(xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPC1>&imgOutput,float sigma)
+void gaussian_filter_accel(xf::Mat<TYPE,HEIGHT,WIDTH,NPC1> &imgInput,xf::Mat<TYPE,HEIGHT,WIDTH,NPC1>&imgOutput,float sigma)
 {
-	xf::GaussianBlur<FILTER_WIDTH, XF_BORDER_CONSTANT, XF_8UC1, HEIGHT, WIDTH, NPC1>(imgInput, imgOutput, sigma);
+	xf::GaussianBlur<FILTER_WIDTH, XF_BORDER_CONSTANT, TYPE, HEIGHT, WIDTH, NPC1>(imgInput, imgOutput, sigma);
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -43,8 +43,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /* set the height and width */
-#define HEIGHT 1080
-#define WIDTH  1920
+#define HEIGHT 2160
+#define WIDTH  3840
 #if NO
 #define NPC1 XF_NPPC1
 #endif
@@ -53,11 +53,14 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #if T_8U
-void arithm_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+#define TYPE XF_8UC1
+void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 #if T_16S
-void arithm_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgOutput);
+#define TYPE XF_16SC1
+void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 
 
 #endif // end of _XF_ARITHM_CONFIG_H_
+

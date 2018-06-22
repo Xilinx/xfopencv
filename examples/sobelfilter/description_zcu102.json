@@ -1,0 +1,21 @@
+{
+    "example" : "sobelfilter - File I/O",
+    "overview" : "sobelfilter",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "Sobel",
+            "location" : "<LIBRARY>/include/imgproc/xf_sobel.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -31,7 +31,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_accumulate_squared_config.h"
 
 
-void accumulate_squared(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1>&imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> &imgOutput)
+void accumulate_squared(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1>&imgInput1,xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &imgOutput)
 {
-	xf::accumulateSquare<XF_8UC1,XF_16UC1, HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput);
+	xf::accumulateSquare<IN_TYPE,OUT_TYPE, HEIGHT, WIDTH, NPC1>(imgInput1,imgInput2,imgOutput);
 }

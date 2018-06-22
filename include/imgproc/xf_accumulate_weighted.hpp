@@ -41,16 +41,14 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define XF_OUT_STEP 16
 #endif
 namespace xf {
-template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC,int PLANES, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 int AccumulateWeightedKernel(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
-		float _alpha,uint16_t height,uint16_t width)
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst, float alpha,
+		uint16_t height,uint16_t width)
 {
 
 	ap_uint<13> i,j,k,l;
-	ap_uint<24> temp  = (_alpha * ((1<<23)-1));
+	ap_uint<24> temp  = (alpha * ((1<<23)-1));
 	ap_uint<24> temp1 = ((1<<23)-1) - temp + 1;
 
 	XF_SNAME(WORDWIDTH_DST) pxl_pack_out;
@@ -66,10 +64,10 @@ int AccumulateWeightedKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(_src1.read());
-			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(_src2.read());
+			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);
+			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.data[i*width+j]);
 			ProcLoop:
-			for( k = 0, l = 0; k < (8<<XF_BITSHIFT(NPC)); k+=XF_IN_STEP, l+=XF_OUT_STEP)
+			for( k = 0, l = 0; k < ((8<<XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP, l+=XF_OUT_STEP)
 			{
 				XF_PTNAME(DEPTH_SRC) pxl1 = pxl_pack1.range(k+7, k);
 				XF_PTNAME(DEPTH_SRC) pxl2 = pxl_pack2.range(k+7, k);
@@ -82,37 +80,13 @@ int AccumulateWeightedKernel(
 				pxl_pack_out.range(l+XF_OUT_STEP-1, l) = t;
 			}
 
-			_dst.write((XF_SNAME(WORDWIDTH_DST))pxl_pack_out);
+			dst.data[i*width+j] = (XF_SNAME(WORDWIDTH_DST))pxl_pack_out;
 		}
 	}
 	return 0;
 }
 
-template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void kernel_process(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
-		float _alpha,uint16_t height,uint16_t width)
-{
 
-
-	width = width  >> XF_BITSHIFT(NPC);
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8");
-	assert(((WORDWIDTH_SRC == XF_8UW) || (WORDWIDTH_SRC == XF_64UW)) &&
-			"WORDWIDTH_SRC must be XF_8UW or XF_128UW ");
-	assert(((WORDWIDTH_DST == XF_16UW) || (WORDWIDTH_DST == XF_128UW)) &&
-			"WORDWIDTH_DST must be XF_16UW or XF_128UW");
-	assert((_alpha >= 0.0) && (_alpha <= 1.0) && "Alpha value must be from 0.0 to 1.0");
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
-
-
-	 AccumulateWeightedKernel<ROWS,COLS,NPC,DEPTH_SRC,DEPTH_DST,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>
-			 (_src1, _src2, _dst, _alpha, height, width);
-
-
-}
 //#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
@@ -125,40 +99,16 @@ void kernel_process(
 template< int SRC_T,int DST_T, int ROWS, int COLS, int NPC = 1>
 void accumulateWeighted(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst,float alpha)
 {
-		hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
-		hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
-		hls::stream<XF_TNAME(DST_T, NPC)> _dst;
-#pragma HLS INLINE OFF
-#pragma HLS dataflow
-		Read_Loop:
-		for(int i=0; i<src1.rows;i++)
-		{
-		#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-			for(int j=0; j<(src1.cols)>>(XF_BITSHIFT(NPC));j++)
-			{
-		#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-				#pragma HLS PIPELINE
-				#pragma HLS loop_flatten off
-				_src1.write( *(src1.data + i*(src1.cols>>(XF_BITSHIFT(NPC))) +j) );
-				_src2.write( *(src2.data + i*(src1.cols>>(XF_BITSHIFT(NPC))) +j) );
-			}
-		}
+	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_8UC3)) && "Input TYPE must be XF_8UC1 for 1-channel and XF_8UC3 for 3-channel image");
+	assert(((DST_T == XF_16UC1) || (DST_T == XF_16UC3)) && "Output TYPE must be XF_16UC1 for 1-channel and XF_16UC3 for 3-channel image");
+	assert(((src1.rows == src2.rows ) && (src1.cols == src2.cols)) && "Both input images should have same size");
+	assert(((src1.rows == dst.rows ) && (src1.cols == dst.cols)) && "Input and output image should be of same size");
+	assert(((src1.rows <= ROWS ) && (src1.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) && "NPC must be XF_NPPC1, XF_NPPC8 ");
 
+	short width = src1.cols  >> XF_BITSHIFT(NPC);
 
-		kernel_process<ROWS, COLS,NPC ,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC)>(_src1, _src2, _dst,alpha,src1.rows, src1.cols);
-
-		for(int i=0; i<dst.rows;i++)
-		{
-		#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-			for(int j=0; j<(dst.cols)>>(XF_BITSHIFT(NPC));j++)
-			{
-		#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-				#pragma HLS PIPELINE
-				#pragma HLS loop_flatten off
-				*(dst.data + i*(dst.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-
-			}
-		}
+	AccumulateWeightedKernel<SRC_T, DST_T, ROWS, COLS,NPC ,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC),(COLS>>XF_BITSHIFT(NPC))>(src1, src2, dst,alpha,src1.rows, width);
 }
 }
 #endif//_XF_ACCUMULATE_WEIGHTED_HPP_

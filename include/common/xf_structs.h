@@ -38,6 +38,8 @@
 #include <stdio.h>
 #include <assert.h>
 #include "xf_types.h"
+#include "hls_stream.h"
+
 #if __SDSCC__
 #include "sds_lib.h"
 
@@ -366,11 +368,15 @@ Scalar<N, T> Scalar<N, T>::operator /(Scalar<N, T> s) {
 template<int T, int ROWS, int COLS, int NPC>
 class Mat {
 public:
-	unsigned char allocatedFlag; //flag to mark memory allocation in this class
-	int rows, cols,size;               // actual image size
+	unsigned char allocatedFlag; 		//flag to mark memory allocation in this class
+	int rows, cols,size;               	// actual image size
 
 #ifndef __SYNTHESIS__
-	XF_TNAME(T,NPC) *data;
+	#ifdef __XFCV_HLS_MODE__
+	XF_TNAME(T,NPC) data[ROWS*(COLS>> (XF_BITSHIFT(NPC)))];
+	#else
+	XF_TNAME(T,NPC)*data;
+	#endif
 #else
 	XF_TNAME(T,NPC) data[ROWS*(COLS>> (XF_BITSHIFT(NPC)))];
 #endif
@@ -381,58 +387,10 @@ public:
 	Mat(int _rows, int _cols, void *_data);
 	~Mat();
 
-	// copy constructor
-	Mat(const Mat& src)
-		{
-			allocatedFlag = src.allocatedFlag;
-			rows = src.rows;
-			cols = src.cols;
-			size = src.size;
-#ifdef __SDSCC__
-			data = (XF_TNAME(T,NPC)*)sds_alloc_non_cacheable(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
-			allocatedFlag = 1;
-#else
-			data = (XF_TNAME(T,NPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
-			allocatedFlag = 1;
-#endif
-			for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
-				data[i] = src.data[i];
-			}
-		}
+	Mat(const Mat&);		// copy constructor
 
-	//Assignment operator
-	Mat& operator=(const Mat& src)
-	{
+	Mat& operator=(const Mat&);	//Assignment operator
 
-		if(this == &src)
-		{
-			return *this; //For self-assignment cases
-		}
-
-#ifdef __SDSCC__
-			sds_free(data);
-#else
-			free(data);	//Cleaning up old data memory
-#endif
-
-		allocatedFlag = src.allocatedFlag;
-		rows = src.rows;
-		cols = src.cols;
-		size = src.size;
-
-#ifdef __SDSCC__
-		data = (XF_TNAME(T,NPC)*)sds_alloc_non_cacheable(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
-		allocatedFlag = 1;
-#else
-		data = (XF_TNAME(T,NPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
-		allocatedFlag = 1;
-#endif
-		for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
-					data[i] = src.data[i];
-			}
-
-		return *this;
-	}
 
 	void init(int _rows, int _cols);
 	void copyTo(void* fromData);
@@ -444,6 +402,74 @@ public:
 
 };
 //Mat
+
+/*Copy constructor definition*/
+template <int T, int ROWS, int COLS, int NPC>
+Mat<T, ROWS, COLS, NPC>::Mat(const Mat& src)
+		{
+			allocatedFlag = src.allocatedFlag;
+			rows = src.rows;
+			cols = src.cols;
+			size = src.size;
+#ifndef __SYNTHESIS__
+#ifndef __XFCV_HLS_MODE__
+
+	#ifdef __SDSCC__
+				data = (XF_TNAME(T,NPC)*)sds_alloc_non_cacheable(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
+				allocatedFlag = 1;
+	#else
+				data = (XF_TNAME(T,NPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
+				allocatedFlag = 1;
+	#endif
+#endif
+#endif
+			for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
+				data[i] = src.data[i];
+			}
+		}
+
+/*Assignment operator definition*/
+template <int T, int ROWS, int COLS, int NPC>
+Mat<T, ROWS, COLS, NPC>& Mat<T, ROWS, COLS, NPC>::operator=(const Mat& src)
+	{
+
+		if(this == &src)
+		{
+			return *this; //For self-assignment cases
+		}
+#ifndef __XFCV_HLS_MODE__
+#ifndef __SYNTHESIS__
+	#ifdef __SDSCC__
+				sds_free(data);
+	#else
+				free(data);	//Cleaning up old data memory
+	#endif
+#endif
+#endif
+
+		allocatedFlag = src.allocatedFlag;
+		rows = src.rows;
+		cols = src.cols;
+		size = src.size;
+#ifndef __SYNTHESIS__
+#ifndef __XFCV_HLS_MODE__
+	#ifdef __SDSCC__
+			data = (XF_TNAME(T,NPC)*)sds_alloc_non_cacheable(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
+			allocatedFlag = 1;
+	#else
+			data = (XF_TNAME(T,NPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPC)))*(sizeof(XF_TNAME(T,NPC))));
+			allocatedFlag = 1;
+	#endif
+#endif
+#endif
+		for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
+					data[i] = src.data[i];
+			}
+
+		return *this;
+	}
+
+/* Member functions of Mat class */
 template<int T, int ROWS, int COLS, int NPPC>
 template<int DST_T>
 inline void Mat<T, ROWS, COLS, NPPC>::convertTo(Mat<DST_T,ROWS, COLS, NPPC> &dst, int otype, double alpha, double beta){
@@ -469,6 +495,7 @@ inline void Mat<T, ROWS, COLS, NPPC>::convertTo(Mat<DST_T,ROWS, COLS, NPPC> &dst
 			min = -2147483648; max = 2147483647;
 		}
 
+#define __SATCAST(X) ( X >= max ? max : (X < 0 ? 0 : lround(X)) )
 
 			for(int j=0;j<rows*cols>>(XF_BITSHIFT(NPPC));j++)
 			{
@@ -484,14 +511,14 @@ inline void Mat<T, ROWS, COLS, NPPC>::convertTo(Mat<DST_T,ROWS, COLS, NPPC> &dst
 
 					if(otype == XF_CONVERT_16U_TO_8U || otype == XF_CONVERT_16S_TO_8U ||otype == XF_CONVERT_32S_TO_8U || otype == XF_CONVERT_32S_TO_16U || otype == XF_CONVERT_32S_TO_16S){
 
-						//in_pix = in_pix * alpha + beta;
 						float tmp = (float)(in_pix * alpha + beta);
-						in_pix = (XF_PTNAME(XF_DEPTH(T,NPPC)))tmp;
+						in_pix = __SATCAST(tmp);
+
 						if(in_pix < min)
 							in_pix = min;
 						if(in_pix > max)
 							in_pix = max;
-						//dst.data[i*(cols>>(XF_BITSHIFT(NPC))) + j] = in_pix;
+
 						tmp_out_pix.range(out_shift+ OUT_STEP-1, out_shift) = in_pix;
 					}
 					else {
@@ -502,7 +529,7 @@ inline void Mat<T, ROWS, COLS, NPPC>::convertTo(Mat<DST_T,ROWS, COLS, NPPC> &dst
 							tmp_out_pix.range(out_shift+OUT_STEP-1, out_shift) = min;
 						}
 						else{
-							tmp_out_pix.range(out_shift+OUT_STEP-1, out_shift) = (XF_PTNAME(XF_DEPTH(DST_T, NPPC)))(in_pix * alpha + beta);
+							tmp_out_pix.range(out_shift+OUT_STEP-1, out_shift) = __SATCAST(in_pix * alpha + beta);
 						}
 					}
 					in_shift = in_shift + IN_STEP;
@@ -514,9 +541,6 @@ inline void Mat<T, ROWS, COLS, NPPC>::convertTo(Mat<DST_T,ROWS, COLS, NPPC> &dst
 	}
 
 
-
-
-/* Member functions of Mat class */
 template<int T, int ROWS, int COLS, int NPPC>
 inline Mat<T, ROWS, COLS, NPPC>::Mat() {
 #pragma HLS inline
@@ -560,19 +584,21 @@ inline void Mat<T, ROWS, COLS, NPPC>::copyTo(void*_input) {
 #pragma HLS inline
 	XF_PTSNAME(T,NPPC) *input=(XF_PTSNAME(T,NPPC)*)_input;
 
+
 	//checking if the number of bytes to copy is a multiple of 8, to use memcpy to copy from _input to data
-	if( (rows*(cols>>XF_BITSHIFT(NPPC))*(sizeof(XF_TNAME(T,NPPC))))%8 == 0 && (T != XF_8UC3) && (T != XF_8UC4))
+	if( (rows*(cols>>XF_BITSHIFT(NPPC))*(sizeof(XF_TNAME(T,NPPC))))%8 == 0 && (T != XF_8UC3) && (T != XF_8UC4) && (T != XF_16SC3))
 	{
 		memcpy(data, input, rows*(cols>>XF_BITSHIFT(NPPC))*(sizeof(XF_TNAME(T,NPPC))));
 	}
-	else if(T==XF_8UC3)
+	else if((T==XF_8UC3)||((T==XF_16SC3)))
 	{
-		ap_uint<24> pix1;
+		int step=XF_DTPIXELDEPTH(T,NPPC)/XF_CHANNELS(T,NPPC);
+		ap_uint<48> pix1;
 			for(int i=0;i<rows;i++){
 				for(int j=0;j<cols;j++){
-					for(int c=0,k=0;c< XF_CHANNELS(T,NPPC);c++,k+=8){
-							pix1.range(k+7,k) = input[XF_CHANNELS(T,NPPC)*(cols*i + j) + c];
-							data[i*cols+j]=pix1;
+					for(int c=0,k=0;c< XF_CHANNELS(T,NPPC);c++,k+=step){
+							pix1.range(k+(step-1),k) = input[XF_CHANNELS(T,NPPC)*(cols*i + j) + c];
+							data[i*cols+j]=(XF_TNAME(T,NPPC))pix1;
 					}
 				}
 			}
@@ -584,17 +610,26 @@ inline void Mat<T, ROWS, COLS, NPPC>::copyTo(void*_input) {
 		for(int i=0;i<(rows*(cols>>(XF_BITSHIFT(NPPC))));i++)
 		{
 			data[i] = input_pointer[i];
-//			data[i] = _input[i];
 		}
 	}
+
 }
 
 template<int T, int ROWS, int COLS, int NPPC>
 inline unsigned char* Mat<T, ROWS, COLS, NPPC>::copyFrom() {
 #pragma HLS inline
-	if ((T != XF_8UC3) && (T != XF_16UC3))
+	if ((T != XF_8UC3) && (T != XF_16UC3) && (T != XF_16SC3))
 	{
-	return (unsigned char*)data;
+		XF_TNAME(T,NPPC) *value = (XF_TNAME(T,NPPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPPC)))*sizeof(XF_TNAME(T,NPPC)));
+		for(int i=0;i<rows;i++)
+		{
+		    for(int j=0;j<(cols>>(XF_BITSHIFT(NPPC)));j++)
+		    {
+			value[i*(cols>>(XF_BITSHIFT(NPPC)))+j] = data[i*(cols>>(XF_BITSHIFT(NPPC)))+j];
+		    }
+		}
+		
+	return (unsigned char*)value;
 	}
 	else
 	{
@@ -627,12 +662,13 @@ inline void Mat<T, ROWS, COLS, NPPC>::init(int _rows, int _cols) {
 	rows = _rows;
 	cols = _cols;
 #ifndef __SYNTHESIS__
+#ifndef __XFCV_HLS_MODE__
 #ifdef __SDSCC__
 	data = (XF_TNAME(T,NPPC)*)sds_alloc_non_cacheable(rows*(cols>>(XF_BITSHIFT(NPPC)))*(sizeof(XF_TNAME(T,NPPC))));
 #else
 	data = (XF_TNAME(T,NPPC)*)malloc(rows*(cols>>(XF_BITSHIFT(NPPC)))*(sizeof(XF_TNAME(T,NPPC))));
 #endif
-
+#endif
 #endif
 	if (data == NULL) {
 		fprintf(stderr, "\nFailed to allocate memory\n");
@@ -649,18 +685,21 @@ template<int SRC_T, int ROWS, int COLS, int NPC>
 Mat<SRC_T, ROWS, COLS, NPC>::~Mat() {
 
 #ifndef __SYNTHESIS__
+#ifndef __XFCV_HLS_MODE__
 	if (data != NULL && allocatedFlag == 1) {
-#ifdef __SDSCC__
-		sds_free(data);
-#else
-		free(data);
-//		data = NULL;
-#endif
+	#ifdef __SDSCC__
+			sds_free(data);
+	#else
+			free(data);
+	#endif
 	}
+#endif
 #endif
 }
 
 }
 ;
 //xF
+
 #endif//_XF_STRUCTS_H_
+

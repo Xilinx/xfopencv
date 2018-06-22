@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -55,14 +55,18 @@ int main(int argc, char** argv)
 	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
+	/////////////////    OpenCV reference  /////////////////
+	cv::medianBlur(in_gray,ocv_ref,WINDOW_SIZE);
 
 	in_width = in_gray.cols;
 	in_height = in_gray.rows;
-	
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
 
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
+
+	
+	//imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
+	imgInput.copyTo(in_gray.data);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;		
@@ -70,23 +74,18 @@ int main(int argc, char** argv)
 	#endif
 	
 	median_blur_accel(imgInput, imgOutput);
-
+	
 	#if __SDSCC__
 		hw_ctr.stop();
 		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	// Write output image
-	xf::imwrite("hls_out.jpg",imgOutput);
+		// Write output image
+		xf::imwrite("hls_out.jpg",imgOutput);
 
-	
-	/////////////////    OpenCV reference  /////////////////
-	cv::medianBlur(in_gray,ocv_ref,WINDOW_SIZE);
+		cv::imwrite("ref_img.jpg", ocv_ref);  // reference image
 
-
-	cv::imwrite("ref_img.jpg", ocv_ref);  // reference image
-
-	xf::absDiff(ocv_ref,imgOutput,diff); // Compute absolute difference image
+		xf::absDiff(ocv_ref, imgOutput, diff);
 
 	// Find minimum and maximum differences.
 	double minval = 255, maxval = 0;

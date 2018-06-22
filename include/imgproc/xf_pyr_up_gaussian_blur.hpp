@@ -34,7 +34,7 @@
 #include "hls_stream.h"
 #include "common/xf_common.h"
 
-template<int NPC,int DEPTH, int WIN_SZ, int WIN_SZ_SQ>
+template<int NPC,int DEPTH, int WIN_SZ, int WIN_SZ_SQ,int PLANES>
 void xFPyrUpApplykernel(
 		XF_PTUNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
 		XF_PTUNAME(DEPTH) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
@@ -42,7 +42,7 @@ void xFPyrUpApplykernel(
 		)
 {
 #pragma HLS INLINE
-	unsigned int array[WIN_SZ_SQ];
+	ap_uint<32> array[WIN_SZ_SQ];
 #pragma HLS ARRAY_PARTITION variable=array complete dim=1
 		
 		
@@ -60,27 +60,31 @@ void xFPyrUpApplykernel(
 				array_ptr++;
 			}
 		}
-unsigned int out_pixel = 0;
+ap_uint<32> out_pixel = 0;
 		int k[25]={1,  4,  6,  4, 1, 
 		           4, 16, 24, 16, 4, 
 				   6, 24, 36, 24, 6, 
 				   4, 16, 24, 16, 4, 
 				   1,  4,  6,  4, 1};
-		out_pixel  = array[0*5 + 0] + array[0*5 + 4] + array[4*5 + 0] + array[4*5 + 4];
-		out_pixel += (array[0*5 + 1] + array[0*5 + 3] + array[1*5 + 0] + array[1*5 + 4]) << 2;
-		out_pixel += (array[4*5 + 1] + array[4*5 + 3] + array[3*5 + 0] + array[3*5 + 4]) << 2;
-		out_pixel += (array[0*5 + 2] + array[2*5 + 0] + array[2*5 + 4] + array[4*5 + 2]) << 2;
-		out_pixel += (array[0*5 + 2] + array[2*5 + 0] + array[2*5 + 4] + array[4*5 + 2]) << 1;
-		out_pixel += (array[1*5 + 1] + array[1*5 + 3] + array[3*5 + 1] + array[3*5 + 3]) << 4;
-		out_pixel += (array[1*5 + 2] + array[2*5 + 1] + array[2*5 + 3] + array[3*5 + 2]) << 4;
-		out_pixel += (array[1*5 + 2] + array[2*5 + 1] + array[2*5 + 3] + array[3*5 + 2]) << 3;
-		out_pixel += (array[2*5 + 2]) << 5;
-		out_pixel += (array[2*5 + 2]) << 2;
-		OutputValues[0] = (unsigned char)( (out_pixel + 32) >> 6);
+		for(ap_uint<5> i=0,k=0;i<PLANES;i++,k+=8)
+		{
+			out_pixel=0;
+		out_pixel  = array[0*5 + 0].range(k+7,k) + array[0*5 + 4].range(k+7,k) + array[4*5 + 0].range(k+7,k) + array[4*5 + 4].range(k+7,k);
+		out_pixel += (array[0*5 + 1].range(k+7,k) + array[0*5 + 3].range(k+7,k) + array[1*5 + 0].range(k+7,k) + array[1*5 + 4].range(k+7,k)) << 2;
+		out_pixel += (array[4*5 + 1].range(k+7,k) + array[4*5 + 3].range(k+7,k) + array[3*5 + 0].range(k+7,k) + array[3*5 + 4].range(k+7,k)) << 2;
+		out_pixel += (array[0*5 + 2].range(k+7,k) + array[2*5 + 0].range(k+7,k) + array[2*5 + 4].range(k+7,k) + array[4*5 + 2].range(k+7,k)) << 2;
+		out_pixel += (array[0*5 + 2].range(k+7,k) + array[2*5 + 0].range(k+7,k) + array[2*5 + 4].range(k+7,k) + array[4*5 + 2].range(k+7,k)) << 1;
+		out_pixel += (array[1*5 + 1].range(k+7,k) + array[1*5 + 3].range(k+7,k) + array[3*5 + 1].range(k+7,k) + array[3*5 + 3].range(k+7,k)) << 4;
+		out_pixel += (array[1*5 + 2].range(k+7,k) + array[2*5 + 1].range(k+7,k) + array[2*5 + 3].range(k+7,k) + array[3*5 + 2].range(k+7,k)) << 4;
+		out_pixel += (array[1*5 + 2].range(k+7,k) + array[2*5 + 1].range(k+7,k) + array[2*5 + 3].range(k+7,k) + array[3*5 + 2].range(k+7,k)) << 3;
+		out_pixel += (array[2*5 + 2].range(k+7,k)) << 5;
+		out_pixel += (array[2*5 + 2].range(k+7,k)) << 2;
+		OutputValues[0].range(k+7,k) = (unsigned char)( (out_pixel + 32) >> 6);
+		}
 		return;
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC, int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC, int WIN_SZ, int WIN_SZ_SQ,int PLANES>
 void xFPyrUpProcessWindow(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 		hls::stream< XF_TNAME(DEPTH,NPC) > & _out_mat,
 		XF_TNAME(DEPTH,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))], XF_PTUNAME(DEPTH) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
@@ -101,7 +105,9 @@ void xFPyrUpProcessWindow(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 #pragma HLS pipeline
 		if(row < img_height && col < img_width)
 			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
-		
+		else
+			buf[row_ind[win_size-1]][col] = 0;
+
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
@@ -129,7 +135,7 @@ void xFPyrUpProcessWindow(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 			}
 		}
 
-		xFPyrUpApplykernel<NPC, DEPTH, WIN_SZ, WIN_SZ_SQ>(OutputValues,src_buf, win_size);
+		xFPyrUpApplykernel<NPC, DEPTH, WIN_SZ, WIN_SZ_SQ,PLANES>(OutputValues,src_buf, win_size);
 		if(col >= (win_size>>1))
 		{
 			_out_mat.write(OutputValues[0]);
@@ -158,7 +164,7 @@ void xFPyrUpProcessWindow(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ,int PLANES>
 void xf_pyrup_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_out_mat, ap_uint<8> win_size,
 		uint16_t img_height, uint16_t img_width)
@@ -222,7 +228,7 @@ void xf_pyrup_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 		P0 = 0;
-		xFPyrUpProcessWindow<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ>(_src_mat, _out_mat, buf, src_buf,OutputValues, P0, img_width, img_height, shift_x, row_ind, row,win_size);
+		xFPyrUpProcessWindow<ROWS, COLS, DEPTH, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ,PLANES>(_src_mat, _out_mat, buf, src_buf,OutputValues, P0, img_width, img_height, shift_x, row_ind, row,win_size);
 	
 		//update indices
 		ap_uint<13> zero_ind = row_ind[0];
@@ -237,7 +243,7 @@ void xf_pyrup_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ,int PLANES>
 void xFPyrUpGaussianBlur(
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_src,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_dst, ap_uint<8> win_size,
@@ -249,7 +255,7 @@ void xFPyrUpGaussianBlur(
 
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 
-	xf_pyrup_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ>(_src, _dst,WIN_SZ,imgheight,imgwidth);
+	xf_pyrup_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ,PLANES>(_src, _dst,WIN_SZ,imgheight,imgwidth);
 
 
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -31,8 +31,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_colordetect_config.h"
 
 
-void colordetect_accel(xf::Mat<XF_8UC3, HEIGHT, WIDTH, NPIX> &_src,
-		xf::Mat<XF_8UC3, HEIGHT, WIDTH, NPIX> &_rgb2hsv,
+void colordetect_accel(xf::Mat<XF_8UC4, HEIGHT, WIDTH, NPIX> &_src,
+		xf::Mat<XF_8UC4, HEIGHT, WIDTH, NPIX> &_rgb2hsv,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter1,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter2,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter3,
@@ -41,8 +41,8 @@ void colordetect_accel(xf::Mat<XF_8UC3, HEIGHT, WIDTH, NPIX> &_src,
 		unsigned char *low_thresh,unsigned char *high_thresh)
 {
 
-	xf::RGB2HSV< XF_8UC3,HEIGHT, WIDTH,NPIX >(_src, _rgb2hsv);
-	xf::colorthresholding< XF_8UC3,XF_8UC1,MAXCOLORS,HEIGHT, WIDTH,NPIX>(_rgb2hsv,_inter1, low_thresh, high_thresh);
+	xf::RGB2HSV< XF_8UC4,HEIGHT, WIDTH,NPIX >(_src, _rgb2hsv);
+	xf::colorthresholding< XF_8UC4,XF_8UC1,MAXCOLORS,HEIGHT, WIDTH,NPIX>(_rgb2hsv,_inter1, low_thresh, high_thresh);
 	xf::erode<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPIX>(_inter1, _inter2);
 	xf::dilate<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPIX>(_inter2, _inter3);
 	xf::dilate<XF_BORDER_CONSTANT,XF_8UC1,HEIGHT, WIDTH,NPIX>(_inter3, _inter4);

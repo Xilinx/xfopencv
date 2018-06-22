@@ -1,0 +1,20 @@
+{
+    "example" : "accumulatesquared - File I/O",
+    "overview" : "accumulatesquared",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "accumulateSquare",
+            "location" : "<LIBRARY>/include/imgproc/xf_accumulate_squared.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "example" : "gaussianfilter - File I/O",
+    "overview" : "gaussianfilter",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "GaussianBlur",
+            "location" : "<LIBRARY>/include/imgproc/xf_gaussian_filter.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

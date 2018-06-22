@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -100,9 +100,9 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_img.rows,in_img.cols);
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_img.rows,in_img.cols);
-	xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputx(in_img.rows,in_img.cols);
+	static xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgInputy(in_img.rows,in_img.cols);
+	static xf::Mat<XF_16SC1,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
 
 	imgInputx.copyTo(( short int*)c_grad_x.data);
 	imgInputy.copyTo(( short int*)c_grad_y.data);

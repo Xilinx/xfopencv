@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -100,15 +100,15 @@ int main(int argc, char **argv)
 	////////////////////////////   END OF REFERENCE   ////////////////////////////
 
 	//////////////////	HLS TOP Function Call  ////////////////////////
-	xf::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(img.rows,img.cols);
+	static xf::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(img.rows,img.cols);
 	inMat.copyTo(img.data);
 	#ifdef __SDSCC__
 	perf_counter hw_ctr;
 	#endif
 #if REPETITIVE_BLOCKS
-	xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_rb);
+	static xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_rb);
 #elif NON_REPETITIVE_BLOCKS
-	xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_nrb);
+	static xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_nrb);
 #endif
 
 #ifdef __SDSCC__

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -53,15 +53,15 @@ int main(int argc, char *argv[]){
 	unsigned int pix =0;
 
 	char out_string[200];
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf0(frame0.rows,frame0.cols);
-	xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf1(frame0.rows,frame0.cols);
-	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowx(frame0.rows,frame0.cols);
-	xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowy(frame0.rows,frame0.cols);
+	static xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf0(frame0.rows,frame0.cols);
+	static xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> buf1(frame0.rows,frame0.cols);
+	static xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowx(frame0.rows,frame0.cols);
+	static xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> flowy(frame0.rows,frame0.cols);
 	
-	//buf0.copyTo(frame0.data);
-	//buf1.copyTo(frame1.data);
-	buf0 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[1], 0);
-	buf1 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[2], 0);
+	buf0.copyTo(frame0.data);
+	buf1.copyTo(frame1.data);
+	//buf0 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[1], 0);
+	//buf1 = xf::imread<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(argv[2], 0);
 
 		
 		#if __SDSCC__

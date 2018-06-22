@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -56,9 +56,6 @@ int main(int argc, char** argv)
 	in_width = in_img.cols;
 	in_height = in_img.rows;
 
-	/*  convert to gray  */
-//	cvtColor(in_img,in_gray,CV_BGR2GRAY);
-
 	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
 	out_img.create(in_img.rows,in_img.cols,in_img.depth());
 	diff.create(in_img.rows,in_img.cols,in_img.depth());
@@ -80,11 +77,10 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
 
-//	imgInput.copyTo(in_gray.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPIX>(argv[1], 0);
+	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -99,7 +95,6 @@ int main(int argc, char** argv)
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-//	out_img.data = imgOutput.copyFrom();
 	
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
@@ -138,13 +133,8 @@ int main(int argc, char** argv)
 	//////   end of reference    /////
 
 
-
-//	imwrite("out_img.jpg", out_img);  // save the output image
-
-
 	imwrite("ref_img.jpg", ocv_ref);  // reference image
 
-	//absdiff(ocv_ref,out_img,diff); // Compute absolute difference image
 	xf::absDiff(ocv_ref, imgOutput, diff);
 	imwrite("diff_img.jpg",diff); // Save the difference image for debugging purpose
 

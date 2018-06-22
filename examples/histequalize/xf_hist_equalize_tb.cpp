@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -43,10 +43,10 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img, in_gray, out_img, ocv_ref, diff;
+	cv::Mat in_img, out_img, ocv_ref, diff;
 
 	// reading in the color image
-	in_img = cv::imread(argv[1], 1);
+	in_img = cv::imread(argv[1], 0);
 
 	if (in_img.data == NULL)
 	{
@@ -54,26 +54,27 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+	//cvtColor(in_img, in_img, CV_BGR2GRAY);
 
 	// create memory for output images
-	out_img.create(in_gray.rows, in_gray.cols, in_gray.depth());
-	ocv_ref.create(in_gray.rows, in_gray.cols, in_gray.depth());
+	out_img.create(in_img.rows, in_img.cols, in_img.depth());
+	ocv_ref.create(in_img.rows, in_img.cols, in_img.depth());
+	diff.create(in_img.rows, in_img.cols, in_img.depth());
 
 	///////////////// 	Opencv  Reference  ////////////////////////
-	cv::equalizeHist(in_gray, ocv_ref);
+	cv::equalizeHist(in_img, ocv_ref);
 	imwrite("out_ocv.jpg", ocv_ref);
 
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput1(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput1(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(in_gray.data);
-	imgInput1.copyTo(in_gray.data);
+	imgInput.copyTo(in_img.data);
+	imgInput1.copyTo(in_img.data);
 #if __SDSCC__
-	perf_counter hw_ctr;	
+	perf_counter hw_ctr;
 	hw_ctr.start();
 	#endif
 
@@ -83,11 +84,11 @@ int main(int argc, char** argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
-	out_img.data = imgOutput.copyFrom();
-	imwrite("out_hls.jpg", out_img);
+
+	xf::imwrite("out_hls.jpg",imgOutput);
 
 	//////////////////  Compute Absolute Difference ////////////////////
-	absdiff(ocv_ref, out_img, diff); // Compute absolute difference image
+	xf::absDiff(ocv_ref,imgOutput,diff);
 
 	imwrite("out_error.jpg", diff);
 
@@ -117,4 +118,3 @@ int main(int argc, char** argv)
 	}
 	return 0;
 }
-

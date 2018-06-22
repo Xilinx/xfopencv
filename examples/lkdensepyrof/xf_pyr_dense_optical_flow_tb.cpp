@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -208,10 +208,10 @@ int main (int argc, char **argv) {
 		return -1;
 	}
 	//allocating memory spaces for all the hardware operations
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
-	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
-	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
+	static xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
+	static xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
 	
 	for(int i=0; i<NUM_LEVELS ; i++)
 	{

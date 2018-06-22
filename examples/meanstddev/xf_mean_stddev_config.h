@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -45,9 +45,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 /* config width and height */
-#define WIDTH 	1920
-#define HEIGHT	1080
+#define WIDTH 	3840
+#define HEIGHT	2160
 
-void mean_stddev_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short &mean, unsigned short &stddev);
+#define TYPE XF_8UC1
+
+void mean_stddev_accel(xf::Mat<TYPE, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned short *mean, unsigned short *stddev);
 
 #endif // _XF_MEAN_STDDEV_CONFIG_H_

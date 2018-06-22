@@ -43,25 +43,30 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
 void xFStddevkernel(hls::stream<XF_SNAME(WORDWIDTH)>&  _src_mat1,unsigned short* _mean,unsigned short*_dst_stddev,uint16_t height,uint16_t width)
 {
 #pragma HLS inline
 	ap_uint<4> j;
-	ap_uint<45> tmp_var_vals[(1<<XF_BITSHIFT(NPC))];
-	ap_uint<64> var = 0;
-	uint32_t tmp_sum_vals[(1<<XF_BITSHIFT(NPC))];
-	uint64_t sum = 0;
+	ap_uint<45> tmp_var_vals[(1<<XF_BITSHIFT(NPC))*PLANES];//={0};
+	ap_uint<64> var[PLANES];//={0};
+	uint32_t tmp_sum_vals[(1<<XF_BITSHIFT(NPC))*PLANES];//={0};
+	uint64_t sum[PLANES];//={0};
 
 #pragma HLS ARRAY_PARTITION variable=tmp_var_vals complete dim=1
 #pragma HLS ARRAY_PARTITION variable=tmp_sum_vals complete dim=1
 
 
-	for ( j = 0; j<(1<<XF_BITSHIFT(NPC));j++)
+	for ( j = 0; j<((1<<XF_BITSHIFT(NPC))*PLANES);j++)
 	{
 #pragma HLS UNROLL
 		tmp_var_vals[j] = 0;
 		tmp_sum_vals[j] = 0;
+	}
+	for(j=0;j<PLANES;j++)
+	{
+		sum[j]=0;
+		var[j]=0;
 	}
 int p=0;
 	ap_uint<13> row,col;
@@ -81,11 +86,12 @@ int p=0;
 			in_buf = _src_mat1.read();
 
 			Extract1:
-			for(uchar_t i = 0,j=0; i < (8 << XF_BITSHIFT(NPC)); i += 8,j++)
+			for(uchar_t i = 0,j=0; i < ((8 << (XF_BITSHIFT(NPC)))*PLANES); i+=8,j++)
 			{
 #pragma HLS DEPENDENCE variable=tmp_var_vals intra false
 #pragma HLS unroll
-				XF_PTNAME(DEPTH) val;
+
+				ap_uint<8> val=0;
 				val = in_buf.range(i+7, i);
 				tmp_sum_vals[j] = tmp_sum_vals[j] + val;
 				unsigned short int  temp=((unsigned short)val * (unsigned short)val);
@@ -94,50 +100,58 @@ int p=0;
 			}
 		}
 	}
+//	printf("the kernel tmp_var_vals values are %ld %ld %ld\n",(unsigned int)tmp_var_vals[0],(unsigned int)tmp_var_vals[1],(unsigned int)tmp_var_vals[2]);
 
-	for ( j = 0; j<(1<<XF_BITSHIFT(NPC));j++)
+	for ( j = 0; j<((1<<XF_BITSHIFT(NPC))*PLANES);j++)
 	{
 #pragma HLS UNROLL
-		sum = (sum + tmp_sum_vals[j]);
+#if GRAY
+		sum[0] = (sum[0] + tmp_sum_vals[j]);
+#else
+		sum[j]=0;
+		sum[j] = (sum[j] + tmp_sum_vals[j]);
+#endif
 	}
 
-	for ( j = 0; j<(1<<XF_BITSHIFT(NPC));j++)
+	for ( j = 0; j<((1<<XF_BITSHIFT(NPC))*PLANES);j++)
 	{
 #pragma HLS UNROLL
-		var =(ap_uint<64>)((ap_uint<64>) var+ (ap_uint<64>)tmp_var_vals[j]);
+#if GRAY
+		var[0] =(ap_uint<64>)((ap_uint<64>) var[0]+ (ap_uint<64>)tmp_var_vals[j]);
+#else
+		var[j]=0;
+		var[j] =(ap_uint<64>)((ap_uint<64>) var[j]+ (ap_uint<64>)tmp_var_vals[j]);
+#endif
 	}
 
-	unsigned short tempmean;
+		for(int c=0;c<PLANES;c++)
+		{
+#pragma HLS UNROLL
+			unsigned int tempmean=0;
+			tempmean = (unsigned short)((ap_uint<64>)(256*(ap_uint<64>)sum[c]) / (width * height));
+			_mean[c]  = tempmean;
 
-// temp_sum[0]=(unsigned long long int)sum;
-// temp_var[0]=(unsigned long long int)tmp_var_vals[0];
+			/* Variance Computation */
 
-	//uint32_t img_size = width * height;
+			uint32_t temp = (ap_uint<32>)((ap_uint<64>)(65536 * (ap_uint<64>)var[c])/(width * height));
 
+			uint32_t Varstddev = temp - (tempmean*tempmean);
 
-	tempmean = (unsigned short)((ap_uint<64>)(256*(ap_uint<64>)sum) / (width * height));
-	_mean[0]  = tempmean;
+			uint32_t t1 = (uint32_t)((Varstddev >> 16) << 16);
 
-	/* Variance Computation */
+			_dst_stddev[c] = (unsigned short)xf::Sqrt(t1);//StdDev;//(StdDev >> 4);
+		}
 
-	uint32_t temp = (ap_uint<32>)((ap_uint<64>)(65536 * (ap_uint<64>)var)/(width * height));
-
-	uint32_t Varstddev = temp - (tempmean*tempmean);
-
-	uint32_t t1 = (uint32_t)((Varstddev >> 16) << 16);
-
-
-	_dst_stddev[0] = (unsigned short)xf::Sqrt(t1);//StdDev;//(StdDev >> 4);		    // STANDARD DEVIATION: Q(I,8) format
 
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
+template<int ROWS, int COLS, int PLANES, int DEPTH, int NPC, int WORDWIDTH>
 void xFMeanStddev(hls::stream< XF_SNAME(WORDWIDTH) >& _src_mat,unsigned short* _mean,unsigned short* _stddev,uint16_t height,uint16_t width)
 {
 
 
 	assert(
-			(DEPTH == XF_8UP)  && "Input image and output image DEPTH should be same");
+			(DEPTH == XF_8UP) || (DEPTH == XF_24UP) && "Input image and output image DEPTH should be same");
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
 			&& " NPC must be XF_NPPC1, XF_NPPC8");
@@ -146,15 +160,17 @@ void xFMeanStddev(hls::stream< XF_SNAME(WORDWIDTH) >& _src_mat,unsigned short* _
 
 
 
-	xFStddevkernel<ROWS, COLS, DEPTH, NPC, WORDWIDTH, (COLS >> XF_BITSHIFT(NPC))>(_src_mat, _mean, _stddev,height,width);
+	xFStddevkernel<ROWS, COLS,PLANES, DEPTH, NPC, WORDWIDTH, (COLS >> XF_BITSHIFT(NPC))>(_src_mat, _mean, _stddev,height,width);
 
 
 }
-//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
-
-
+#pragma SDS data access_pattern(_mean:SEQUENTIAL)
+#pragma SDS data access_pattern(_stddev:SEQUENTIAL)
+#pragma SDS data copy(_mean[0:3])
+#pragma SDS data copy(_stddev[0:3])
 
 template<int SRC_T,int ROWS, int COLS,int NPC=1>
 void meanStdDev(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,unsigned short* _mean,unsigned short* _stddev)
@@ -177,7 +193,7 @@ void meanStdDev(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,unsigned short* _mean,uns
 		}
 	}
 
-	xFMeanStddev<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _mean, _stddev, _src.rows, _src.cols);
+	xFMeanStddev<ROWS, COLS, XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src_stream, _mean, _stddev, _src.rows, _src.cols);
 }
 }
 

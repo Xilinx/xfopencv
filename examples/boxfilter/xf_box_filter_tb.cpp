@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -80,11 +80,11 @@ int main(int argc, char** argv)
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	#endif
-	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> in_8bit(in_img.rows,in_img.cols);
+	static xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> in_8bit(in_img.rows,in_img.cols);
 
-	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPIX>(argv[1], 0);
+	in_8bit.copyTo(in_img.data);
 #if T_8U
 	imgInput = in_8bit;
 #elif T_16U
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 	hw_ctr.start();
 	#endif
 
-	//xFboxfilter<XF_BORDER_CONSTANT,FILTER_WIDTH,IN_T,HEIGHT, WIDTH,NPIX>(imgInput,imgOutput);
+
 	boxfilter_accel(imgInput,imgOutput);
 
 	#if __SDSCC__
@@ -105,8 +105,6 @@ int main(int argc, char** argv)
 
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	//out_img.data = (unsigned char *)imgOutput.copyFrom();
-
 
 
 	xf::imwrite("hls_out.jpg", imgOutput);

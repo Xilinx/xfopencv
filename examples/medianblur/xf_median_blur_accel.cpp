@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_median_blur_config.h"
 
-void median_blur_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPxPC> &_dst)
+void median_blur_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> &_dst)
 {	
-	xf::medianBlur <WINDOW_SIZE, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH,  NPxPC> (_src, _dst);
+	xf::medianBlur <WINDOW_SIZE, XF_BORDER_REPLICATE, TYPE, HEIGHT, WIDTH,  NPxPC> (_src, _dst);
 }

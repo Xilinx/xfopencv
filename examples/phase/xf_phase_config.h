@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -41,8 +41,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef unsigned short int  uint16_t;
 
 /*  set the height and weight  */
-#define HEIGHT 1080
-#define WIDTH  1920
+#define HEIGHT 2160
+#define WIDTH  3840
 
 /*  define the input and output types  */
 #if NO

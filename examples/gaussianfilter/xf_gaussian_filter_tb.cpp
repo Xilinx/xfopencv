@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -46,15 +46,18 @@ int main(int argc, char **argv) {
 	cv::Mat in_img, out_img, ocv_ref, in_img_gau;
 	cv::Mat in_gray, in_gray1, diff;
 
+
+
 	in_img = cv::imread(argv[1], 0); // reading in the color image
 	if (!in_img.data) {
 		printf("Failed to load the image ... !!!");
 		return -1;
 	}
+	//extractChannel(in_img, in_img, 1);
+	out_img.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for output image
+	diff.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for OCV-ref image
+	ocv_ref.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for OCV-ref image
 
-	//extractChannel(in_img, in_gray, 1);
-	diff.create(in_img.rows, in_img.cols, in_img.depth()); // create memory for diff image
-	ocv_ref.create(in_img.rows, in_img.cols, in_img.depth()); // create memory for OCV output image
 #if FILTER_WIDTH==3
 	float sigma = 0.5f;
 #endif
@@ -72,29 +75,24 @@ int main(int argc, char **argv) {
 	imwrite("output_ocv.png", ocv_ref);
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
-	//imgInput.copyTo(in_img.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
-
+		imgInput.copyTo(in_img.data);
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	 hw_ctr.start();
+	TIME_STAMP_INIT
 	#endif
 
 	gaussian_filter_accel(imgInput,imgOutput,sigma);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	TIME_STAMP
 	#endif
-
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
+	// Compute absolute difference image
+	xf::absDiff(ocv_ref, imgOutput, diff);
 
-	//imwrite("output_hls.png", out_img);
-	xf::absDiff(ocv_ref, imgOutput, diff); // Compute absolute difference image
 	imwrite("error.png", diff); // Save the difference image for debugging purpose
 
 	// 	Find minimum and maximum differences.
@@ -127,4 +125,5 @@ int main(int argc, char **argv) {
 		printf("\nTest Pass\n");
 	return 0;
 	}
+
 }

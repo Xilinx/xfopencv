@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -81,11 +81,12 @@ int main(int argc, char** argv)
 	#endif
 	int shift = 0;
 
-	xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPC> in_8bit(in_img.rows,in_img.cols);
+	static xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<_DST_T, HEIGHT, WIDTH, _NPC> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPC> in_8bit(in_img.rows,in_img.cols);
 
-	in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPC>(argv[1], 0);
+	//in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPC>(argv[1], 0);
+	in_8bit.copyTo(in_img.data);
 
 #if (XF_CONVERT16STO8U)
 	//imgInput.copyTo((IN_TYPE *) input_img.data);

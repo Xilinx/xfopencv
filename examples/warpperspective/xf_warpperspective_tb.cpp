@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -185,31 +185,31 @@ int main(int argc,char **argv){
 
 
 
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC8> imgOutput(in_img.rows,in_img.cols);
 
-	//imgInput.copyTo(img_gray.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(argv[1], 0);	
+	imgInput.copyTo(in_img.data);
 
-	
-	
-	#if __SDSCC__
-perf_counter hw_ctr;
+
+
+
+#if __SDSCC__
+	perf_counter hw_ctr;
 	hw_ctr.start();
-	#endif
+#endif
 
 	perspective_accel(imgInput, imgOutput,transform_matrix);
 
-	#if __SDSCC__
+#if __SDSCC__
 
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-	
+#endif
+
 	//hls_out_img.data = imgOutput.copyFrom();
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
-	
+
 	uchar* out_ptr = (uchar *)imgOutput.data;
 	uchar* ocv_ref_ptr = (uchar *)ocv_out_img.data;
 	uchar* diff_ptr = (uchar *)diff_img.data;
@@ -251,7 +251,7 @@ perf_counter hw_ctr;
 	imwrite("testcase_diff.png", diff_img);
 
 	if(per_error > 2.0f)
-			return 1;
+		return 1;
 
 	return 0;
 }

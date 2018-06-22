@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -55,10 +55,11 @@ int main(int argc, char** argv) {
 
 	out_hls.create(in_gray.rows, in_gray.cols, CV_8U);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows, in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows, in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows, in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows, in_gray.cols);
 
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+	imgInput.copyTo(in_gray.data);
+
 #if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();

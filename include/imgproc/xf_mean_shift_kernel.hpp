@@ -303,10 +303,6 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
 	short A,B;
 	uint16_t dispx = 0, dispy = 0;
 
-#pragma HLS ARRAY_PARTITION variable=total_x complete
-#pragma HLS ARRAY_PARTITION variable=total_y complete
-#pragma HLS ARRAY_PARTITION variable=total_w complete
-
 	short buf_size;
 	int y_off,a,b;
 

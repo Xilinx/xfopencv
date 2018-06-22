@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -45,6 +45,7 @@
 #define __ARM_NEON__
 #define __ARM_NEON
 
+#include "common/xf_sw_utils.h"
 
 #if __SDSCC__
 #include "sds_lib.h"
@@ -52,7 +53,6 @@
 #define TIME_STAMP  { clock_end = sds_clock_counter(); printf("elapsed time %lu \n", clock_end-clock_start); clock_start = sds_clock_counter();  }
 #endif
 
-#include "common/xf_sw_utils.h"
 
 #endif//_XF_HEADERS_H_
 

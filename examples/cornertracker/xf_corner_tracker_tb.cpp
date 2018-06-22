@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -186,14 +186,14 @@ int main (int argc, char **argv) {
 
 	//allocating memory spaces for all the hardware operations
 	bool harris_flag = true;
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> inHarris;
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> outHarris;
-	ap_uint<64> *listfixed = (ap_uint<64> *)MEMORYALLOC((MAXCORNERS)*8);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> inHarris;
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> outHarris;
+	unsigned long *listfixed = (unsigned long *)MEMORYALLOC((MAXCORNERS)*8);
 	unsigned int *list = (unsigned int *)MEMORYALLOC((MAXCORNERS)*sizeof( unsigned int));
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
-	xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
-	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
-	xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr1[NUM_LEVELS];
+	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,XF_NPPC1>imagepyr2[NUM_LEVELS];
+	static xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow;
+	static xf::Mat<XF_32UC1,HEIGHT,WIDTH,XF_NPPC1>flow_iter;
 	unsigned int num_corners = 0;
 	for(int i=0; i<NUM_LEVELS ; i++)
 	{
@@ -283,13 +283,13 @@ int main (int argc, char **argv) {
 		cv::cvtColor(im1, outputimage, cv::COLOR_GRAY2BGR);
 		for (int li=0; li<num_corners; li++)
 		{
-			ap_uint<32> point = (ap_uint<32>)list[li];
-			ap_uint<16> row_num = 0;
-			ap_uint<16> col_num = 0;
-			if(listfixed[li].range(63,42) == 0)
+			unsigned int point = list[li];
+			unsigned short row_num = 0;
+			unsigned short col_num = 0;
+			if(listfixed[li]>>42 == 0)
 			{
-				row_num = point.range(31,16);
-				col_num = point.range(15,0);
+				row_num = (point>>16) & 0x0000FFFF;//.range(31,16);
+				col_num = point & 0x0000FFFF;//.range(15,0);
 				cv::Point2f rmappoint((float)col_num,(float)row_num);
 				cv::circle( outputimage, rmappoint, 2, cv::Scalar(0,0,255), -1, 8);
 			}

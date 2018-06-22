@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 	map_x.create( src.rows,src.cols, CV_32FC1 ); // Mapx for opencv remap function
 	map_y.create( src.rows,src.cols, CV_32FC1 ); // Mapy for opencv remap function
 	hls_remapped.create( src.rows,src.cols, src.type()); 	// create memory for output images
-   diff.create( src.rows,src.cols, src.type());
+	diff.create( src.rows,src.cols, src.type());
 	if(!src.data)
 	{
 		cout << "Failed to load the input image ... !!!" << endl;
@@ -95,18 +95,16 @@ int main(int argc, char** argv)
 	cv::remap (src,ocv_remapped,map_x,map_y,CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(0, 0, 0) );
 
 	//////////////////	HLS Function Call  ////////////////////////
-	xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxMat(src.rows,src.cols);
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
-	xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
+	static xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
+	static xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxMat(src.rows,src.cols);
+	static xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyMat(src.rows,src.cols);
+	static xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> remappedMat(src.rows,src.cols);
 
 
 	mapxMat.copyTo(map_x.data);
 	mapyMat.copyTo(map_y.data);
 
-
-	inMat = xf::imread<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1>(argv[1], 0);
-
+	inMat.copyTo(src.data);
 
 #if __SDSCC__
 		perf_counter hw_ctr;
@@ -157,3 +155,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
+

@@ -47,13 +47,12 @@ namespace xf{
 /**
  * xFThresholdKernel: Thresholds an input image and produces an output boolean image depending
  * 		upon the type of thresholding.
- * Input   : _src, _thresh_type, _binary_thresh_val,  _upper_range and _lower_range
- * Output  : _dst
+ * Input   : _src_mat, _thresh_type, _binary_thresh_val,  _upper_range and _lower_range
+ * Output  : _dst_mat
  */
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
+template<int SRC_T, int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST, int COLS_TRIP>
-void xFThresholdKernel(hls::stream <XF_SNAME(WORDWIDTH_SRC)> & _src,
-		hls::stream <XF_SNAME(WORDWIDTH_DST)> & _dst, bool _thresh_type,
+void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat, bool _thresh_type,
 		short _binary_thresh_val, short _upper_range, short _lower_range, unsigned short height, unsigned short width)
 {
 	XF_SNAME(WORDWIDTH_SRC) val_src;
@@ -73,7 +72,7 @@ void xFThresholdKernel(hls::stream <XF_SNAME(WORDWIDTH_SRC)> & _src,
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src.read());  //reading the source stream _src into val_src
+			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.data[i*width+j]);  //reading the source stream _src into val_src
 
 			//Binary Thresholding
 			if(_thresh_type == XF_THRESHOLD_TYPE_BINARY)
@@ -112,60 +111,10 @@ void xFThresholdKernel(hls::stream <XF_SNAME(WORDWIDTH_SRC)> & _src,
 					}
 				}
 			}
-			_dst.write(val_dst);  //writing the val_dst into output stream _dst
+			_dst_mat.data[i*width+j] = (val_dst);  //writing the val_dst into output stream _dst
 		}
 	}
 }
-
-
-/**
- * xFthreshold: This function acts as wrapper and calls the kernel function.
- */
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST>
-void xFThresholding(hls::stream <XF_SNAME(WORDWIDTH_SRC)> & _src,
-				 hls::stream <XF_SNAME(WORDWIDTH_DST)> & _dst,
-				 bool _thresh_type, short _binary_thresh_val, short _upper_range, short _lower_range, unsigned short height, unsigned short width)
-{
-
-	width = width >> XF_BITSHIFT(NPC);
-
-	assert((DEPTH == XF_8UP) && "Depth must be XF_8UP");
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) || (NPC == XF_NPPC16)) &&
-			"NPC must be XF_NPPC1, XF_NPPC8 or XF_NPPC16");
-	assert(((WORDWIDTH_SRC == XF_8UW) || (WORDWIDTH_SRC == XF_64UW) ||
-			(WORDWIDTH_SRC == XF_128UW)) &&
-			"WORDWIDTH_SRC must be XF_8UW, XF_64UW or XF_128UW");
-	assert(((WORDWIDTH_DST == XF_8UW) || (WORDWIDTH_DST == XF_64UW) ||
-			(WORDWIDTH_DST == XF_128UW)) &&
-			"WORDWIDTH_DST must be XF_8UW, XF_64UW or XF_128UW");
-	assert(((_thresh_type == XF_THRESHOLD_TYPE_BINARY) ||
-			(_thresh_type == XF_THRESHOLD_TYPE_RANGE)) &&
-			"_thresh_type must be either XF_THRESHOLD_TYPE_BINARY or XF_THRESHOLD_TYPE_BINARY");
-	assert(((_binary_thresh_val >= 0) && (_binary_thresh_val <= 255)) &&
-			"_binary_thresh_val must be with the range of 0 to 255");
-	assert(((_upper_range >= 0) && (_upper_range <= 255)) &&
-			"_upper_range must be with the range of 0 to 255");
-	assert(((_lower_range >= 0) && (_lower_range <= 255)) &&
-			"_lower_range must be with the range of 0 to 255");
-	assert((_upper_range >= _lower_range)  &&
-			"_upper_range must be greater than _lower_range");
-
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
-	if(_thresh_type == XF_THRESHOLD_TYPE_BINARY)
-	{
-		assert(((_upper_range == 0) && (_lower_range == 0)) &&
-				"for _thresh_type of 'XF_THRESHOLD_TYPE_BINARY', the range threshold parameters '_upper_range' and '_lower_range' must be 0");
-	}
-	else if(_thresh_type == XF_THRESHOLD_TYPE_RANGE)
-	{
-		assert((_binary_thresh_val == 0) &&
-				"for _thresh_type of 'XF_THRESHOLD_TYPE_RANGE', the binary threshold parameter '_binary_thresh_val' must be 0");
-	}
-
-	xFThresholdKernel<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,
-	(COLS>>XF_BITSHIFT(NPC))>(_src,_dst,_thresh_type,_binary_thresh_val,_upper_range,_lower_range, height,  width);
-}
-
 
 
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
@@ -180,37 +129,32 @@ template<int THRESHOLD_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
 void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short thresh_val,short thresh_upper,short thresh_lower)
 {
 
-#pragma HLS DATAFLOW
+	unsigned short width = _src_mat.cols >> XF_BITSHIFT(NPC);
+	unsigned short height = _src_mat.rows;
+
+	assert((SRC_T == XF_8UC1) && "Type must be XF_8UC1");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) &&
+			"NPC must be XF_NPPC1, XF_NPPC8");
+
+	assert(((THRESHOLD_TYPE == XF_THRESHOLD_TYPE_BINARY) ||
+			(THRESHOLD_TYPE == XF_THRESHOLD_TYPE_RANGE)) &&
+			"_thresh_type must be either XF_THRESHOLD_TYPE_BINARY or XF_THRESHOLD_TYPE_BINARY");
+	assert(((thresh_val >= 0) && (thresh_val <= 255)) &&
+			"_binary_thresh_val must be with the range of 0 to 255");
+	assert(((thresh_upper >= 0) && (thresh_upper <= 255)) &&
+			"_upper_range must be with the range of 0 to 255");
+	assert(((thresh_lower >= 0) && (thresh_lower <= 255)) &&
+			"_lower_range must be with the range of 0 to 255");
+	assert((thresh_upper >= thresh_lower)  &&
+			"_upper_range must be greater than _lower_range");
+
+	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
+
 #pragma HLS INLINE OFF
-	hls::stream< XF_TNAME(SRC_T,NPC) > _src;
-	hls::stream< XF_TNAME(SRC_T,NPC) > _dst;
 
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-			#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
+	xFThresholdKernel<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>
+	(_src_mat,_dst_mat,THRESHOLD_TYPE,thresh_val,thresh_upper,thresh_lower,height,width);
 
-
-	xFThresholding<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC)>(_src,_dst,THRESHOLD_TYPE,thresh_val,thresh_upper,thresh_lower,_src_mat.rows,_src_mat.cols);
-
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-		}
-	}
 }
 }
 

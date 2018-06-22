@@ -37,71 +37,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * Image resizing function.
  */
 namespace xf {
-template<int SRC_ROWS,int SRC_COLS,int DEPTH,int NPC,int WORDWIDTH_SRC,int DST_ROWS,int DST_COLS>
-void xFresize(hls::stream <XF_TNAME(DEPTH,NPC)> &_in_mat,
-		hls::stream <XF_TNAME(DEPTH,NPC)> &_out_mat,
-		int _interpolation_type, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
-{
-#pragma HLS INLINE OFF
-	width = width >> XF_BITSHIFT(NPC);
-	out_width = out_width >> XF_BITSHIFT(NPC);
-
-	assert(((_interpolation_type == XF_INTERPOLATION_BILINEAR) ||
-			(_interpolation_type == XF_INTERPOLATION_NN) ||
-			(_interpolation_type == XF_INTERPOLATION_AREA))
-			&& "Incorrect parameters interpolation type");
-
-	assert( ((NPC == XF_NPPC8) || (NPC == XF_NPPC1) )  && "Supported Operation Modes XF_NPPC8 and XF_NPPC1");
-
-	assert( ( (!(height & 7)) || (!(width & 7)) )
-			&& "Input and ouput image widths should be multiples of 8");
-
-	assert(((height <= SRC_ROWS ) && (width <= SRC_COLS)) && "SRC_ROWS and SRC_COLS should be greater than input image");
-
-	assert(((out_height <= DST_ROWS ) && (out_width <= DST_COLS)) && "DST_ROWS and DST_COLS should be greater than output image");
-
-	if (_interpolation_type == XF_INTERPOLATION_NN)
-	{
-		if ((SRC_ROWS < DST_ROWS) || (SRC_COLS < DST_COLS)){
-			xFResizeNNUpScale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC,   \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-		else if ((SRC_ROWS > DST_ROWS) || (SRC_COLS > DST_COLS)){
-			xFResizeNNDownScale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC, \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-	}
-	else if (_interpolation_type == XF_INTERPOLATION_BILINEAR)
-	{
-		if ((SRC_ROWS < DST_ROWS) || (SRC_COLS < DST_COLS)){
-			xFResizeBilinearUpscale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC,   \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-		else if ((SRC_ROWS > DST_ROWS) || (SRC_COLS > DST_COLS)){
-			xFResizeBilinearDownScale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC, \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-	}
-	else if (_interpolation_type == XF_INTERPOLATION_AREA)
-	{
-		if ((SRC_ROWS < DST_ROWS) || (SRC_COLS < DST_COLS)){
-			xFResizeAreaUpScale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC,   \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-		else if ((SRC_ROWS > DST_ROWS) || (SRC_COLS > DST_COLS)){
-			xFResizeAreaDownScale<SRC_ROWS,SRC_COLS,DEPTH,NPC,WORDWIDTH_SRC, \
-			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
-			(_in_mat,_out_mat, height, width, out_height, out_width);
-		}
-	}
-}
-
-
 
 #pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
@@ -109,45 +44,47 @@ void xFresize(hls::stream <XF_TNAME(DEPTH,NPC)> &_in_mat,
 //#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
-template<int INTERPOLATION_TYPE, int TYPE, int SRC_ROWS, int SRC_COLS, int DST_ROWS, int DST_COLS, int NPC> 
+template<int INTERPOLATION_TYPE, int TYPE, int SRC_ROWS, int SRC_COLS, int DST_ROWS, int DST_COLS, int NPC, int MAX_DOWN_SCALE> 
 void resize (xf::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> & _src, xf::Mat<TYPE, DST_ROWS, DST_COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
-	unsigned short input_height = _src.rows;
-	unsigned short input_width = _src.cols;
-	unsigned short output_height = _dst.rows;
-	unsigned short output_width = _dst.cols;
-			
-	hls::stream< XF_TNAME(TYPE,NPC) > in_image;
-	hls::stream< XF_TNAME(TYPE,NPC) > out_image;
 
-	for(int i=0;i<input_height;i++)
+	assert(  ((INTERPOLATION_TYPE == XF_INTERPOLATION_NN)
+	        ||(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR)
+			||(INTERPOLATION_TYPE == XF_INTERPOLATION_AREA)) && "Incorrect parameters interpolation type");
+
+	assert( ((NPC == XF_NPPC8) || (NPC == XF_NPPC1) )  && "Supported Operation Modes XF_NPPC8 and XF_NPPC1");
+	if(NPC == XF_NPPC8)
+		assert((((_src.cols & 7) == 0) && ((_dst.cols & 7) == 0)) && "Input and ouput image widths should be multiples of 8 in NPPC8 mode");
+
+	if(INTERPOLATION_TYPE == XF_INTERPOLATION_AREA)
 	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=SRC_ROWS
-		for(int j=0;j<input_width>>XF_BITSHIFT(NPC);j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=SRC_COLS
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_FLATTEN OFF
-			in_image.write( *(_src.data + i*(input_width>>XF_BITSHIFT(NPC)) + j) );
-		}
-	}
 	
-	xFresize< SRC_ROWS, SRC_COLS, TYPE, NPC, XF_WORDWIDTH(TYPE,NPC), DST_ROWS, DST_COLS>(in_image, out_image, INTERPOLATION_TYPE, input_height, input_width, output_height, output_width);
-		
-	for(int i=0;i<output_height;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=DST_ROWS
-		for(int j=0;j<output_width>>XF_BITSHIFT(NPC);j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=DST_COLS
-#pragma HLS PIPELINE II=1
-#pragma HLS LOOP_FLATTEN OFF
-			*(_dst.data + i*(output_width>>XF_BITSHIFT(NPC)) + j) = out_image.read();
+		assert(((_src.rows <= SRC_ROWS ) && (_src.cols <= SRC_COLS)) && "SRC_ROWS and SRC_COLS should be greater than input image");
+
+		assert(((_dst.rows <= DST_ROWS ) && (_dst.cols <= DST_COLS)) && "DST_ROWS and DST_COLS should be greater than output image");
+		unsigned short input_height = _src.rows;
+		unsigned short input_width = _src.cols >> XF_BITSHIFT(NPC);
+		unsigned short output_height = _dst.rows;
+		unsigned short output_width = _dst.cols >> XF_BITSHIFT(NPC);
+				
+		if ((SRC_ROWS < DST_ROWS) || (SRC_COLS < DST_COLS)){
+			xFResizeAreaUpScale<SRC_ROWS,SRC_COLS,XF_CHANNELS(TYPE,NPC),TYPE,NPC,XF_WORDWIDTH(TYPE,NPC),   \
+			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
+			(_src,_dst, input_height, input_width, output_height, output_width);
 		}
+		else if ((SRC_ROWS >= DST_ROWS) || (SRC_COLS >= DST_COLS)){
+			xFResizeAreaDownScale<SRC_ROWS,SRC_COLS,XF_CHANNELS(TYPE,NPC),TYPE,NPC,XF_WORDWIDTH(TYPE,NPC), \
+			DST_ROWS,DST_COLS,(SRC_COLS>>XF_BITSHIFT(NPC)),(DST_COLS>>XF_BITSHIFT(NPC))> \
+			(_src,_dst, input_height, input_width, output_height, output_width);
+		}
+
+		return;
 	}
-	return;
+	else
+	{
+		resizeNNBilinear<TYPE, SRC_ROWS, SRC_COLS, NPC, DST_ROWS, DST_COLS, INTERPOLATION_TYPE, MAX_DOWN_SCALE>(_src,_dst);
+	}
 }
 }
 #endif

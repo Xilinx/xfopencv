@@ -166,9 +166,10 @@ void xFComputeCustomFilter(
 	}
 }
 
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST,int TC,int FW,int filter_height,int filter_width,int F_COUNT>
-void Convolution_Process(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src,hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst,XF_SNAME(WORDWIDTH_SRC) buf[filter_height][COLS>>XF_BITSHIFT(NPC)], XF_PTNAME(DEPTH_SRC) lbuf[filter_height][XF_NPIXPERCYCLE(NPC)+filter_width-1],
-		XF_SNAME(WORDWIDTH_SRC) tmp_buf[filter_height],XF_PTNAME(DEPTH_DST) mask_value[XF_NPIXPERCYCLE(NPC)],short int _filter[][filter_width],uint16_t image_width,uchar row_ind, unsigned char shift,XF_SNAME(WORDWIDTH_DST) &P0,unsigned char index[filter_height],ap_uint<13> col_factor,uchar filter_width_factor,unsigned short image_height, ap_uint<13> row)
+template<int SRC_T, int DST_T, int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST,int TC,int FW,int filter_height,int filter_width,int F_COUNT>
+void Convolution_Process(xf::Mat<SRC_T, ROWS, COLS, NPC>& _src,xf::Mat<DST_T, ROWS, COLS, NPC>& _dst,XF_SNAME(WORDWIDTH_SRC) buf[filter_height][COLS>>XF_BITSHIFT(NPC)], XF_PTNAME(DEPTH_SRC) lbuf[filter_height][XF_NPIXPERCYCLE(NPC)+filter_width-1],
+		XF_SNAME(WORDWIDTH_SRC) tmp_buf[filter_height],XF_PTNAME(DEPTH_DST) mask_value[XF_NPIXPERCYCLE(NPC)],short int _filter[][filter_width],uint16_t image_width,uchar row_ind, unsigned char shift,XF_SNAME(WORDWIDTH_DST) &P0,
+		unsigned char index[filter_height],ap_uint<13> col_factor,uchar filter_width_factor,unsigned short image_height, ap_uint<13> row, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 	uchar step = XF_PIXELDEPTH(DEPTH_DST);
@@ -183,7 +184,8 @@ void Convolution_Process(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src,hls::stre
 
 		if(row < image_height)
 		{
-			buf[row_ind][col] = _src.read();
+			buf[row_ind][col] = _src.data[rd_ind];
+			rd_ind++;
 		}
 		else
 		{
@@ -251,7 +253,8 @@ void Convolution_Process(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src,hls::stre
 			}
 
 			// writing the temporary result into the stream
-			_dst.write(P0);
+			_dst.data[wr_ind] = P0;
+			wr_ind++;
 
 			ap_uint<13> ind = filter_width_factor;
 			ap_uint<13> range_step = 0;
@@ -293,13 +296,13 @@ void Convolution_Process(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src,hls::stre
  * _dst		->  Output image after applying the filter operation, of type 8U or 16S
  * shift	->  Fixed point format of the filter co-efficients for unity gain filter
  ************************************************************************************/
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST, int COLS_COUNT,  int filter_height,
 int filter_width, int F_COUNT, int FW, int COL_FACTOR_COUNT>
 void xFCustomConvolutionKernel(
-		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _src,
+		xf::Mat<SRC_T, ROWS, COLS, NPC>& _src,
 		short int _filter[][filter_width],
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _dst,
+		xf::Mat<DST_T, ROWS, COLS, NPC>& _dst,
 		unsigned char shift,unsigned short img_width,unsigned short img_height)
 {
 	uchar step = XF_PIXELDEPTH(DEPTH_DST);
@@ -328,6 +331,7 @@ void xFCustomConvolutionKernel(
 
 	ap_uint<13> col_factor = 0;
 	uchar filter_width_factor = (filter_width >> 1);
+	int rd_ind = 0, wr_ind = 0;
 
 	// setting the column factor depending upon the filter dimensions
 	colFactorLoop:
@@ -362,7 +366,8 @@ void xFCustomConvolutionKernel(
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_COUNT max=COLS_COUNT
 #pragma HLS PIPELINE
-			buf[row_ind][j] = _src.read();
+			buf[row_ind][j] = _src.data[rd_ind];
+			rd_ind++;
 		}
 		row_ind++;
 	}
@@ -401,8 +406,8 @@ void xFCustomConvolutionKernel(
 		// initializing the temporary result value to zero
 		P0 = 0;
 
-		Convolution_Process<ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,COLS_COUNT,FW,filter_height,filter_width,F_COUNT>
-		(_src,_dst,buf,lbuf,tmp_buf,mask_value,_filter,img_width,row_ind,shift,P0,index,col_factor,filter_width_factor,img_height,row);
+		Convolution_Process<SRC_T, DST_T, ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,COLS_COUNT,FW,filter_height,filter_width,F_COUNT>
+		(_src,_dst,buf,lbuf,tmp_buf,mask_value,_filter,img_width,row_ind,shift,P0,index,col_factor,filter_width_factor,img_height,row,rd_ind,wr_ind);
 
 		/////////  Column right border  /////////
 
@@ -444,7 +449,8 @@ void xFCustomConvolutionKernel(
 		}
 
 		// writing the temporary result into the stream
-		_dst.write(P0);
+		_dst.data[wr_ind] = P0;
+		wr_ind++;
 
 		colFactorLoopBorder:
 		for(ap_uint<13> c = 0; c < col_factor; c++)
@@ -453,14 +459,14 @@ void xFCustomConvolutionKernel(
 
 			max_range_step = 0;
 			widthFactorLoopBorder:
-			for(int l = FW;
-					l < (XF_NPIXPERCYCLE(NPC) + FW); l++)
+			for(int l = FW;l < (XF_NPIXPERCYCLE(NPC) + FW); l++)
 			{
 				P0.range((max_range_step+(step-1)),
 						(max_range_step)) = col_border_mask[l];
 				max_range_step += step;
 			}
-			_dst.write(P0);
+			_dst.data[wr_ind] = P0;
+			wr_ind++;
 		}
 
 		// incrementing the row_ind for each iteration of row
@@ -472,62 +478,82 @@ void xFCustomConvolutionKernel(
 	}  // end of main row loop
 }  // end of xFCustomConvKernel
 
-template<int DEPTH_SRC, int DEPTH_DST,int F_HEIGHT, int F_WIDTH>
+template<int DEPTH_SRC, int DEPTH_DST,int F_HEIGHT, int F_WIDTH,int PLANES>
 void xFApplyFilter2D(XF_PTNAME(DEPTH_SRC) _kernel_pixel[F_HEIGHT][F_WIDTH],
 		short int	_kernel_filter[F_HEIGHT][F_WIDTH],
 		XF_PTNAME(DEPTH_DST)  &out, unsigned char shift)
 {
 #pragma HLS INLINE off
 
-	ap_int<32> sum=0;
+	ap_int<32> sum=0,in_step=0,out_step=0,p=0;
 	ap_int<32> temp=0;
-
+	ap_int<32> tmp_sum=0;
 	FILTER_LOOP_HEIGHT:
+	ap_uint<24> bgr_val;
+if ((DEPTH_DST == XF_8UP) || (DEPTH_DST == XF_24UP))
+{
+	 in_step=8;
+	 out_step=8;
+}
+else
+{
+	in_step=8;
+	out_step=16;
+}
+for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=out_step)
+{
+	sum=0;temp=0;tmp_sum=0;
 	for(ap_int<8> m = 0; m < F_HEIGHT; m++)
 	{
+
 		FILTER_LOOP_WIDTH:
 		for(ap_int<8> n = 0; n < F_WIDTH; n++)
 		{
 			XF_PTNAME(DEPTH_SRC) src_v = _kernel_pixel[F_HEIGHT-m-1][F_WIDTH-1-n];
+
 			short int filter_v = _kernel_filter[m][n];
-			temp = src_v * filter_v;
+			temp = src_v.range(p+(in_step-1),p) * filter_v;
 			sum = sum + temp;
+
 		}
 	}
+	p=p+8;
+	tmp_sum = sum >> shift;
 
-	ap_int<32> tmp_sum = sum >> shift;
-	if(DEPTH_DST == XF_8UP)
+	if((DEPTH_DST == XF_8UP)||(DEPTH_DST == XF_24UP))
 	{
-		if(tmp_sum > ((1 << (XF_PIXELDEPTH(DEPTH_DST))) - 1))
+		if(tmp_sum > ((1 << (8)) - 1))
 		{
-			out = ((1 << (XF_PIXELDEPTH(DEPTH_DST))) - 1);
+			out.range(k+7,k) = ((1 << (8)) - 1);
 		}
 		else if(tmp_sum < 0)
 		{
-			out = 0;
+			out.range(k+7,k) = 0;
 		}
 		else
 		{
-			out = tmp_sum;
+			out.range(k+7,k) = tmp_sum;
 		}
 	}
-	else if(DEPTH_DST == XF_16SP)
+	else if((DEPTH_DST == XF_16SP)||(DEPTH_DST == XF_48SP))
 	{
-		if(tmp_sum > ((1 << (XF_PIXELDEPTH(DEPTH_DST)-1)) - 1))
+		if(tmp_sum > ((1 << (16)) - 1))
 		{
-			out = ((1 << (XF_PIXELDEPTH(DEPTH_DST)-1)) - 1);
+			out.range(k+15,k) = ((1 << (16)) - 1);
 		}
-		else if(tmp_sum < -(1 << (XF_PIXELDEPTH(DEPTH_DST)-1)))
+		else if(tmp_sum < -(1 << (16)))
 		{
-			out = -(1 << (XF_PIXELDEPTH(DEPTH_DST)-1));
+			out.range(k+15,k) = -(1 << (16));
 		}
 		else
 		{
-			out = tmp_sum;
+			out.range(k+15,k) = tmp_sum;
 		}
 	}
+
 }
 
+}
 static int borderInterpolate( int p, int len, int borderType )
 {
 #pragma HLS INLINE
@@ -540,9 +566,8 @@ static int borderInterpolate( int p, int len, int borderType )
 }
 
 
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC, int K_HEIGHT, int K_WIDTH>
-static void xFFilter2Dkernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >	&_src,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >	&_dst,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC, int K_HEIGHT, int K_WIDTH, int PLANES>
+static void xFFilter2Dkernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
 		short int _filter_kernel[K_HEIGHT][K_WIDTH],
 		unsigned char shift, uint16_t rows, uint16_t cols)
 
@@ -578,6 +603,7 @@ static void xFFilter2Dkernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >	&_src,
 	ap_uint<13> ImagLocx=0,ImagLocy =0;*/
 
 	uint16_t i,j;
+	int rd_ind=0, wr_ind=0;
 	uint16_t anchorx = K_WIDTH >> 1,anchory = K_HEIGHT >> 1;
 	int16_t ImagLocx=0,ImagLocy =0;
 
@@ -585,7 +611,7 @@ static void xFFilter2Dkernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >	&_src,
 	for( i = 0; i < heightloop; i++) {
 		COL_LOOP:
 		for ( j = 0; j < widthloop;j++) {
-			// This DEPENDENCE pragma is necessary becxFse the border mode handling is not affine.
+			// This DEPENDENCE pragma is necessary because the border mode handling is not affine.
 #pragma HLS DEPENDENCE array inter false
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS PIPELINE
@@ -625,7 +651,9 @@ static void xFFilter2Dkernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >	&_src,
 						}
 					}
 					XF_SNAME(WORDWIDTH_SRC) temp=0;
-					_src>>temp;
+					temp = (_src_mat.data[rd_ind]);
+					rd_ind++;
+
 					k_buf[0][x]=temp;
 				}
 				else if(ImagLocx < 0)
@@ -667,112 +695,62 @@ static void xFFilter2Dkernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) >	&_src,
 			if(i >= (K_HEIGHT + K_HEIGHT - 1) && j >= (K_WIDTH-1))
 			{
 				XF_PTNAME(DEPTH_DST) temp;
-				xFApplyFilter2D<DEPTH_SRC,DEPTH_DST,K_HEIGHT,K_WIDTH>(src_kernel_win,_filter_kernel,temp,shift);
+				xFApplyFilter2D<DEPTH_SRC,DEPTH_DST,K_HEIGHT,K_WIDTH,PLANES>(src_kernel_win,_filter_kernel,temp,shift);
 				XF_SNAME(WORDWIDTH_DST) temp1 = temp;
-				_dst<<temp1;
+				(_dst_mat.data[wr_ind]) = temp1;
+				wr_ind++;
+
 			}
 		}
 	}
 }
 
-/******************************************************************************************
- * xFCustomConvKernel : Calls the xFCustomConvKernel depend upon the configuration.
- *
- * _src			->  Input image of type 8U
- * _filter		->  kernel provided by the user of type 16S
- * _dst			->  output image after applying the filter operation, of type 8U or 16S
- * shift		->  Fixed point format of the filter co-efficients for unity gain filter
- * _border_type ->  Type of border processing (ALLOWED ONLY BORDER CONSTANT)
- *******************************************************************************************/
-template<int filter_height, int filter_width,int ROWS, int COLS,
-int DEPTH_SRC, int DEPTH_DST,int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void xFCustomConvolution(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _src,
-		short int _filter[][filter_width],
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _dst,
-		unsigned char _shift, int _border_type,unsigned short img_width,unsigned short img_height)
-{
 
-
-
-	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
-	img_width = img_width >>XF_BITSHIFT(NPC);
-
-	if(NPC==XF_NPPC8){
-
-		xFCustomConvolutionKernel<ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC)),
-				filter_height,
-				filter_width,
-				(XF_NPIXPERCYCLE(NPC) - ((filter_width >> 1) % XF_NPIXPERCYCLE(NPC))),
-				(( filter_width >> 1) % XF_NPIXPERCYCLE(NPC)),
-				(((filter_width >> 1) - 1) >> XF_BITSHIFT(NPC))> (_src,_filter,_dst,_shift,img_width,img_height);
-
-	}
-
-	else if(NPC==XF_NPPC1)
-	{
-		xFFilter2Dkernel<ROWS,COLS,DEPTH_SRC,DEPTH_DST,XF_NPPC1,WORDWIDTH_SRC,WORDWIDTH_DST,COLS,filter_height,filter_width>(_src,_dst,_filter,_shift,img_height,img_width);
-	}
-}
 
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,filter:RANDOM,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
-
-
 template<int BORDER_TYPE,int FILTER_WIDTH,int FILTER_HEIGHT, int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
 void filter2D(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,short int filter[FILTER_HEIGHT*FILTER_WIDTH],unsigned char _shift)
 {
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
-
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
 
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
-
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	unsigned short img_width = _src_mat.cols >>XF_BITSHIFT(NPC);
+	unsigned short img_height = _src_mat.rows;
 
 	short int lfilter[FILTER_HEIGHT][FILTER_WIDTH];
-#pragma HLS ARRAY_PARTITION variable=lfilter complete dim=0
-	for(unsigned char i = 0; i < FILTER_HEIGHT; i++)
-	{
-		for(unsigned char j = 0; j < FILTER_WIDTH; j++)
+	#pragma HLS ARRAY_PARTITION variable=lfilter complete dim=0
+		for(unsigned char i = 0; i < FILTER_HEIGHT; i++)
 		{
-			lfilter[i][j]=filter[i*FILTER_WIDTH+j];
+			for(unsigned char j = 0; j < FILTER_WIDTH; j++)
+			{
+				lfilter[i][j]=filter[i*FILTER_WIDTH+j];
+			}
 		}
+
+
+	if(NPC==XF_NPPC8){
+
+		xFCustomConvolutionKernel<SRC_T, DST_T,ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS >> XF_BITSHIFT(NPC)),
+				FILTER_HEIGHT, FILTER_WIDTH, (XF_NPIXPERCYCLE(NPC) - ((FILTER_WIDTH >> 1) % XF_NPIXPERCYCLE(NPC))),
+				(( FILTER_WIDTH >> 1) % XF_NPIXPERCYCLE(NPC)), (((FILTER_WIDTH >> 1) - 1) >> XF_BITSHIFT(NPC))>
+		(_src_mat,lfilter,_dst_mat,_shift,img_width,img_height);
+
+	}
+
+	else if(NPC==XF_NPPC1)
+	{
+		xFFilter2Dkernel<SRC_T, DST_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),COLS,FILTER_HEIGHT,FILTER_WIDTH, XF_CHANNELS(SRC_T,NPC)>
+		(_src_mat,_dst_mat,lfilter,_shift,img_height,img_width);
 	}
 
 
-
-
-	xFCustomConvolution<FILTER_HEIGHT,FILTER_WIDTH,ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC)>(_src,lfilter,_dst,_shift,BORDER_TYPE,_src_mat.cols,_src_mat.rows);
-
-
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-		}
 	}
-
-}
 }
 #endif // _XF_CUSTOM_CONVOLUTION_HPP_
+
 

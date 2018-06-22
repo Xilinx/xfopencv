@@ -1,0 +1,20 @@
+{
+    "example" : "harris - File I/O",
+    "overview" : "harris",
+    "board" : [
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "cornerHarris",
+            "location" : "<LIBRARY>/include/features/xf_harris.hpp-hls-tcldirective.tcl",
+            "clkid" : "2"
+        }
+    ]
+}

@@ -157,14 +157,19 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 #pragma HLS pipeline ii=1
 #pragma HLS LOOP_FLATTEN OFF
 			ap_fixed<FLOW_WIDTH,FLOW_INT> flowU, flowV;
+			//read the components needed to compute the hessian matrix
+			// Sigma Ix^2 Sigma Iy^2 Sigma Ix*Iy Sigma Ix*It Sigma Iy*It
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIx2 = strmSigmaIx2.read();
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIy2 = strmSigmaIy2.read();
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIxIy = strmSigmaIxIy.read();
 			ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> sigmaItIx = strmSigmaItIx.read();
 			ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> sigmaItIy = strmSigmaItIy.read();
 			
+			//Compute determinant IxIx * IyIy - IxIy*IxIy
 			ap_fixed< ((SIXIY_WIDTH+1)<<1) + 3 , ((SIXIY_INT+1)<<1) +3 > S12sq = sigmaIxIy*sigmaIxIy;
 			ap_fixed<DET_WIDTH,DET_INT> det = (sigmaIx2*sigmaIy2 - S12sq);
+
+			//For eigen value computation
 			ap_fixed<SIXIY_WIDTH+1,SIXIY_INT+1> S1122 = (sigmaIx2 + sigmaIy2);
 			ap_fixed< (SIXIY_WIDTH+1)<<1 , (SIXIY_INT+1)<<1 > S1122sq = S1122*S1122;
 			S12sq = (S12sq << 2) + S1122sq; //multiply by 4
@@ -175,9 +180,11 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 			// float  eig_comp =  (((A11 + A22) - sqrt( ((A11 + A22)*(A11 + A22)) + 4.0*A12*A12))/(2.0*WINSIZE*WINSIZE));
 			eig_comp = eig_comp * div_by_eig;
 			eig_comp = (eig_comp < 0)? -eig_comp : eig_comp;
+			//end eigen value computation
 			
 			bool tflagu;
 			bool tflagv;
+			//if determinant is 0, make the flow vectors 0
 			if ((det == 0) || (eig_comp < 0.025)) {
 				flowU = (ap_fixed<FLCMP_WIDTH,FLCMP_INT>)0;
 				flowV = (ap_fixed<FLCMP_WIDTH,FLCMP_INT>)0;
@@ -186,10 +193,13 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 				tflagv = 0;
 			}
 			else {	
+
 				ap_fixed<DIVBY_WIDTH,DIVBY_INT> divideBy;
 				ap_fixed<FLCMP_WIDTH,FLCMP_INT> tempU;
 				ap_fixed<FLCMP_WIDTH,FLCMP_INT> tempV; 
+				//compute the inverse of the determinant
 				divideBy = (ap_fixed<DIVBY_WIDTH,DIVBY_INT>)(1.0)/((ap_fixed<DET_WIDTH,DET_INT>)det);
+				//current flow vector output = inverse([IxIx IxIy; IxIy IyIy])*[-IxIt; -IyIt]
 				tempU =  ((ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIy2*sigmaItIx - (ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIxIy*sigmaItIy)*(divideBy);
 				tempV =  ((ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIx2*sigmaItIy - (ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIxIy*sigmaItIx)*(divideBy);
 				flowU = ap_fixed<FLOW_WIDTH,FLOW_INT>(tempU);
@@ -197,6 +207,8 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 				tflagu = 1;
 				tflagv = 1;
 			}
+			//if the init flag is set to 0, for the 1st iteration in the least image size, do not accumulate the flow vectors
+			//if the init flag is 1, accumulate the previously computed flow vectors
 			if(init_flag == (ap_uint<1>)0)
 			{
 				flowU += ap_fixed<FLOW_WIDTH,FLOW_INT>(streamflowU_in.read());
@@ -214,6 +226,7 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 	  fprintf(fpglxup,"%12.8f ",float(flowU));
 	  fprintf(fpglyup,"%12.8f ",float(flowV));
 #endif
+			//output the flow vectors
 			strmFlowU.write((ap_fixed<FLOW_WIDTH,FLOW_INT>)flowU);
 			strmFlowV.write((ap_fixed<FLOW_WIDTH,FLOW_INT>)flowV);
 		}

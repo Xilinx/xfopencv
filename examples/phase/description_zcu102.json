@@ -1,0 +1,21 @@
+{
+    "example" : "phase - File I/O",
+    "overview" : "phase",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "phase",
+            "location" : "<LIBRARY>/include/core/xf_phase.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

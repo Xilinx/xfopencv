@@ -43,12 +43,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf {
 
-template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int SRC_T, int DST_T, int ROWS, int COLS, int NPC,int PLANES, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 
 int AccumulateImageKernel(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,uint16_t height,uint16_t width,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _dst)
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst,
+		uint16_t height,uint16_t width)
 {
 	ap_uint<13> i,j,k,l;
 	XF_SNAME(WORDWIDTH_DST) pxl_pack_out;
@@ -64,10 +63,10 @@ int AccumulateImageKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 			int y;
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(_src1.read());
-			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(_src2.read());
+			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);
+			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.data[i*width+j]);
 			ProcLoop:
-			for(  k = 0, l = 0; k < (8<<XF_BITSHIFT(NPC)); k+=XF_IN_STEP, l+=XF_OUT_STEP)
+			for(  k = 0, l = 0; k < ((8<< XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP, l+=XF_OUT_STEP)
 			{
 #pragma HLS UNROLL
 				XF_SNAME(DEPTH_SRC) pxl1 = pxl_pack1.range(k+7, k);
@@ -77,33 +76,12 @@ int AccumulateImageKernel(
 			}
 
 
-			_dst.write((XF_SNAME(WORDWIDTH_DST))pxl_pack_out);
+			dst.data[i*width+j]= ((XF_SNAME(WORDWIDTH_DST))pxl_pack_out);
 
 		}
 	}
 	return 0;
 }
-
-template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-int xFAccumulateImage(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,uint16_t height,uint16_t width)
-{
-
-
-	assert(DEPTH_SRC == XF_8UP && "Input Depth must be XF_8UP");
-	assert(DEPTH_DST == XF_16UP && "Input Depth must be XF_16UP");
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	uint16_t lwidth = width >> XF_BITSHIFT(NPC);
-
-
-	AccumulateImageKernel<ROWS,COLS,NPC,DEPTH_SRC,DEPTH_DST,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src1, _src2, height, lwidth, _dst);
-
-
-}
-
 
 //#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
@@ -117,40 +95,19 @@ int xFAccumulateImage(
 template<int SRC_T, int DST_T,int ROWS, int COLS, int NPC=1>
 void accumulate(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst)
 {
-	hls::stream<XF_TNAME(SRC_T, NPC)> _src1;
-	hls::stream<XF_TNAME(SRC_T, NPC)> _src2;
-	hls::stream<XF_TNAME(DST_T, NPC)> _dst;
+
+	assert(((src1.rows <= ROWS ) && (src1.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((src2.rows <= ROWS ) && (src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((dst.rows <= ROWS ) && (dst.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((src1.rows == src2.rows ) && (src1.cols == src2.cols)) && "Both input images should have same size");
+	assert(((src1.rows == dst.rows ) && (src1.cols == dst.cols)) && "Input and output image should be of same size");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) && "NPC must be XF_NPPC1, XF_NPPC8 ");
+
+	uint16_t lwidth = src2.cols >> XF_BITSHIFT(NPC);
+
 #pragma HLS INLINE OFF
-#pragma HLS dataflow
 
-	Read_Loop:
-	for(int i=0; i<src1.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(src1.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			_src1.write( *(src1.data + i*(src1.cols>>(XF_BITSHIFT(NPC))) +j) );
-			_src2.write( *(src2.data + i*(src1.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
-
-	xFAccumulateImage<ROWS,COLS,NPC,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC)> (_src1,_src2,_dst,src1.rows,src1.cols);
-
-	for(int i=0; i<dst.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(dst.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			*(dst.data + i*(dst.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
-
-		}
-	}
+	AccumulateImageKernel<SRC_T, DST_T, ROWS,COLS,NPC,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS>>XF_BITSHIFT(NPC))> (src1,src2,dst,src1.rows,lwidth);
 
 }
 }

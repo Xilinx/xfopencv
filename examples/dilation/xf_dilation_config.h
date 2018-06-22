@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -40,8 +40,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 /* config width and height */
-#define WIDTH 	1920
-#define HEIGHT	1080
+#define WIDTH 	3840
+#define HEIGHT	2160
 
 
 /*  define the input and output types  */
@@ -53,7 +53,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPC1 XF_NPPC8
 #endif
 
-void dilation_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst);
+#define TYPE XF_8UC1
+
+void dilation_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst);
 
 
 #endif // _XF_DILATION_CONFIG_H_

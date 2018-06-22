@@ -41,15 +41,16 @@
 #include "imgproc/xf_histogram.hpp"
 
 /**
- *  auEqualize : Computes the histogram and performs
+ *  xfEqualize : Computes the histogram and performs
  *               Histogram Equalization
- *  _src_mat	: Input image
+ *  _src1	: Input image
  *  _dst_mat	: Output image
  */
 namespace xf{
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int SRC_TC>
-void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream, hls::stream<XF_SNAME(WORDWIDTH)> &out_strm,uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int SRC_TC>
+void xFEqualize(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,uint32_t hist_stream[0][256], xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst_mat,
+		uint16_t img_height, uint16_t img_width)
 {
 	XF_SNAME (WORDWIDTH)
 	in_buf, temp_buf;
@@ -63,7 +64,7 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 
 	/*	Normalization	*/
 	uint32_t temp_val =(uint32_t) (img_height * (img_width << XF_BITSHIFT(NPC)));
-	uint32_t init_val = (uint32_t)(temp_val - hist_stream[0]);
+	uint32_t init_val = (uint32_t)(temp_val - hist_stream[0][0]);
 	uint32_t scale;
 	if (init_val == 0) {
 		scale = 0;
@@ -79,11 +80,12 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 	{
 #pragma HLS LOOP_TRIPCOUNT min=256 max=256
 #pragma HLS PIPELINE
-		temp_sum = (uint32_t)temp_sum + (uint32_t)hist_stream[i];
+		temp_sum = (uint32_t)temp_sum + (uint32_t)hist_stream[0][i];
 		uint64_t sum = (uint64_t)((uint64_t)temp_sum * (uint64_t)scale1);
 		sum = (uint64_t)(sum + 0x40000000);
 		cum_hist[i] = sum >> 31;
 	}
+
 
 	for (ap_uint<9> i = 0; i < 256; i++) {
 #pragma HLS PIPELINE
@@ -94,13 +96,16 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 		}
 	}
 
+
+
+
 	NORMALISE_ROW_LOOP: for (ap_uint<13> row = 0; row < img_height; row++) {
 #pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
 		NORMALISE_COL_LOOP: for (ap_uint<13> col = 0; col < img_width; col++) {
 #pragma HLS LOOP_TRIPCOUNT min=SRC_TC max=SRC_TC
 #pragma HLS PIPELINE
 #pragma HLS LOOP_FLATTEN OFF
-			in_buf = in_strm2.read();
+			in_buf = _src1.data[row*img_width+col];
 			Normalise_Extract: for (ap_uint<9> i = 0, j = 0; i < (8 << XF_BITSHIFT(NPC));
 					j++, i += 8) {
 #pragma HLS DEPENDENCE variable=tmp_cum_hist array intra false
@@ -110,36 +115,11 @@ void xFEqualize(hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2,uint32_t* hist_stream
 				val = in_buf.range(i + 7, i);
 				temp_buf(i + 7, i) = tmp_cum_hist[j][val];
 			}
-			out_strm.write(temp_buf);
+			_dst_mat.data[row*img_width+col] = temp_buf;
 		}
 	}
 }
 
-template<int SRC_T,int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFHistEqualize(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,hls::stream<XF_SNAME(WORDWIDTH)> &in_strm2, hls::stream<XF_SNAME(WORDWIDTH)> &out_strm, uint16_t img_height,uint16_t img_width)
- {
-
-#pragma HLS inline
-
-	assert(
-			((img_height <= ROWS) && (img_width <= COLS))
-					&& "ROWS and COLS should be greater than input image");
-
-	assert((DEPTH == XF_8UP) && "DEPTH must be of type AU_8UP");
-
-	assert(
-			((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
-					&& " NPC must be AU_NPPC1, AU_NPPC8");
-
-
-	uint32_t histogram[256];
-
-	xFHistogram<SRC_T,ROWS, COLS, DEPTH, NPC, WORDWIDTH>(_src_mat, histogram,img_height, img_width);
-
-	img_width = img_width >> XF_BITSHIFT(NPC);
-
-	xFEqualize<ROWS, COLS, DEPTH, NPC, WORDWIDTH, (COLS >> XF_BITSHIFT(NPC))>(in_strm2,histogram, out_strm, img_height, img_width);
-}
 
 /****************************************************************
  * equalizeHist : Wrapper function which calls the main kernel
@@ -159,39 +139,25 @@ template<int SRC_T, int ROWS, int COLS, int NPC = 1>
 void equalizeHist(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS inline off
-#pragma HLS dataflow
-	hls::stream<XF_TNAME(SRC_T, NPC)> _src_stream;
-	hls::stream<XF_TNAME(SRC_T, NPC)> _dst_stream;
+
+	uint16_t img_height = _src1.rows;
+	uint16_t img_width = _src1.cols;
+	assert(((img_height <= ROWS) && (img_width <= COLS))
+					&& "ROWS and COLS should be greater than input image");
+
+	assert((SRC_T == XF_8UC1) && "Type must be of XF_8UC1");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
+					&& " NPC must be XF_NPPC1, XF_NPPC8");
+
+	uint32_t histogram[1][256];
+
+	img_width = img_width >> XF_BITSHIFT(NPC);
+	xFHistogramKernel<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), ((COLS>>(XF_BITSHIFT(NPC)))>>1), XF_CHANNELS(SRC_T,NPC)>
+		(_src, histogram, img_height, img_width);
 
 
-
-	Read_Loop:
-	for(int i=0; i<_src1.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src1.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			_src_stream.write( *(_src1.data + i*(_src1.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
-
-	xFHistEqualize<SRC_T,ROWS, COLS, XF_DEPTH(SRC_T, NPC), NPC, XF_WORDWIDTH(SRC_T, NPC) >(_src,_src_stream, _dst_stream, _src.rows,_src.cols);
-
-	for(int i=0; i<_dst.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			#pragma HLS loop_flatten off
-			*(_dst.data + i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) = _dst_stream.read();
-
-		}
-	}
+	xFEqualize<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), (COLS >> XF_BITSHIFT(NPC))>
+	(_src1,histogram, _dst, img_height, img_width);
 
 }
 }//namespace

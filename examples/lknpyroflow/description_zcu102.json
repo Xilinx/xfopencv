@@ -1,0 +1,21 @@
+{
+    "example" : "lknpyroflow - File I/O",
+    "overview" : "lknpyroflow",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "DenseNonPyrLKOpticalFlow",
+            "location" : "<LIBRARY>/include/imgproc/xf_dense_npyr_optical_flow.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

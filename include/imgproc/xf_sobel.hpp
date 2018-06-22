@@ -64,7 +64,7 @@ XF_PTNAME(DEPTH_DST) xFGradientX3x3(
 #pragma HLS INLINE off
 
 	XF_PTNAME(DEPTH_DST) g_x = 0;
-
+	//ap_uint<8> g_x = 0;
 	short int M00 = ((short int)m0 << 1);
 	short int M01 = ((short int)m2 << 1);
 	short int A00 = (t2 + b2);
@@ -77,15 +77,16 @@ XF_PTNAME(DEPTH_DST) xFGradientX3x3(
 
 	g_x = (XF_PTNAME(DEPTH_DST))out_pix;
 
-	if(DEPTH_DST == XF_8UC1){
-		if(out_pix < 0)
-		{
-			g_x = 0;
-		}
-		else if(out_pix>255)
-		{
-			g_x = 255;
-		}
+	if((DEPTH_DST == XF_8UP) || (DEPTH_DST == XF_24UP))
+	{
+				if(out_pix < 0)
+				{
+					g_x = 0;
+				}
+				else if(out_pix>255)
+				{
+					g_x = 255;
+				}
 	}
 
 	return g_x;
@@ -123,7 +124,8 @@ XF_PTNAME(DEPTH_DST) xFGradientY3x3(
 
 	g_y = (XF_PTNAME(DEPTH_DST))out_pix;
 
-			if(DEPTH_DST == XF_8UC1){
+	if((DEPTH_DST == XF_8UP) || (DEPTH_DST == XF_24UP))
+	{
 				if(out_pix < 0)
 				{
 					g_y = 0;
@@ -132,7 +134,7 @@ XF_PTNAME(DEPTH_DST) xFGradientY3x3(
 				{
 					g_y = 255;
 				}
-			}
+	}
 	return g_y;
 		}
 
@@ -140,7 +142,7 @@ XF_PTNAME(DEPTH_DST) xFGradientY3x3(
  * xFSobel3x3 : Applies the mask and Computes the gradient values
  *
  */
-template<int NPC,int DEPTH_SRC,int DEPTH_DST>
+template<int PLANES,int NPC,int DEPTH_SRC,int DEPTH_DST>
 void xFSobel3x3(
 		XF_PTNAME(DEPTH_DST) *GradientvaluesX,
 		XF_PTNAME(DEPTH_DST) *GradientvaluesY,
@@ -150,19 +152,34 @@ void xFSobel3x3(
 {
 #pragma HLS INLINE off
 
+	int STEP;
+	if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+	{
+		  STEP=16;
+	}
+	else
+	{
+		  STEP=8;
+	}
+
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++)
 	{
+		int p=0;
 #pragma HLS UNROLL
-		GradientvaluesX[j] = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
-				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
-				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
-				src_buf3[j], src_buf3[j+1],	src_buf3[j+2]);
+		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+		{
+		GradientvaluesX[j].range(p+(STEP-1) ,p) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
+				src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
+				src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
+				src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
 
-		GradientvaluesY[j] = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
-				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
-				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
-				src_buf3[j], src_buf3[j+1],	src_buf3[j+2]);
+		GradientvaluesY[j].range(p+(STEP-1) ,p) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
+				src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
+				src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
+				src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
+		p+=STEP;
+		}
 	}
 }
 
@@ -170,7 +187,7 @@ void xFSobel3x3(
 /**************************************************************************************
  * ProcessSobel3x3 : Computes gradients for the column input data
  **************************************************************************************/
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
@@ -212,7 +229,7 @@ void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf3[2] = buf2;
 		}
 
-		xFSobel3x3<NPC, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
+		xFSobel3x3<PLANES,NPC, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
 				src_buf1, src_buf2, src_buf3);
 
 		if(col == 0)
@@ -258,7 +275,7 @@ void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_gradx_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_grady_mat, uint16_t img_height, uint16_t img_width)
@@ -321,7 +338,7 @@ void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 
 		/***********		Process complete row			**********/
 		P0 = P1 = 0;
-		ProcessSobel3x3<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>
+		ProcessSobel3x3<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>
 		(_src_mat, _gradx_mat, _grady_mat, buf, src_buf1, src_buf2, src_buf3, GradientValuesX, GradientValuesY, P0, P1, img_width, img_height, row_ind, shift_x, shift_y, tp, mid, bottom, row);
 
 		/*			Last column border care	for RO & PO Case			*/
@@ -340,15 +357,28 @@ void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 		}
 		else							/*			Last column border care	for NO Case			*/
 		{
-			GradientValuesX[0] = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
-					src_buf1[buf_size-3], src_buf1[buf_size-2], 0,
-					src_buf2[buf_size-3], src_buf2[buf_size-2], 0,
-					src_buf3[buf_size-3], src_buf3[buf_size-2], 0);
+			int STEP,q=0;
+			if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+			{
+				  STEP=16;
+			}
+			else
+			{
+				  STEP=8;
+			}
+			for(ap_uint<7> i=0,k=0;i< PLANES;i++,k+=8)
+			{
+			GradientValuesX[0].range(q+(STEP-1) ,q) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
+					src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+					src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+					src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
 
-			GradientValuesY[0] = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
-					src_buf1[buf_size-3], src_buf1[buf_size-2], 0,
-					src_buf2[buf_size-3], src_buf2[buf_size-2], 0,
-					src_buf3[buf_size-3], src_buf3[buf_size-2], 0);
+			GradientValuesY[0].range(q+(STEP-1) ,q) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
+					src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+					src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+					src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
+			 q+=STEP;
+			}
 		}
 
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], P0, 0, 1, shift_x);
@@ -389,23 +419,35 @@ void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
  *       --- ---- ---- ---- ---
  ****************************************************************/
 
-template<int DEPTH_SRC, int DEPTH_DST>
+template<int PLANES,int DEPTH_SRC, int DEPTH_DST>
 XF_PTNAME(DEPTH_DST) xFGradientX5x5(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DEPTH_SRC) *src_buf2,
 									XF_PTNAME(DEPTH_SRC) *src_buf3, XF_PTNAME(DEPTH_SRC) *src_buf4,	XF_PTNAME(DEPTH_SRC) *src_buf5)
 {
 #pragma HLS INLINE off
-	XF_PTNAME(DEPTH_DST) g_x = 0;
-	short int M00 = (short int)(((short int)src_buf1[1] + (short int)src_buf5[1]) << 1);
-	short int M01 = (short int)((short int)src_buf1[4] + (short int)src_buf5[4])-((short int)src_buf1[0] + (short int)src_buf5[0]);
-	short int A00 = (short int)(((short int)src_buf1[3] + (short int)src_buf5[3]) << 1);
-	short int M02 = (short int)(((short int)src_buf2[0] + (short int)src_buf4[0]) << 2);
-	short int M03 = (short int)((short int)src_buf2[1] + (short int)src_buf4[1]) << 3;
-	short int A01 = (short int)((short int)src_buf2[3] + (short int)src_buf4[3]) << 3;
-	short int A02 = (short int)((short int)src_buf2[4] + (short int)src_buf4[4]) << 2;
-	short int M04 = (short int)src_buf3[0] * 6;
-	short int M05 = (short int)src_buf3[1] * 12;
-	short int A03 = (short int)src_buf3[3] * 12;
-	short int A04 = (short int)src_buf3[4] * 6;
+	XF_PTNAME(DEPTH_DST) g_x = 0,out_val=0;
+	int STEP,p=0;
+	if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+	{
+		  STEP=16;
+	}
+	else
+	{
+		  STEP=8;
+	}
+
+	for(int i=0,k=0;i< PLANES;i++,k+=8)
+	{
+	short int M00 = (short int)(((short int)src_buf1[1].range(k+7,k) + (short int)src_buf5[1].range(k+7,k)) << 1);
+	short int M01 = (short int)((short int)src_buf1[4].range(k+7,k) + (short int)src_buf5[4].range(k+7,k))-((short int)src_buf1[0].range(k+7,k) + (short int)src_buf5[0].range(k+7,k));
+	short int A00 = (short int)(((short int)src_buf1[3].range(k+7,k) + (short int)src_buf5[3].range(k+7,k)) << 1);
+	short int M02 = (short int)(((short int)src_buf2[0].range(k+7,k) + (short int)src_buf4[0].range(k+7,k)) << 2);
+	short int M03 = (short int)((short int)src_buf2[1].range(k+7,k) + (short int)src_buf4[1].range(k+7,k)) << 3;
+	short int A01 = (short int)((short int)src_buf2[3].range(k+7,k) + (short int)src_buf4[3].range(k+7,k)) << 3;
+	short int A02 = (short int)((short int)src_buf2[4].range(k+7,k) + (short int)src_buf4[4].range(k+7,k)) << 2;
+	short int M04 = (short int)src_buf3[0].range(k+7,k) * 6;
+	short int M05 = (short int)src_buf3[1].range(k+7,k) * 12;
+	short int A03 = (short int)src_buf3[3].range(k+7,k) * 12;
+	short int A04 = (short int)src_buf3[4].range(k+7,k) * 6;
 	short int S00 = M00 + M02;
 	short int S01 = M03 + M04 + M05;
 	short int A0 = A00 + A01;
@@ -417,13 +459,17 @@ XF_PTNAME(DEPTH_DST) xFGradientX5x5(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 
 	g_x = (XF_PTNAME(DEPTH_DST))out_x;
 
-	if(DEPTH_DST == XF_8UC1){
+	if((DEPTH_DST == XF_8UP) ||(DEPTH_DST == XF_24UP))
+	{
 		if(out_x < 0)
 			g_x = 0;
 		else if (out_x > 255)
 			g_x = 255;
 	}
-	return g_x;
+	out_val.range(p+(STEP-1),p)=g_x;
+	p+=STEP;
+	}
+	return out_val;
 }
 /****************************************************************
  * Sobel Filter Y-Gradient used is 5x5
@@ -441,47 +487,63 @@ XF_PTNAME(DEPTH_DST) xFGradientX5x5(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
  *       --- ---- ---- ---- --- ---
  ******************************************************************/
 
-template<int DEPTH_SRC, int  DEPTH_DST>
+template<int PLANES,int DEPTH_SRC, int  DEPTH_DST>
 XF_PTNAME(DEPTH_DST) xFGradientY5x5(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DEPTH_SRC) *src_buf2,
 									XF_PTNAME(DEPTH_SRC) *src_buf3, XF_PTNAME(DEPTH_SRC) *src_buf4,	XF_PTNAME(DEPTH_SRC) *src_buf5)
 {
 #pragma HLS INLINE off
-	XF_PTNAME(DEPTH_DST) g_y = 0;
-	short int M00 = ((short int)src_buf5[0] + (short int)src_buf5[4]) - ((short int)src_buf1[0] + (short int)src_buf1[4]);
-	short int M01 = (short int)(((short int)src_buf1[1] + (short int)src_buf1[3]) << 2);
-	short int A00 = (short int)(((short int)src_buf5[1] + (short int)src_buf5[3]) << 2);
-	short int M02 = (short int)(((short int)src_buf2[0] + (short int)src_buf2[4]) << 1);
-	short int A01 = (short int)(((short int)src_buf4[0] + (short int)src_buf4[4]) << 1);
-	short int M03 = (short int)(((short int)src_buf2[1] + (short int)src_buf2[3]) << 3);
-	short int A02 = (short int)(((short int)src_buf4[1] + (short int)src_buf4[3]) << 3);
-	short int M04 = (short int)(src_buf1[2] * 6);
-	short int M05 = (short int)(src_buf2[2] * 12);
-	short int A03 = (short int)(src_buf4[2] * 12);
-	short int A04 = (short int)(src_buf5[2] * 6);
-	short int S00 = M01 + M02 + M03;
-	short int S01 = M04 + M05;
-	short int A0 = A00 + A01;
-	short int A1 = A02 + A03;
-	short int A2 = A04 + M00;
-	short int FA = A0 + A1 + A2;
-	short int FS = S00 + S01;
-	short int out_y = FA - FS;
-
-	g_y = (XF_PTNAME(DEPTH_DST))out_y;
-
-	if(DEPTH_DST == XF_8UC1){
-		if(out_y < 0)
-			g_y = 0;
-		else if (out_y > 255)
-			g_y = 255;
+	XF_PTNAME(DEPTH_DST) g_y = 0,out_val=0;
+	int STEP,p=0;
+	if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+	{
+		  STEP=16;
 	}
-	return g_y;
+	else
+	{
+		  STEP=8;
+	}
+
+	for(int i=0,k=0;i<PLANES;i++,k+=8)
+	{
+		short int M00 = ((short int)src_buf5[0].range(k+7,k) + (short int)src_buf5[4].range(k+7,k)) - ((short int)src_buf1[0].range(k+7,k) + (short int)src_buf1[4].range(k+7,k));
+		short int M01 = (short int)(((short int)src_buf1[1].range(k+7,k) + (short int)src_buf1[3].range(k+7,k)) << 2);
+		short int A00 = (short int)(((short int)src_buf5[1].range(k+7,k) + (short int)src_buf5[3].range(k+7,k)) << 2);
+		short int M02 = (short int)(((short int)src_buf2[0].range(k+7,k) + (short int)src_buf2[4].range(k+7,k)) << 1);
+		short int A01 = (short int)(((short int)src_buf4[0].range(k+7,k) + (short int)src_buf4[4].range(k+7,k)) << 1);
+		short int M03 = (short int)(((short int)src_buf2[1].range(k+7,k) + (short int)src_buf2[3].range(k+7,k)) << 3);
+		short int A02 = (short int)(((short int)src_buf4[1].range(k+7,k) + (short int)src_buf4[3].range(k+7,k)) << 3);
+		short int M04 = (short int)(src_buf1[2].range(k+7,k) * 6);
+		short int M05 = (short int)(src_buf2[2].range(k+7,k) * 12);
+		short int A03 = (short int)(src_buf4[2].range(k+7,k) * 12);
+		short int A04 = (short int)(src_buf5[2].range(k+7,k) * 6);
+		short int S00 = M01 + M02 + M03;
+		short int S01 = M04 + M05;
+		short int A0 = A00 + A01;
+		short int A1 = A02 + A03;
+		short int A2 = A04 + M00;
+		short int FA = A0 + A1 + A2;
+		short int FS = S00 + S01;
+		short int out_y = FA - FS;
+
+		g_y = (XF_PTNAME(DEPTH_DST))out_y;
+
+		if((DEPTH_DST == XF_8UP) ||(DEPTH_DST == XF_24UP))
+		{
+			if(out_y < 0)
+				g_y = 0;
+			else if (out_y > 255)
+				g_y = 255;
+		}
+		out_val.range(p+(STEP-1),p)=g_y;
+		p+=STEP;
+	}
+	return out_val;
 }
 /**
  * xFSobel5x5 : Applies the mask and Computes the gradient values
  *
  */
-template<int NPC, int DEPTH_SRC, int DEPTH_DST>
+template<int NPC,int PLANES, int DEPTH_SRC, int DEPTH_DST>
 void xFSobel5x5(
 		XF_PTNAME(DEPTH_DST) *GradientvaluesX,
 		XF_PTNAME(DEPTH_DST) *GradientvaluesY,
@@ -496,10 +558,23 @@ void xFSobel5x5(
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++ )
 	{
+//		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+//		{
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 #pragma HLS UNROLL
-		GradientvaluesX[j] = xFGradientX5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j], &src_buf3[j], &src_buf4[j], &src_buf5[j]);
-		GradientvaluesY[j] = xFGradientY5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j], &src_buf3[j], &src_buf4[j], &src_buf5[j]);
+		GradientvaluesX[j] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j], &src_buf3[j], &src_buf4[j], &src_buf5[j]);
+		GradientvaluesY[j] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j], &src_buf3[j], &src_buf4[j], &src_buf5[j]);
+//		GradientValuesX[0].range(q+(STEP-1) ,q) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
+//				src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+//				src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+//				src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
+//
+//		GradientValuesY[0].range(q+(STEP-1) ,q) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
+//				src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+//				src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+//				src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
+//		}
+
 	}
 }
 
@@ -507,7 +582,7 @@ void xFSobel5x5(
 /**************************************************************************************
  * ProcessSobel5x5 : Computes gradients for the column input data
  **************************************************************************************/
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+4],
@@ -556,7 +631,7 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf5[4] = buf4;
 
 		}
-		xFSobel5x5<NPC, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
+		xFSobel5x5<NPC,PLANES, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
 											  src_buf1, src_buf2, src_buf3, src_buf4, src_buf5);
 
 		for(ap_uint<4> i = 0; i < 4; i++)
@@ -613,7 +688,7 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS, int PLANES,int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat, uint16_t img_height, uint16_t img_width)
@@ -710,7 +785,7 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 
 		inter_valx = inter_valy = 0;
 
-		ProcessSobel5x5<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat,  _grady_mat, buf, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	GradientValuesX, GradientValuesY,
+		ProcessSobel5x5<ROWS, COLS, PLANES,DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat,  _grady_mat, buf, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	GradientValuesX, GradientValuesY,
 				inter_valx, inter_valy, img_width, img_height, row_ind, shift_x, shift_y, tp1, tp2, mid, bottom1, bottom2, row);
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
@@ -724,10 +799,10 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				src_buf5[i] = 0;
 			}
 
-			GradientValuesX[0] = xFGradientX5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
-			GradientValuesX[1] = xFGradientX5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[1], &src_buf2[1], &src_buf3[1], &src_buf4[1], &src_buf5[1]);
-			GradientValuesY[0] = xFGradientY5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
-			GradientValuesY[1] = xFGradientY5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[1], &src_buf2[1], &src_buf3[1], &src_buf4[1], &src_buf5[1]);
+			GradientValuesX[0] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesX[1] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[1], &src_buf2[1], &src_buf3[1], &src_buf4[1], &src_buf5[1]);
+			GradientValuesY[0] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesY[1] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[1], &src_buf2[1], &src_buf3[1], &src_buf4[1], &src_buf5[1]);
 
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], inter_valx, 0, 2, shift_x);
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], inter_valy, 0, 2, shift_y);
@@ -746,8 +821,8 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf4[buf_size-1] = 0;
 			src_buf5[buf_size-1] = 0;
 
-			GradientValuesX[0] = xFGradientX5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
-			GradientValuesY[0] = xFGradientY5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesX[0] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesY[0] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
 			inter_valx((max_loop-1), (max_loop-step)) = GradientValuesX[0];
 			inter_valy((max_loop-1), (max_loop-step)) = GradientValuesY[0];
 			_gradx_mat.write(inter_valx);
@@ -768,8 +843,8 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf4[buf_size-1] = 0;
 			src_buf5[buf_size-1] = 0;
 
-			GradientValuesX[0] = xFGradientX5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
-			GradientValuesY[0] = xFGradientY5x5<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesX[0] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
+			GradientValuesY[0] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
 
 			inter_valx((max_loop-1), (max_loop-step)) = GradientValuesX[0];
 			inter_valy((max_loop-1), (max_loop-step)) = GradientValuesY[0];
@@ -808,7 +883,7 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  *      |  -1 |  -4 |   -5 | 0 |   5 |  4 |  1 |
  *       --- ---- ---- ---- ---  ---- ---  ----
  ******************************************************************************/
-template<int DEPTH_SRC, int DEPTH_DST>
+template<int PLANES,int DEPTH_SRC, int DEPTH_DST>
 XF_PTNAME(DEPTH_DST) xFGradientX7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DEPTH_SRC) *src_buf2,
 		XF_PTNAME(DEPTH_SRC) *src_buf3, XF_PTNAME(DEPTH_SRC) *src_buf4,
 		XF_PTNAME(DEPTH_SRC) *src_buf5, XF_PTNAME(DEPTH_SRC) *src_buf6,
@@ -816,32 +891,41 @@ XF_PTNAME(DEPTH_DST) xFGradientX7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 		{
 #pragma HLS INLINE off
 #pragma HLS PIPELINE II=1
-
+int STEP,p=0;
 	XF_PTNAME(DEPTH_DST) g_x = 0;
+	XF_PTNAME(DEPTH_DST) val=0;
 
-
-
+	if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+	{
+		  STEP=16;
+	}
+	else
+	{
+		  STEP=8;
+	}
+for(int i=0,k=0;i<PLANES;i++,k+=8)
+{
 	int Res = 0;
-	ap_int<20> M00 = (ap_int<20>)(((ap_int<20>)src_buf1[6] + (ap_int<20>)src_buf7[6]) - ((ap_int<20>)src_buf1[0] + (ap_int<20>)src_buf7[0]));
-	ap_int<20> M01 = (ap_int<20>)(((ap_int<20>)src_buf1[1] + (ap_int<20>)src_buf7[1]) << 2);
-	ap_int<20> A00 = (ap_int<20>)(((ap_int<20>)src_buf1[5] + (ap_int<20>)src_buf7[5]) << 2);
-	ap_int<20> M02 = (ap_int<20>)(((ap_int<20>)src_buf1[2] + (ap_int<20>)src_buf7[2]) << 2) + (ap_int<20>)((ap_int<20>)src_buf1[2] + (ap_int<20>)src_buf7[2]);		//(src_buf1[2] + src_buf7[2]) * 5;
-	ap_int<20> A01 = (ap_int<20>)(((ap_int<20>)src_buf1[4] + (ap_int<20>)src_buf7[4]) << 2) + (ap_int<20>)src_buf1[4] + (ap_int<20>)src_buf7[4];			//(src_buf1[4] + src_buf7[4]) * 5;
-	ap_int<20> M03 = (ap_int<20>)(((ap_int<20>)src_buf2[0] + (ap_int<20>)src_buf6[0]) << 2) + (ap_int<20>)(((ap_int<20>)src_buf2[0] + (ap_int<20>)src_buf6[0]) << 1) ;	//(src_buf2[0] + src_buf6[0]) * 6;
-	ap_int<20> A02 = (ap_int<20>)(((ap_int<20>)src_buf2[6] + (ap_int<20>)src_buf6[6]) << 2) + (ap_int<20>)(((ap_int<20>)src_buf2[6] + (ap_int<20>)src_buf6[6]) << 1) ;	//(src_buf2[6] + src_buf6[6]) * 6;
-	ap_int<20> M04 = (ap_int<20>)(((ap_int<20>)src_buf2[1] + (ap_int<20>)src_buf6[1]) << 4) + (ap_int<20>)(((ap_int<20>)src_buf2[1] + (ap_int<20>)src_buf6[1]) << 3) ;	//(src_buf2[1] + src_buf6[1]) * 24;
-	ap_int<20> A03 = (ap_int<20>)(((ap_int<20>)src_buf2[5] + (ap_int<20>)src_buf6[5]) << 4) + (ap_int<20>)(((ap_int<20>)src_buf2[5] + (ap_int<20>)src_buf6[5]) << 3) ;	//(src_buf2[5] + src_buf6[5]) * 24;
-	ap_int<20> M05 = (ap_int<20>)(((ap_int<20>)src_buf2[2] + (ap_int<20>)src_buf6[2]) << 5) - (ap_int<20>)(((ap_int<20>)src_buf2[2] + (ap_int<20>)src_buf6[2]) << 1) ;	//(src_buf2[2] + src_buf6[2]) * 30;
-	ap_int<20> A04 = (ap_int<20>)(((ap_int<20>)src_buf2[4] + (ap_int<20>)src_buf6[4]) << 5) - (ap_int<20>)(((ap_int<20>)src_buf2[4] + (ap_int<20>)src_buf6[4]) << 1) ;	//(src_buf2[4] + src_buf6[4]) * 30;
-	ap_int<20> M06 = (ap_int<20>)(((ap_int<20>)src_buf3[0] + (ap_int<20>)src_buf5[0]) << 4) - (ap_int<20>)((ap_int<20>)src_buf3[0] + (ap_int<20>)src_buf5[0]) ;			//(src_buf3[0] + src_buf5[0]) * 15;
-	ap_int<20> A05 = (ap_int<20>)(((ap_int<20>)src_buf3[6] + (ap_int<20>)src_buf5[6]) << 4) - (ap_int<20>)((ap_int<20>)src_buf3[6] + (ap_int<20>)src_buf5[6]) ;			//(src_buf3[6] + src_buf5[6]) * 15;
-	ap_int<20> M07 = (ap_int<20>)(((ap_int<20>)src_buf3[1] + (ap_int<20>)src_buf5[1]) << 6) - (ap_int<20>)(((ap_int<20>)src_buf3[1] + (ap_int<20>)src_buf5[1]) << 2);		//(src_buf3[1] + src_buf5[1]) * 60;
-	ap_int<20> A06 = (ap_int<20>)(((ap_int<20>)src_buf3[5] + (ap_int<20>)src_buf5[5]) << 6) - (ap_int<20>)(((ap_int<20>)src_buf3[5] + (ap_int<20>)src_buf5[5]) << 2);		//(src_buf3[5] + src_buf5[5]) * 60;
-	ap_int<20> M08 = (ap_int<20>)(((ap_int<20>)src_buf3[2] + (ap_int<20>)src_buf5[2]) << 6) + (ap_int<20>)(((ap_int<20>)src_buf3[2] + (ap_int<20>)src_buf5[2]) << 3) + (ap_int<20>)((ap_int<20>)src_buf3[2] + (ap_int<20>)src_buf5[2] << 1) + (ap_int<20>)src_buf3[2] + (ap_int<20>)src_buf5[2];//(src_buf3[2] + src_buf5[2]) * 75;
-	ap_int<20> A07 = (ap_int<20>)(((ap_int<20>)src_buf3[4] + (ap_int<20>)src_buf5[4]) << 6) + (ap_int<20>)(((ap_int<20>)src_buf3[4] + (ap_int<20>)src_buf5[4]) << 3) + (ap_int<20>)((ap_int<20>)src_buf3[4] + (ap_int<20>)src_buf5[4] << 1) + (ap_int<20>)src_buf3[4] + (ap_int<20>)src_buf5[4];//(src_buf3[4] + src_buf5[4]) * 75;
-	ap_int<20> M09 = (ap_int<20>)(((ap_int<20>)src_buf4[6] - (ap_int<20>)src_buf4[0]) << 4) + (ap_int<20>)(((ap_int<20>)src_buf4[6] - (ap_int<20>)src_buf4[0]) << 2);		//(src_buf4[6] - src_buf4[0]) * 20;
-	ap_int<20> M10 = (ap_int<20>)(((ap_int<20>)src_buf4[5] - (ap_int<20>)src_buf4[1]) << 6) + (ap_int<20>)(((ap_int<20>)src_buf4[5] - (ap_int<20>)src_buf4[1]) << 4) ;					//(src_buf4[5] - src_buf4[1]) * 80;
-	ap_int<20> M11 = (ap_int<20>)(((ap_int<20>)src_buf4[4] - (ap_int<20>)src_buf4[2]) << 6) + (ap_int<20>)(((ap_int<20>)src_buf4[4] - (ap_int<20>)src_buf4[2]) << 5) + (ap_int<20>)((ap_int<20>)src_buf4[4] - (ap_int<20>)src_buf4[2] << 2);//(src_buf4[4] - src_buf4[2]) * 100;
+	ap_int<20> M00 = (ap_int<20>)(((ap_int<20>)src_buf1[6].range(k+7,k) + (ap_int<20>)src_buf7[6].range(k+7,k)) - ((ap_int<20>)src_buf1[0].range(k+7,k) + (ap_int<20>)src_buf7[0].range(k+7,k)));
+	ap_int<20> M01 = (ap_int<20>)(((ap_int<20>)src_buf1[1].range(k+7,k) + (ap_int<20>)src_buf7[1].range(k+7,k)) << 2);
+	ap_int<20> A00 = (ap_int<20>)(((ap_int<20>)src_buf1[5].range(k+7,k) + (ap_int<20>)src_buf7[5].range(k+7,k)) << 2);
+	ap_int<20> M02 = (ap_int<20>)(((ap_int<20>)src_buf1[2].range(k+7,k) + (ap_int<20>)src_buf7[2].range(k+7,k)) << 2) + (ap_int<20>)((ap_int<20>)src_buf1[2].range(k+7,k) + (ap_int<20>)src_buf7[2].range(k+7,k));		//(src_buf1[2] + src_buf7[2]) * 5;
+	ap_int<20> A01 = (ap_int<20>)(((ap_int<20>)src_buf1[4].range(k+7,k) + (ap_int<20>)src_buf7[4].range(k+7,k)) << 2) + (ap_int<20>)src_buf1[4].range(k+7,k) + (ap_int<20>)src_buf7[4].range(k+7,k);			//(src_buf1[4] + src_buf7[4]) * 5;
+	ap_int<20> M03 = (ap_int<20>)(((ap_int<20>)src_buf2[0].range(k+7,k) + (ap_int<20>)src_buf6[0].range(k+7,k)) << 2) + (ap_int<20>)(((ap_int<20>)src_buf2[0].range(k+7,k) + (ap_int<20>)src_buf6[0].range(k+7,k)) << 1) ;	//(src_buf2[0] + src_buf6[0]) * 6;
+	ap_int<20> A02 = (ap_int<20>)(((ap_int<20>)src_buf2[6].range(k+7,k) + (ap_int<20>)src_buf6[6].range(k+7,k)) << 2) + (ap_int<20>)(((ap_int<20>)src_buf2[6].range(k+7,k) + (ap_int<20>)src_buf6[6].range(k+7,k)) << 1) ;	//(src_buf2[6] + src_buf6[6]) * 6;
+	ap_int<20> M04 = (ap_int<20>)(((ap_int<20>)src_buf2[1].range(k+7,k) + (ap_int<20>)src_buf6[1].range(k+7,k)) << 4) + (ap_int<20>)(((ap_int<20>)src_buf2[1].range(k+7,k) + (ap_int<20>)src_buf6[1].range(k+7,k)) << 3) ;	//(src_buf2[1] + src_buf6[1]) * 24;
+	ap_int<20> A03 = (ap_int<20>)(((ap_int<20>)src_buf2[5].range(k+7,k) + (ap_int<20>)src_buf6[5].range(k+7,k)) << 4) + (ap_int<20>)(((ap_int<20>)src_buf2[5].range(k+7,k) + (ap_int<20>)src_buf6[5].range(k+7,k)) << 3) ;	//(src_buf2[5] + src_buf6[5]) * 24;
+	ap_int<20> M05 = (ap_int<20>)(((ap_int<20>)src_buf2[2].range(k+7,k)+ (ap_int<20>)src_buf6[2].range(k+7,k)) << 5) - (ap_int<20>)(((ap_int<20>)src_buf2[2].range(k+7,k) + (ap_int<20>)src_buf6[2].range(k+7,k)) << 1) ;	//(src_buf2[2] + src_buf6[2]) * 30;
+	ap_int<20> A04 = (ap_int<20>)(((ap_int<20>)src_buf2[4].range(k+7,k)+ (ap_int<20>)src_buf6[4].range(k+7,k)) << 5) - (ap_int<20>)(((ap_int<20>)src_buf2[4].range(k+7,k) + (ap_int<20>)src_buf6[4].range(k+7,k)) << 1) ;	//(src_buf2[4] + src_buf6[4]) * 30;
+	ap_int<20> M06 = (ap_int<20>)(((ap_int<20>)src_buf3[0].range(k+7,k) + (ap_int<20>)src_buf5[0].range(k+7,k)) << 4) - (ap_int<20>)((ap_int<20>)src_buf3[0].range(k+7,k) + (ap_int<20>)src_buf5[0].range(k+7,k)) ;			//(src_buf3[0] + src_buf5[0]) * 15;
+	ap_int<20> A05 = (ap_int<20>)(((ap_int<20>)src_buf3[6].range(k+7,k) + (ap_int<20>)src_buf5[6].range(k+7,k)) << 4) - (ap_int<20>)((ap_int<20>)src_buf3[6].range(k+7,k) + (ap_int<20>)src_buf5[6].range(k+7,k)) ;			//(src_buf3[6] + src_buf5[6]) * 15;
+	ap_int<20> M07 = (ap_int<20>)(((ap_int<20>)src_buf3[1].range(k+7,k) + (ap_int<20>)src_buf5[1].range(k+7,k)) << 6) - (ap_int<20>)(((ap_int<20>)src_buf3[1].range(k+7,k) + (ap_int<20>)src_buf5[1].range(k+7,k)) << 2);		//(src_buf3[1] + src_buf5[1]) * 60;
+	ap_int<20> A06 = (ap_int<20>)(((ap_int<20>)src_buf3[5].range(k+7,k) + (ap_int<20>)src_buf5[5].range(k+7,k)) << 6) - (ap_int<20>)(((ap_int<20>)src_buf3[5].range(k+7,k) + (ap_int<20>)src_buf5[5].range(k+7,k)) << 2);		//(src_buf3[5] + src_buf5[5]) * 60;
+	ap_int<20> M08 = (ap_int<20>)(((ap_int<20>)src_buf3[2].range(k+7,k) + (ap_int<20>)src_buf5[2].range(k+7,k)) << 6) + (ap_int<20>)(((ap_int<20>)src_buf3[2].range(k+7,k) + (ap_int<20>)src_buf5[2].range(k+7,k)) << 3) + (ap_int<20>)((ap_int<20>)src_buf3[2].range(k+7,k) + (ap_int<20>)src_buf5[2].range(k+7,k) << 1) + (ap_int<20>)src_buf3[2].range(k+7,k) + (ap_int<20>)src_buf5[2].range(k+7,k);//(src_buf3[2] + src_buf5[2]) * 75;
+	ap_int<20> A07 = (ap_int<20>)(((ap_int<20>)src_buf3[4].range(k+7,k) + (ap_int<20>)src_buf5[4].range(k+7,k)) << 6) + (ap_int<20>)(((ap_int<20>)src_buf3[4].range(k+7,k) + (ap_int<20>)src_buf5[4].range(k+7,k)) << 3) + (ap_int<20>)((ap_int<20>)src_buf3[4].range(k+7,k) + (ap_int<20>)src_buf5[4].range(k+7,k) << 1) + (ap_int<20>)src_buf3[4].range(k+7,k) + (ap_int<20>)src_buf5[4].range(k+7,k);//(src_buf3[4] + src_buf5[4]) * 75;
+	ap_int<20> M09 = (ap_int<20>)(((ap_int<20>)src_buf4[6].range(k+7,k) - (ap_int<20>)src_buf4[0].range(k+7,k)) << 4) + (ap_int<20>)(((ap_int<20>)src_buf4[6].range(k+7,k) - (ap_int<20>)src_buf4[0].range(k+7,k)) << 2);		//(src_buf4[6] - src_buf4[0]) * 20;
+	ap_int<20> M10 = (ap_int<20>)(((ap_int<20>)src_buf4[5].range(k+7,k) - (ap_int<20>)src_buf4[1].range(k+7,k)) << 6) + (ap_int<20>)(((ap_int<20>)src_buf4[5].range(k+7,k)- (ap_int<20>)src_buf4[1].range(k+7,k)) << 4) ;					//(src_buf4[5] - src_buf4[1]) * 80;
+	ap_int<20> M11 = (ap_int<20>)(((ap_int<20>)src_buf4[4].range(k+7,k) - (ap_int<20>)src_buf4[2].range(k+7,k)) << 6) + (ap_int<20>)(((ap_int<20>)src_buf4[4].range(k+7,k) - (ap_int<20>)src_buf4[2].range(k+7,k)) << 5) + (ap_int<20>)((ap_int<20>)src_buf4[4].range(k+7,k) - (ap_int<20>)src_buf4[2].range(k+7,k) << 2);//(src_buf4[4] - src_buf4[2]) * 100;
 	ap_int<20> FS00 = M01 + M02 + M03;
 	ap_int<20> FS01 = M04 + M05;
 	ap_int<20> FS02 = M06 + M07 + M08;
@@ -857,13 +941,17 @@ XF_PTNAME(DEPTH_DST) xFGradientX7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 	Res = (FA0 + FA1) - (FS0);
 	g_x = Res ;
 
-	if(DEPTH_DST == XF_8UC1){
+	if((DEPTH_DST == XF_8UP) ||(DEPTH_DST == XF_24UP)){
 		if(Res < 0)
 			g_x = 0;
 		else if (Res > 255)
 			g_x = 255;
 
 	}
+	val.range(p+(STEP-1),p)=g_x;
+	p+=STEP;
+
+}
 
 /*	if(DEPTH_DST == XF_8UP){
 		int Res;
@@ -907,7 +995,7 @@ XF_PTNAME(DEPTH_DST) xFGradientX7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 	else if (Res > 255)
 		g_x = 255;
 	}*/
-	return g_x;
+	return val;
 		}
 
 /********************************************************************
@@ -929,7 +1017,7 @@ XF_PTNAME(DEPTH_DST) xFGradientX7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
  *      |  1 |   6 |  15 |  20 |  15 |  6 |  1 |
  *       --- ---- ---- ---- ---  ---- ---  ----
  ******************************************************************/
-template<int DEPTH_SRC, int DEPTH_DST>
+template<int PLANES,int DEPTH_SRC, int DEPTH_DST>
 XF_PTNAME(DEPTH_DST) xFGradientY7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DEPTH_SRC) *src_buf2,
 		XF_PTNAME(DEPTH_SRC) *src_buf3, XF_PTNAME(DEPTH_SRC) *src_buf4,
 		XF_PTNAME(DEPTH_SRC) *src_buf5, XF_PTNAME(DEPTH_SRC) *src_buf6,
@@ -937,33 +1025,42 @@ XF_PTNAME(DEPTH_DST) xFGradientY7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 		{
 #pragma HLS INLINE off
 #pragma HLS PIPELINE II=1
-	XF_PTNAME(DEPTH_DST) g_y = 0;
+	XF_PTNAME(DEPTH_DST) g_y = 0,val=0;
+int STEP,p=0;
 
-
-
+	if( (DEPTH_DST == XF_48SP) || (DEPTH_DST == XF_16SP) )
+	{
+		  STEP=16;
+	}
+	else
+	{
+		  STEP=8;
+	}
+for(int i=0,k=0;i<PLANES;i++,k+=8)
+{
 
 	int Res = 0;
-	ap_int<20> M00 = (src_buf7[0] + src_buf7[6]) - (src_buf1[0] + src_buf1[6]);
-	ap_int<20> M01 = ((ap_int<20>)(src_buf1[1] + src_buf1[5]) << 2) + ((ap_int<20>)(src_buf1[1] + src_buf1[5]) << 1);//(src_buf1[1] + src_buf1[5]) * 6;
-	ap_int<20> A00 = ((ap_int<20>)(src_buf7[1] + src_buf7[5]) << 2) + ((ap_int<20>)(src_buf7[1] + src_buf7[5]) << 1);//(src_buf7[1] + src_buf7[5]) * 6;
-	ap_int<20> M02 = ((ap_int<20>)(src_buf1[2] + src_buf1[4]) << 4) - (src_buf1[2] + src_buf1[4]) ;							   // (src_buf1[2] + src_buf1[4]) * 15;
-	ap_int<20> A01 = ((ap_int<20>)(src_buf7[2] + src_buf7[4]) << 4) - (src_buf7[2] + src_buf7[4]) ;							   //(src_buf7[2] + src_buf7[4]) * 15;
-	ap_int<20> M03 = (ap_int<20>)(src_buf2[0] + src_buf2[6]) << 2;
-	ap_int<20> A02 = (ap_int<20>)(src_buf6[0] + src_buf6[6]) << 2;
-	ap_int<20> M04 = ((ap_int<20>)(src_buf2[1] + src_buf2[5]) << 4) + ((ap_int<20>)(src_buf2[1] + src_buf2[5]) << 3);//(src_buf2[1] + src_buf2[5]) * 24;
-	ap_int<20> A03 = ((ap_int<20>)(src_buf6[1] + src_buf6[5]) << 4) + ((ap_int<20>)(src_buf6[1] + src_buf6[5]) << 3);//(src_buf6[1] + src_buf6[5]) * 24;
-	ap_int<20> M05 = ((ap_int<20>)(src_buf2[2] + src_buf2[4]) << 6) - ((ap_int<20>)(src_buf2[2] + src_buf2[4]) << 2);//(src_buf2[2] + src_buf2[4]) * 60;
-	ap_int<20> A04 = ((ap_int<20>)(src_buf6[2] + src_buf6[4]) << 6) - ((ap_int<20>)(src_buf6[2] + src_buf6[4]) << 2);//(src_buf6[2] + src_buf6[4]) * 60;
-	ap_int<20> M06 = ((ap_int<20>)(src_buf3[0] + src_buf3[6]) << 2) + (src_buf3[0] + src_buf3[6]);//(src_buf3[0] + src_buf3[6]) * 5;
-	ap_int<20> A05 = ((ap_int<20>)(src_buf5[0] + src_buf5[6]) << 2) + (src_buf5[0] + src_buf5[6]);//(src_buf5[0] + src_buf5[6]) * 5;
-	ap_int<20> M07 = ((ap_int<20>)(src_buf3[1] + src_buf3[5]) << 5) - ((ap_int<20>)(src_buf3[1] + src_buf3[5]) << 1);//(src_buf3[1] + src_buf3[5]) * 30;
-	ap_int<20> A06 = ((ap_int<20>)(src_buf5[1] + src_buf5[5]) << 5) - ((ap_int<20>)(src_buf5[1] + src_buf5[5]) << 1);//(src_buf5[1] + src_buf5[5]) * 30;
+	ap_int<20> M00 = (src_buf7[0].range(k+7,k) + src_buf7[6].range(k+7,k)) - (src_buf1[0].range(k+7,k) + src_buf1[6].range(k+7,k));
+	ap_int<20> M01 = ((ap_int<20>)(src_buf1[1].range(k+7,k) + src_buf1[5].range(k+7,k)) << 2) + ((ap_int<20>)(src_buf1[1].range(k+7,k) + src_buf1[5].range(k+7,k)) << 1);//(src_buf1[1] + src_buf1[5]) * 6;
+	ap_int<20> A00 = ((ap_int<20>)(src_buf7[1].range(k+7,k) + src_buf7[5].range(k+7,k)) << 2) + ((ap_int<20>)(src_buf7[1].range(k+7,k) + src_buf7[5].range(k+7,k)) << 1);//(src_buf7[1] + src_buf7[5]) * 6;
+	ap_int<20> M02 = ((ap_int<20>)(src_buf1[2].range(k+7,k) + src_buf1[4].range(k+7,k)) << 4) - (src_buf1[2].range(k+7,k) + src_buf1[4].range(k+7,k)) ;							   // (src_buf1[2] + src_buf1[4]) * 15;
+	ap_int<20> A01 = ((ap_int<20>)(src_buf7[2].range(k+7,k) + src_buf7[4].range(k+7,k)) << 4) - (src_buf7[2].range(k+7,k) + src_buf7[4].range(k+7,k)) ;							   //(src_buf7[2] + src_buf7[4]) * 15;
+	ap_int<20> M03 = (ap_int<20>)(src_buf2[0].range(k+7,k) + src_buf2[6].range(k+7,k)) << 2;
+	ap_int<20> A02 = (ap_int<20>)(src_buf6[0].range(k+7,k) + src_buf6[6].range(k+7,k)) << 2;
+	ap_int<20> M04 = ((ap_int<20>)(src_buf2[1].range(k+7,k) + src_buf2[5].range(k+7,k)) << 4) + ((ap_int<20>)(src_buf2[1].range(k+7,k) + src_buf2[5].range(k+7,k)) << 3);//(src_buf2[1] + src_buf2[5]) * 24;
+	ap_int<20> A03 = ((ap_int<20>)(src_buf6[1].range(k+7,k) + src_buf6[5].range(k+7,k)) << 4) + ((ap_int<20>)(src_buf6[1].range(k+7,k) + src_buf6[5].range(k+7,k)) << 3);//(src_buf6[1] + src_buf6[5]) * 24;
+	ap_int<20> M05 = ((ap_int<20>)(src_buf2[2].range(k+7,k) + src_buf2[4].range(k+7,k)) << 6) - ((ap_int<20>)(src_buf2[2].range(k+7,k) + src_buf2[4].range(k+7,k)) << 2);//(src_buf2[2] + src_buf2[4]) * 60;
+	ap_int<20> A04 = ((ap_int<20>)(src_buf6[2].range(k+7,k) + src_buf6[4].range(k+7,k)) << 6) - ((ap_int<20>)(src_buf6[2].range(k+7,k) + src_buf6[4].range(k+7,k)) << 2);//(src_buf6[2] + src_buf6[4]) * 60;
+	ap_int<20> M06 = ((ap_int<20>)(src_buf3[0].range(k+7,k) + src_buf3[6].range(k+7,k)) << 2) + (src_buf3[0].range(k+7,k) + src_buf3[6].range(k+7,k));//(src_buf3[0] + src_buf3[6]) * 5;
+	ap_int<20> A05 = ((ap_int<20>)(src_buf5[0].range(k+7,k) + src_buf5[6].range(k+7,k)) << 2) + (src_buf5[0].range(k+7,k) + src_buf5[6].range(k+7,k));//(src_buf5[0] + src_buf5[6]) * 5;
+	ap_int<20> M07 = ((ap_int<20>)(src_buf3[1].range(k+7,k) + src_buf3[5].range(k+7,k)) << 5) - ((ap_int<20>)(src_buf3[1].range(k+7,k) + src_buf3[5].range(k+7,k)) << 1);//(src_buf3[1] + src_buf3[5]) * 30;
+	ap_int<20> A06 = ((ap_int<20>)(src_buf5[1].range(k+7,k) + src_buf5[5].range(k+7,k)) << 5) - ((ap_int<20>)(src_buf5[1].range(k+7,k) + src_buf5[5].range(k+7,k)) << 1);//(src_buf5[1] + src_buf5[5]) * 30;
 
-	ap_int<20> M08 = ((ap_int<20>)(src_buf3[2] + src_buf3[4]) << 6) + ((ap_int<20>)(src_buf3[2] + src_buf3[4]) << 3) + ((ap_int<20>)(src_buf3[2] + src_buf3[4]) << 1) + (src_buf3[2] + src_buf3[4]);//(src_buf3[2] + src_buf3[4]) * 75;
-	ap_int<20> A07 = ((ap_int<20>)(src_buf5[2] + src_buf5[4]) << 6) + ((ap_int<20>)(src_buf5[2] + src_buf5[4]) << 3) + ((ap_int<20>)(src_buf5[2] + src_buf5[4]) << 1) + (src_buf5[2] + src_buf5[4]);//(src_buf5[2] + src_buf5[4]) * 75;
-	ap_int<20> M09 = ((ap_int<20>)(src_buf7[3] - src_buf1[3]) << 4) + ((ap_int<20>)(src_buf7[3] - src_buf1[3]) << 2);//(src_buf7[3] - src_buf1[3]) * 20;
-	ap_int<20> M10 = ((ap_int<20>)(src_buf6[3] - src_buf2[3]) << 6) + ((ap_int<20>)(src_buf6[3] - src_buf2[3]) << 4);//(src_buf6[3] - src_buf2[3]) * 80;
-	ap_int<20> M11 = ((ap_int<20>)(src_buf5[3] - src_buf3[3]) << 6) + ((ap_int<20>)(src_buf5[3] - src_buf3[3]) << 5) + ((ap_int<20>)(src_buf5[3] - src_buf3[3]) << 2);	//(src_buf5[3] - src_buf3[3]) * 100;
+	ap_int<20> M08 = ((ap_int<20>)(src_buf3[2].range(k+7,k) + src_buf3[4].range(k+7,k)) << 6) + ((ap_int<20>)(src_buf3[2].range(k+7,k) + src_buf3[4].range(k+7,k)) << 3) + ((ap_int<20>)(src_buf3[2].range(k+7,k) + src_buf3[4].range(k+7,k)) << 1) + (src_buf3[2].range(k+7,k) + src_buf3[4].range(k+7,k));//(src_buf3[2] + src_buf3[4]) * 75;
+	ap_int<20> A07 = ((ap_int<20>)(src_buf5[2].range(k+7,k) + src_buf5[4].range(k+7,k)) << 6) + ((ap_int<20>)(src_buf5[2].range(k+7,k) + src_buf5[4].range(k+7,k)) << 3) + ((ap_int<20>)(src_buf5[2].range(k+7,k) + src_buf5[4].range(k+7,k)) << 1) + (src_buf5[2].range(k+7,k) + src_buf5[4].range(k+7,k));//(src_buf5[2] + src_buf5[4]) * 75;
+	ap_int<20> M09 = ((ap_int<20>)(src_buf7[3].range(k+7,k) - src_buf1[3].range(k+7,k)) << 4) + ((ap_int<20>)(src_buf7[3].range(k+7,k) - src_buf1[3].range(k+7,k)) << 2);//(src_buf7[3] - src_buf1[3]) * 20;
+	ap_int<20> M10 = ((ap_int<20>)(src_buf6[3] .range(k+7,k)- src_buf2[3].range(k+7,k)) << 6) + ((ap_int<20>)(src_buf6[3].range(k+7,k) - src_buf2[3].range(k+7,k)) << 4);//(src_buf6[3] - src_buf2[3]) * 80;
+	ap_int<20> M11 = ((ap_int<20>)(src_buf5[3].range(k+7,k) - src_buf3[3].range(k+7,k)) << 6) + ((ap_int<20>)(src_buf5[3].range(k+7,k) - src_buf3[3].range(k+7,k)) << 5) + ((ap_int<20>)(src_buf5[3].range(k+7,k) - src_buf3[3].range(k+7,k)) << 2);	//(src_buf5[3] - src_buf3[3]) * 100;
 	ap_int<20> FS00 = M01 + M02 + M03;
 	ap_int<20> FS01 = M04 + M05;
 	ap_int<20> FS02 = M06 + M07 + M08;
@@ -978,13 +1075,15 @@ XF_PTNAME(DEPTH_DST) xFGradientY7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 	Res = (FA0 + FA1) - (FS0);
 	g_y = Res ;
 
-	if(DEPTH_DST == XF_8UC1){
+	if((DEPTH_DST == XF_8UP)|| (DEPTH_DST == XF_24UP)){
 		if(Res < 0)
 			g_y = 0 ;
 		else if(Res > 255)
 			g_y = 255;
 		}
-
+	val.range(p+(STEP-1),p)=g_y;
+	p+=STEP;
+}
 
 /*
 if(DEPTH_DST==XF_8UP){
@@ -1030,7 +1129,7 @@ if(DEPTH_DST==XF_8UP){
 		g_y = 255;
 	}
 */
-	return g_y;
+	return val;
 
 		}
 
@@ -1038,7 +1137,7 @@ if(DEPTH_DST==XF_8UP){
  * xFSobel7x7 : Applies the mask and Computes the gradient values
  *              for filtersize 7x7
  */
-template<int NPC, int DEPTH_SRC, int DEPTH_DST>
+template<int NPC,int PLANES, int DEPTH_SRC, int DEPTH_DST>
 void xFSobel7x7(XF_PTNAME(DEPTH_DST) *GradientvaluesX, XF_PTNAME(DEPTH_DST) *GradientvaluesY,
 		XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf4[XF_NPIXPERCYCLE(NPC)+6],
@@ -1049,11 +1148,11 @@ void xFSobel7x7(XF_PTNAME(DEPTH_DST) *GradientvaluesX, XF_PTNAME(DEPTH_DST) *Gra
 	{
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 #pragma HLS UNROLL
-		GradientvaluesX[j] = xFGradientX7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j],
+		GradientvaluesX[j] = xFGradientX7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j],
 				&src_buf3[j], &src_buf4[j], &src_buf5[j], &src_buf6[j],
 				&src_buf7[j]);
 
-		GradientvaluesY[j] = xFGradientY7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j],
+		GradientvaluesY[j] = xFGradientY7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j],
 				&src_buf3[j], &src_buf4[j], &src_buf5[j], &src_buf6[j],
 				&src_buf7[j]);
 	}
@@ -1066,7 +1165,7 @@ void xFSobel7x7(XF_PTNAME(DEPTH_DST) *GradientvaluesX, XF_PTNAME(DEPTH_DST) *Gra
  * ProcessSobel7x7 : Computes gradients for the column input data
  **************************************************************************************/
 
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[7][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6],
@@ -1113,7 +1212,7 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf6[6] = buf5;
 			src_buf7[6] = buf6;
 		}
-		xFSobel7x7<NPC, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
+		xFSobel7x7<NPC,PLANES, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
 				src_buf1, src_buf2, src_buf3, src_buf4,
 				src_buf5, src_buf6, src_buf7);
 
@@ -1163,7 +1262,7 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 	}// Col_Loop
 }
 
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
 		XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+6],
@@ -1196,11 +1295,11 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=3 max=3
 #pragma HLS unroll
 
-			GradientValuesX[i] = xFGradientX7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
+			GradientValuesX[i] = xFGradientX7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
 					&src_buf4[i], &src_buf5[i], &src_buf6[i],
 					&src_buf7[i]);
 
-			GradientValuesY[i] = xFGradientY7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
+			GradientValuesY[i] = xFGradientY7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
 					&src_buf4[i], &src_buf5[i], &src_buf6[i],
 					&src_buf7[i]);
 
@@ -1231,11 +1330,11 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS ALLOCATION instances=xFGradientX7x7 limit=1 function
 #pragma HLS ALLOCATION instances=xFGradientY7x7 limit=1 function
 
-			GradientValuesX[0] = xFGradientX7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
+			GradientValuesX[0] = xFGradientX7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
 					&src_buf4[0], &src_buf5[0], &src_buf6[0],
 					&src_buf7[0]);
 
-			GradientValuesY[0] = xFGradientY7x7<DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
+			GradientValuesY[0] = xFGradientY7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
 					&src_buf4[0], &src_buf5[0], &src_buf6[0],
 					&src_buf7[0]);
 
@@ -1256,7 +1355,7 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
 void xFSobelFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat, uint16_t img_height, uint16_t img_width)
@@ -1370,10 +1469,10 @@ void xFSobelFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		}
 		inter_valx = inter_valy = 0;
 		/***********		Process complete row			**********/
-		ProcessSobel7x7<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
+		ProcessSobel7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
 				inter_valx, inter_valy, img_width, img_height, row_ind, shiftx, shifty, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row);
 
-		RightBorder7x7<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
+		RightBorder7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
 				inter_valx, inter_valy, shiftx, shifty);
 
 		row_ind++;
@@ -1386,10 +1485,12 @@ void xFSobelFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 // xFSobelFilter7x7
 
 
+
+
 /*********************************************************************
  * xFSobelFilter : Calls the Main Function depend on Requirements
  *********************************************************************/
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
+template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
 void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _gradx,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _grady,
@@ -1405,7 +1506,7 @@ void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
 	assert(((_filter_width == XF_FILTER_3X3) || (_filter_width == XF_FILTER_5X5) ||
 			(_filter_width == XF_FILTER_7X7)) && " Filter width must be XF_FILTER_3X3, XF_FILTER_5X5 or XF_FILTER_7X7 ");
 
-	assert((DEPTH_SRC == XF_8UP) && " Input image must be of type XF_8UP ");
+//	assert((DEPTH_SRC == XF_8UP) && " Input image must be of type XF_8UP ");
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) || (NPC == XF_NPPC16))
 			&& "NPC must be XF_NPPC1, XF_NPPC8 or XF_NPPC16 ");
@@ -1419,19 +1520,19 @@ void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
 
 	if(_filter_width == XF_FILTER_3X3)
 	{
-		xFSobelFilter3x3<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC,
+		xFSobelFilter3x3<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
 		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC))>(_src, _gradx, _grady,height,width);
 	}
 
 	else if(_filter_width == XF_FILTER_5X5)
 	{
-		xFSobelFilter5x5<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC,
+		xFSobelFilter5x5<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
 		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC))>(_src, _gradx, _grady,height,width);
 	}
 
 	else if(_filter_width == XF_FILTER_7X7)
 	{
-		xFSobelFilter7x7<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC,
+		xFSobelFilter7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
 		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC))>(_src, _gradx, _grady,height,width);
 	}
 
@@ -1446,7 +1547,7 @@ void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
 //#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_matx.data"[0:"_dst_matx.size"],"_dst_maty.data"[0:"_dst_maty.size"])
 
-template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
+template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC=1>
 void Sobel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
 {
 	
@@ -1471,7 +1572,7 @@ void Sobel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS,
 
 
 
-	xFSobelFilter<ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC)>(_src,_dstx,_dsty,FILTER_TYPE, BORDER_TYPE,_src_mat.rows,_src_mat.cols);
+	xFSobelFilter<ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC)>(_src,_dstx,_dsty,FILTER_TYPE, BORDER_TYPE,_src_mat.rows,_src_mat.cols);
 
 	
 	for(int i=0; i<_dst_matx.rows;i++)

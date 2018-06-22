@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -70,12 +70,12 @@ int main(int argc, char **argv) {
 
 	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat1(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat2(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat3(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat4(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat5(in_gray.rows,in_gray.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat1(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat2(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat3(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat4(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat5(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput.copyTo(in_gray.data);
 	

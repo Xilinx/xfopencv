@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -42,7 +42,9 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img, in_gray, in_conv_img, out_img, ocv_ref, diff, filter;
 
-	in_img = cv::imread(argv[1],0); // reading in the color image
+
+	in_img = cv::imread(argv[1],0); // reading in the gray image
+
 
 	if (in_img.data == NULL)
 	{
@@ -50,8 +52,8 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	unsigned short height  = in_img.rows;
-	unsigned short width  = in_img.cols;
+
+
 	unsigned char shift = SHIFT;
 
 	//////////////////  Creating the kernel ////////////////
@@ -67,22 +69,29 @@ int main(int argc, char** argv)
 		}
 	}
 
+
+	/*  convert to specific types  */
+	in_img.convertTo(in_conv_img,CV_8U);			//Size conversion
+
+
 		/////////////////    OpenCV reference   /////////////////
 #if   OUT_8U
-	out_img.create(in_img.rows,in_img.cols,CV_8U); // create memory for output image
-	diff.create(in_img.rows,in_img.cols,CV_8U);    // create memory for difference image
+	out_img.create(in_conv_img.rows,in_conv_img.cols,CV_8U); // create memory for output image
+	diff.create(in_conv_img.rows,in_conv_img.cols,CV_8U);    // create memory for difference image
 #elif OUT_16S
-	out_img.create(in_img.rows,in_img.cols,CV_16S); // create memory for output image
-	diff.create(in_img.rows,in_img.cols,CV_16S);	  // create memory for difference image
+	out_img.create(in_conv_img.rows,in_conv_img.cols,CV_16S); // create memory for output image
+	diff.create(in_conv_img.rows,in_conv_img.cols,CV_16S);	  // create memory for difference image
 #endif
 
 	cv::Point anchor = cv::Point( -1, -1 );
 
 #if OUT_8U
-	cv::filter2D(in_img, ocv_ref, CV_8U , filter, anchor, 0, cv::BORDER_CONSTANT);
+	cv::filter2D(in_conv_img, ocv_ref, CV_8U , filter, anchor, 0, cv::BORDER_CONSTANT);
 #elif OUT_16S
-	cv::filter2D(in_img, ocv_ref, CV_16S ,filter, anchor, 0, cv::BORDER_CONSTANT );
+	cv::filter2D(in_conv_img, ocv_ref, CV_16S ,filter, anchor, 0, cv::BORDER_CONSTANT );
 #endif
+
+	imwrite("ref_img.jpg", ocv_ref);  // reference image
 
 #if __SDSCC__
 	short int *filter_ptr=(short int*)sds_alloc_non_cacheable(FILTER_WIDTH*FILTER_HEIGHT*sizeof(short int));
@@ -98,10 +107,16 @@ int main(int argc, char** argv)
 	}
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+
+	static xf::Mat<INTYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
+
+
+
+
+	imgInput.copyTo(in_img.data);
+
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -114,15 +129,21 @@ int main(int argc, char** argv)
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
+	//out_img.data = (unsigned char *)imgOutput.copyFrom();
 
-	// Write output image
-	xf::imwrite("hls_out.jpg",imgOutput);
 
-	imwrite("ref_img.jpg", ocv_ref);  // reference image
-
-	xf::absDiff(ocv_ref,imgOutput,diff); // Compute absolute difference image
+	xf::imwrite("out_img.jpg", imgOutput);
+	xf::absDiff(ocv_ref,imgOutput,diff);    // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);     // Save the difference image for debugging purpose
-
+//	FILE *fp=fopen("cv.txt","w");
+//	FILE *fp1=fopen("hls.txt","w");
+//	for(int i=0;i<(2073600*CHANNELS);i++)
+//	{
+//		fprintf(fp,"%d\n",ocv_ref.data[i]);
+//		fprintf(fp1,"%d\n",out_img.data[i]);
+//	}
+//	fclose(fp);
+//	fclose(fp1);
 	
 	double minval=256,maxval=0;
 	int cnt = 0;
@@ -150,9 +171,16 @@ int main(int argc, char** argv)
 	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
+	in_gray.~Mat();
+	in_conv_img.~Mat();
+
+	ocv_ref.~Mat();
+	diff.~Mat();
+	int ret  = 0;
 	if(err_per > 0.0f)
 		return 1;
-
+	in_img.~Mat();
+	out_img.~Mat();
 	return 0;
 }
 

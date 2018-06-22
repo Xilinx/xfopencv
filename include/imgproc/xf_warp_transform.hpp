@@ -83,7 +83,7 @@ void store_EvOd_image1(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j
 	}
 };
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+template<int COLS, int PLANES,int STORE_LINES, int DEPTH, int NPC>
 XF_TNAME(DEPTH,NPC) retrieve_EvOd_image1(int i,int j, XF_TNAME(DEPTH,NPC) store1_pt_2EvR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2EvR_OdC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_OdC[(STORE_LINES>>2)][COLS])
 {
 #pragma HLS INLINE
@@ -126,7 +126,7 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image1(int i,int j, XF_TNAME(DEPTH,NPC) store1
 	return return_val;
 };
 //function to store the image in 4 memories of a combined size of (0:STORE_LINES-1,0:COLS-1)
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+template<int COLS, int PLANES,int STORE_LINES, int DEPTH, int NPC>
 XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int D, XF_TNAME(DEPTH,NPC) store1_pt_2EvR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2EvR_OdC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_OdC[(STORE_LINES>>2)][COLS])
 {
 #pragma HLS INLINE
@@ -136,7 +136,8 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int 
 	//finding the LSB of i and j to find even/odd conditions for memory reads
 
 	//output value computed in fixed point (17,15)
-	int op_val = 0;
+	ap_uint<32> op_val = 0;
+	int op_val1 = 0;
 	//temporary variables to compute the indices for 4 memories for linear interpolation
 	//computing i/2 (i+1)/2 j/2 and (j+1)/2 to access the 4 memories
 	int I,J,I1,J1,temp1,temp2,Ja,Ja1;
@@ -254,18 +255,23 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int 
 		    px10 = pop_bram_EvR_OdC;
 		    px11 = pop_bram_EvR_EvC;
         }		
-    }        	    
-		op_val  = (A*px00);
-		op_val += (B*px01);
-		op_val += (C*px10);
-		op_val += (D*px11);
+    }
+	for(ap_uint<10> c=0,k=0;c<PLANES;c++,k+=8)
+	{
+#pragma HLS UNROLL
+		op_val1  = (A*px00.range(k+7,k));
+		op_val1 += (B*px01.range(k+7,k));
+		op_val1 += (C*px10.range(k+7,k));
+		op_val1 += (D*px11.range(k+7,k));
+		op_val.range(k+7,k)=((op_val1+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
+	}
 //returning the computed interpolated output after rounding off the op_val by adding 0.5
 //and shifting to right by INTER_REMAP_COEF_BITS
-	return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
+	return XF_TNAME(DEPTH,NPC)(op_val);
 };
 
-template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE>
-int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::stream< XF_TNAME(DEPTH,NPC) > &output_image, float P_matrix[9], short img_rows, short img_cols)
+template <int TYPE, int NPC, int ROWS, int COLS,int PLANES, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE>
+int xFwarpTransformKernel(xf::Mat<TYPE,ROWS,COLS,NPC> &input_image, xf::Mat<TYPE,ROWS,COLS,NPC> &output_image, float P_matrix[9], short img_rows, short img_cols)
 {
 #pragma HLS INLINE
 	//dividing memory (0:STORE_LINES-1,0:COLS-1) to ensure that the same memory
@@ -301,6 +307,7 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 
 	//varables for loop counters
 	ap_uint<16> i=0,j=0,k=0,l=0,m=0,n=0,p=0;
+	int read_index = 0, write_index = 0;
 
 	//copying transformation matrix to a local variable
 	float R[3][3];
@@ -362,7 +369,7 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 				//function to store the input image stream to
 				//a buffer of size STORE_LINES rows
 				//computing i-l to snap the writes to STORE_LINES size buffer
-				store_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>( input_image.read() ,i-l,j, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
+				store_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>( input_image.data[read_index++] ,i-l,j, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 			}
 
 			//condition to compute and stream out the output image
@@ -468,12 +475,12 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 					I1 = I - m;
 					if(INTERPOLATION_TYPE==0)
 					{
-						op_val = retrieve_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>(I1,J, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
+						op_val = retrieve_EvOd_image1<COLS,PLANES,STORE_LINES,DEPTH,NPC>(I1,J, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 					else
 					{
 						//calling the read function with interpolation
-						op_val = retrieve_EvOd_image4x1<COLS,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
+						op_val = retrieve_EvOd_image4x1<COLS,PLANES,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 				}
 				else
@@ -482,7 +489,7 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 					op_val = 0;
 				}
 				//streaming out the computed output value and incrementing the out address pointer
-				output_image.write(op_val);
+				output_image.data[write_index++] = (op_val);
 			}
 		}
 	}
@@ -497,37 +504,13 @@ return 0;
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
 #pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC>
+template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC=1>
 void warpTransform(xf::Mat<TYPE,ROWS,COLS,NPC> & _src_mat, xf::Mat<TYPE,ROWS,COLS,NPC> & _dst_mat, float P_matrix[9])
 {
 	#pragma HLS INLINE OFF
-	#pragma HLS DATAFLOW
-hls::stream< XF_TNAME(TYPE,NPC) > in_stream;
-hls::stream< XF_TNAME(TYPE,NPC) > out_stream;
 
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>XF_BITSHIFT(NPC);j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			in_stream.write( *(_src_mat.data + i*(_src_mat.cols>>XF_BITSHIFT(NPC)) +j) );
-		}
-	}
+xFwarpTransformKernel<TYPE, NPC, ROWS, COLS,XF_CHANNELS(TYPE,NPC), TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE>(_src_mat, _dst_mat, P_matrix, _src_mat.rows, _src_mat.cols);
 
-xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE>(in_stream, out_stream, P_matrix, _src_mat.rows, _src_mat.cols);
-
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>XF_BITSHIFT(NPC);j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			*(_dst_mat.data + i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j) = out_stream.read();
-		}
-	}
 }
 }
 

@@ -123,9 +123,17 @@ void xFInitUndistortRectifyMapInverseKernel (
 #pragma HLS ARRAY_PARTITION variable=distCoeffsHLS complete dim=0
 #pragma HLS ARRAY_PARTITION variable=iRnewCameraMatrixHLS complete dim=0
 
-	memcpy(cameraMatrixHLS,cameraMatrix,4*CM_SIZE);
-	memcpy(distCoeffsHLS,distCoeffs,4*N);
-	memcpy(iRnewCameraMatrixHLS,ir,4*CM_SIZE);
+	for (int i=0; i<CM_SIZE; i++)
+	{
+#pragma HLS PIPELINE II=1
+		cameraMatrixHLS[i] = cameraMatrix[i];
+		iRnewCameraMatrixHLS[i] = ir[i];
+	}
+	for (int i=0; i<N; i++)
+	{
+#pragma HLS PIPELINE II=1
+		distCoeffsHLS[i] = distCoeffs[i];
+	}
 
 	MAP_T mx;
 	MAP_T my;
@@ -138,7 +146,9 @@ void xFInitUndistortRectifyMapInverseKernel (
 
 	int idx = 0;
 	loop_height: for(int i=0; i< rows; i++) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 		loop_width: for(int j=0; j< cols; j++) {
+#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 #pragma HLS PIPELINE II=1
 			typedef ap_uint<BitWidth<ROWS>::Value> ROWT;
 			typedef ap_uint<BitWidth<COLS>::Value> COLT;
@@ -156,7 +166,6 @@ void xFInitUndistortRectifyMapInverseKernel (
 			mx = u;
 			my = v;
 
-			// TODO check if incr works
 			*(map1 + idx) = mx;
 			*(map2 + idx) = my;
 			idx++;
@@ -187,4 +196,5 @@ void InitUndistortRectifyMapInverse (
 }
 }
 #endif  // _XF_STEREO_PIPELINE_HPP_
+
 

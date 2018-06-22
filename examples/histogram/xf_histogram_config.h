@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -41,8 +41,8 @@ typedef unsigned int 	uint32_t;
 typedef unsigned short  uint16_t;
 
 /* config width and height */
-#define WIDTH 	1920
-#define HEIGHT	1080
+#define WIDTH 	3840
+#define HEIGHT	2160
 
 #if NO
 	#define _NPPC XF_NPPC1
@@ -52,6 +52,8 @@ typedef unsigned short  uint16_t;
 	#define _NPPC XF_NPPC8
 #endif
 
-void histogram_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram);
+#define TYPE XF_8UC1
+
+void histogram_accel(xf::Mat<TYPE, HEIGHT, WIDTH, _NPPC> &imgInput, unsigned int *histogram);
 
 #endif // _XF_HISTOGRAM_CONFIG_H_

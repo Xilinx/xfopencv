@@ -37,7 +37,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 
-static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uint8_t &thresh)
+static void xfOtsuKernel(uint32_t _hist[0][256], uint16_t _height, uint16_t _width, uint8_t &thresh)
 {
 #pragma HLS INLINE off
 
@@ -93,7 +93,7 @@ static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uin
 	for(uint16_t i = 0; i < 256 ; i++)
 	{
 #pragma HLS PIPELINE
-		tmp1 = (ap_uint<45>)_hist[i];
+		tmp1 = (ap_uint<45>)_hist[0][i];
 		tmp2 = (tmp1 * wdt) >> shift3;
 		HistArray[i] = (tmp2 * hgt) >> shift4;						//Histogram array is expressed in Q8.25
 	}
@@ -150,7 +150,7 @@ static void xfOtsuKernel(uint32_t *_hist, uint16_t _height, uint16_t _width, uin
 
 
 /*********************************************************************
- * auOtsuthreshold : Computes the otsu threshold for the input image
+ * Otsuthreshold : Computes the otsu threshold for the input image
  *********************************************************************/
 //#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
@@ -160,17 +160,22 @@ template<int SRC_T, int ROWS, int COLS,int NPC=1>
 void OtsuThreshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, uint8_t &_thresh)
 {
 
-	uint32_t hist[256];
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) )&& "NPC must be XF_NPPC1, XF_NPPC8 ");
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+
+	uint32_t hist[XF_CHANNELS(SRC_T,NPC)][256];
 	uint8_t thresh ;
 
 #pragma HLS INLINE off
-//#pragma HLS DATAFLOW
 #pragma HLS interface ap_fifo port=hist
-	//xFcalcHist<SRC_T, ROWS, COLS, NPC>(_src_mat,  hist);
 
-	xFHistogram<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC)>(_src_mat, hist, _src_mat.rows, _src_mat.cols);
+	uint16_t width = _src_mat.cols >> (XF_BITSHIFT(NPC));
+	uint16_t height = _src_mat.rows;
 
-	xfOtsuKernel(hist, _src_mat.rows, _src_mat.cols, thresh);
+	xFHistogramKernel<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), ((COLS>>(XF_BITSHIFT(NPC)))>>1), XF_CHANNELS(SRC_T,NPC)>
+	(_src_mat, hist, height, width);
+
+	xfOtsuKernel(hist, height, _src_mat.cols, thresh);
 	_thresh = thresh;
 }
 }

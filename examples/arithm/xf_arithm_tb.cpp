@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -42,11 +42,9 @@ int main(int argc, char** argv)
 	}
 
 	cv::Mat in_img1, in_img2, in_gray1, in_gray2, in_gray1_16, in_gray2_16,out_img, ocv_ref, diff;
-
 	/*  reading in the color image  */
 	in_gray1 = cv::imread(argv[1],0);
 	in_gray2 = cv::imread(argv[2],0);
-
 	if (in_gray1.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
@@ -63,21 +61,18 @@ int main(int argc, char** argv)
 	in_gray1.convertTo(in_gray1_16,CV_16SC1);
 	in_gray2.convertTo(in_gray2_16,CV_16SC1);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
-
 #if T_8U
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
 
 	out_img.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 
-
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
-	
 
 
 	#if __SDSCC__
@@ -93,13 +88,12 @@ int main(int argc, char** argv)
 	#endif
 
 
-	out_img.data = imgOutput.copyFrom();
 
 	///////////// OpenCV reference  /////////////
-    	//cv::absdiff(in_gray1,in_gray2,ocv_ref);
+    //cv::absdiff(in_gray1,in_gray2,ocv_ref);
 	//cv::add(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
 	//cv::subtract(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
-	//cv::bitwise_and(in_gray1,in_gray2,ocv_ref);
+//	cv::bitwise_and(in_gray1,in_gray2,ocv_ref);
 	//bitwise_or(in_gray1,in_gray2,ocv_ref);
 	//cv::bitwise_not(in_gray1,ocv_ref);
 	//cv::bitwise_xor(in_gray1,in_gray2,ocv_ref);
@@ -108,25 +102,18 @@ int main(int argc, char** argv)
 #endif
 
 #if T_16S
-
 	out_img.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 	ocv_ref.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 	diff.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
 
+	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1_16(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2_16(in_gray1.rows,in_gray1.cols);
 
+	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
-	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1_16(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2_16(in_gray1.rows,in_gray1.cols);
+	imgInput1_16.copyTo(in_gray1_16.data);
+	imgInput2_16.copyTo(in_gray2_16.data);
 
-	xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
-
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[2], 0);
-
-	imgInput1.convertTo(imgInput1_16, XF_CONVERT_8U_TO_16S);
-	imgInput2.convertTo(imgInput2_16, XF_CONVERT_8U_TO_16S);
-
-	
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	 hw_ctr.start();
@@ -141,7 +128,7 @@ int main(int argc, char** argv)
 	
 	///////////// OpenCV reference  /////////////
 	//cv::add(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
-	//cv::subtract(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
+//	cv::subtract(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
 	cv::multiply(in_gray1_16,in_gray2_16,ocv_ref,0.05,-1);
 #endif
 
@@ -150,9 +137,10 @@ int main(int argc, char** argv)
 	imwrite("ref_img.jpg",ocv_ref);   // save the reference image
 
 	xf::absDiff(ocv_ref,imgOutput,diff);	  // Compute absolute difference image
+	//cv::absdiff(ocv_ref,out_img,diff);
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 
-
+	FILE *fp2=fopen("diff.txt","w");
 	// Find minimum and maximum differences.
 	double minval=256,maxval=0;
 	int cnt = 0;
@@ -161,7 +149,8 @@ int main(int argc, char** argv)
 		for(int j=0;j<in_gray1.cols;j++)
 		{
 			uchar v = diff.at<uchar>(i,j);
-			if (v>1)
+			fprintf(fp2,"%d\n",v);
+			if (v>2)
 				cnt++;
 			if (minval > v )
 				minval = v;
@@ -169,6 +158,7 @@ int main(int argc, char** argv)
 				maxval = v;
 		}
 	}
+	fclose(fp2);
 	float err_per = 100.0*(float)cnt/(in_gray1.rows*in_gray1.cols);
 	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 

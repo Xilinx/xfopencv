@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -42,10 +42,8 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img, in_img1, out_img;
 	cv::Mat in_gray, in_gray1, diff;
-
 	in_gray  = cv::imread(argv[1], 0); // read image
 	in_gray1 = cv::imread(argv[2], 0); // read image
-
 	if (in_gray.data == NULL)
 	{
 		fprintf(stderr, "Cannot open image %s\n", argv[1]);
@@ -57,9 +55,6 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	//cvtColor(in_gray, in_gray, CV_BGR2GRAY);
-	//cvtColor(in_gray1, in_gray1, CV_BGR2GRAY);
-
 	cv::Mat inout_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
 	cv::Mat   out_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
 	cv::Mat inout_gray1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
@@ -70,7 +65,6 @@ int main(int argc, char** argv)
 
 	in_gray.convertTo(ocv_ref_in1, CV_32FC1);
 	in_gray1.convertTo(ocv_ref_in2, CV_32FC1);
-	
 	// Weight ( 0 to 1 )
 	float alpha = 0.76;	
 
@@ -81,19 +75,14 @@ int main(int argc, char** argv)
 	// Write OpenCV reference image
 	imwrite("out_ocv.jpg", ocv_ref);
 
-	in_gray1.convertTo(inout_gray, CV_8U);
+//	in_gray1.convertTo(inout_gray, CV_8U);
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
-	xf::Mat<XF_16UC1, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
+	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
 
-//	imgInput1.copyTo(in_gray.data);
-//	imgInput2.copyTo(inout_gray.data);
-
-	imgInput1 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1],0);
-	imgInput2 = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[2],0);
-
-
+	imgInput1.copyTo(in_gray.data);
+	imgInput2.copyTo(in_gray1.data);
 
 #if __SDSCC__
 perf_counter hw_ctr;
@@ -110,8 +99,7 @@ uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 
 
 	imwrite("out_hls.jpg", out_gray);
-
-	out_gray.convertTo(inout_gray1, CV_32FC1);	
+	out_gray.convertTo(inout_gray1, CV_32FC1);
 	// Compute absolute difference image
 	absdiff(ocv_ref_in2, inout_gray1, diff);
 	// Save the difference image 

@@ -29,7 +29,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
 #include "xf_bilateral_filter_config.h"
 
-void bilateral_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst, float sigma_color, float sigma_space)
+void bilateral_filter_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst, float sigma_color, float sigma_space)
 {	
-	xf::bilateralFilter<FILTER_WIDTH, XF_BORDER_REPLICATE, XF_8UC1, HEIGHT, WIDTH, NPC1>(_src,_dst, sigma_color, sigma_space);
+	xf::bilateralFilter<FILTER_WIDTH, XF_BORDER_REPLICATE, TYPE, HEIGHT, WIDTH, NPC1>(_src,_dst, sigma_color, sigma_space);
 }

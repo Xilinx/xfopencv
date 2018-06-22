@@ -40,14 +40,15 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 /**
- *   auConvertBitDepthKernel : Converts the input image bit depth to specified bit depth
- *  _src_strm  : Input  image
- *  _dst_strm : Output image
- *  _convert_type : convertion type
+ *   xfConvertBitDepthKernel : Converts the input image bit depth to specified bit depth
+ *  _src_mat  : Input  image
+ *  _dst_mat : Output image
+ *  _convert_type : conversion type
  *  _shift : scale factor
  */
-template<int ROWS,int COLS,int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC,  int WORDWIDTH_DST, int NPC, int TRIP_CNT>
-void xfConvertBitDepthKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src_strm,hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst_strm, ap_uint<4> _convert_type, int _shift, unsigned short _height, unsigned short _width)
+template<int SRC_T, int DST_T, int ROWS,int COLS,int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC,  int WORDWIDTH_DST, int NPC, int TRIP_CNT>
+void xfConvertBitDepthKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,
+		ap_uint<4> _convert_type, int _shift, unsigned short _height, unsigned short _width)
 {
 	XF_SNAME(WORDWIDTH_SRC)   buf;
 	XF_SNAME(WORDWIDTH_DST)  result;
@@ -85,7 +86,7 @@ void xfConvertBitDepthKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src_strm,hls
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS pipeline
 
-			buf = (XF_SNAME(WORDWIDTH_SRC))(_src_strm.read());
+			buf = (XF_SNAME(WORDWIDTH_SRC))(_src_mat.data[row*_width+col]);
 			out_step = XF_PIXELDEPTH(DEPTH_DST),
 					in_step  = XF_PIXELDEPTH(DEPTH_SRC);
 
@@ -119,47 +120,11 @@ void xfConvertBitDepthKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src_strm,hls
 						result(i+(out_step-1), i) = (XF_PTNAME(DEPTH_DST))val << _shift;
 				}
 			}
-			_dst_strm.write((XF_SNAME(WORDWIDTH_DST))result);
+			_dst_mat.data[row*_width+col] = ((XF_SNAME(WORDWIDTH_DST))result);
 		}
 	}
 }
-/****************************************************************
- * xfConvertBitDepth : Wrapper function which calls the main kernel
- *  _src_strm  : Input  image Mat
- *  _dst_strm : Output image Mat
- *  _convert_type : convertion type
- *  _shift : scale factor
- *******************************************************************/
-template<int ROWS,int COLS,int DEPTH_SRC, int DEPTH_DST, int WORDWIDTH_SRC,  int WORDWIDTH_DST, int NPC>
-void xfConvertBitDepth(hls::stream<XF_SNAME(WORDWIDTH_SRC)>   &_src_strm,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)> &_dst_strm,
-		ap_uint<4> _convert_type, int _shift,unsigned short _height,unsigned short _width)
-{
 
-assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-assert(((_height <= ROWS ) && (_width <= COLS)) && "ROWS and COLS should be greater than input image");
-#pragma HLS inline
-
-	_width = _width >> (XF_BITSHIFT(NPC));
-
-
-
-	assert(( (_convert_type == XF_CONVERT_16U_TO_8U)  || (_convert_type == XF_CONVERT_16S_TO_8U)
-			|| ( _convert_type == XF_CONVERT_32S_TO_8U) || ( _convert_type == XF_CONVERT_32S_TO_16S)
-			|| (_convert_type == XF_CONVERT_32S_TO_16U) || (_convert_type == XF_CONVERT_8U_TO_16U)
-			|| (_convert_type == XF_CONVERT_8U_TO_16S)  || (_convert_type == XF_CONVERT_8U_TO_32S)
-			|| (_convert_type == XF_CONVERT_16U_TO_32S) || (_convert_type == XF_CONVERT_16S_TO_32S)
-			&& " conversion type is not valid "));
-
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
-			&& " NPC must be XF_NPPC1 or XF_NPPC8");
-
-	xfConvertBitDepthKernel<ROWS, COLS, DEPTH_SRC, DEPTH_DST, WORDWIDTH_SRC, WORDWIDTH_DST,NPC,
-	 (COLS>>XF_BITSHIFT(NPC))>(_src_strm, _dst_strm, _convert_type, _shift,_height,_width);
-
-
-}
 
 //#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
@@ -169,39 +134,27 @@ assert(((_height <= ROWS ) && (_width <= COLS)) && "ROWS and COLS should be grea
 template <int SRC_T, int DST_T, int ROWS, int COLS, int NPC=1>
 void convertTo(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat, ap_uint<4> _convert_type, int _shift)
 {
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dst;
+
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+				"NPC must be XF_NPPC1 or XF_NPPC8 ");
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((_dst_mat.rows <= ROWS ) && (_dst_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+
+	assert(( ((_convert_type == XF_CONVERT_16U_TO_8U)  || (_convert_type == XF_CONVERT_16S_TO_8U)
+			|| ( _convert_type == XF_CONVERT_32S_TO_8U) || ( _convert_type == XF_CONVERT_32S_TO_16S)
+			|| (_convert_type == XF_CONVERT_32S_TO_16U) || (_convert_type == XF_CONVERT_8U_TO_16U)
+			|| (_convert_type == XF_CONVERT_8U_TO_16S)  || (_convert_type == XF_CONVERT_8U_TO_32S)
+			|| (_convert_type == XF_CONVERT_16U_TO_32S) || (_convert_type == XF_CONVERT_16S_TO_32S))
+			&& " conversion type is not valid "));
 
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
 
-	Read_Mat_Loop:
-	for(int i=0; i<_src_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
-	}
+	uint16_t width = _src_mat.cols>>(XF_BITSHIFT(NPC));
+	uint16_t height = _src_mat.rows;
 
+	xfConvertBitDepthKernel<SRC_T, DST_T, ROWS, COLS, XF_DEPTH(SRC_T, NPC), XF_DEPTH(DST_T, NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC), NPC,(COLS>>XF_BITSHIFT(NPC))>
+	(_src_mat, _dst_mat, _convert_type, _shift, height, width);
 
-	xfConvertBitDepth< ROWS, COLS, XF_DEPTH(SRC_T, NPC), XF_DEPTH(DST_T, NPC), XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(DST_T,NPC), NPC>(_src, _dst, _convert_type, _shift, _src_mat.rows, _src_mat.cols);
-
-	Write_Mat_Loop:
-	for(int i=0; i<_dst_mat.rows;i++)
-	{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-			#pragma HLS PIPELINE
-			XF_TNAME(DST_T,NPC) outpix = _dst.read();
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = outpix;
-		}
-	}
 
 }
 }

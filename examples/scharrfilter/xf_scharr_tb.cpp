@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -34,6 +34,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int main(int argc, char** argv)
 {
+
 	if(argc != 2)
 	{
 		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
@@ -46,8 +47,9 @@ int main(int argc, char** argv)
 	cv::Mat hls_grad_x, hls_grad_y;
 	cv::Mat diff_grad_x, diff_grad_y;
 
-	// reading in the color image
+	// reading in the gray image
 	in_img = cv::imread(argv[1],0);
+	#define PTYPE CV_8UC1//CV_16SC1 //CV_8U// CV_16S //
 
 	if (in_img.data == NULL)
 	{
@@ -55,9 +57,8 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	//cvtColor(in_img, in_img, CV_BGR2GRAY);
 
-	#define PTYPE CV_8U// CV_16S //
+
 	typedef unsigned char TYPE; //short int TYPE; //
 
 	// create memory for output images
@@ -71,7 +72,7 @@ int main(int argc, char** argv)
 	////////////    Opencv Reference    //////////////////////
 	int scale = 1;
 	int delta = 0;
-	int ddepth = -1;//CV_16S;//
+	int ddepth =-1;//CV_16S;//
 
 	Scharr(in_img, c_grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_CONSTANT );
 	Scharr(in_img, c_grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_CONSTANT );
@@ -88,12 +89,12 @@ int main(int argc, char** argv)
 
 
 
-	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
+	static xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
+	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
 
-	//imgInput.copyTo(in_img.data);
-	imgInput = xf::imread<IN_TYPE, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+
+	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
@@ -107,21 +108,17 @@ int main(int argc, char** argv)
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	
-	//hls_grad_x.data = (unsigned char*)imgOutputx.copyFrom();
-	//hls_grad_y.data = (unsigned char*) imgOutputy.copyFrom();
+
 
 	xf::imwrite("hls_out_x.jpg",imgOutputx);
 	xf::imwrite("hls_out_y.jpg",imgOutputy);
 
 
-	//imwrite("out_hlsx.jpg", hls_grad_x);
-	//imwrite("out_hlsy.jpg", hls_grad_y);
+	imwrite("out_hlsx.jpg", hls_grad_x);
+	imwrite("out_hlsy.jpg", hls_grad_y);
 
 
 	//////////////////  Compute Absolute Difference ////////////////////
-	//absdiff(c_grad_x, hls_grad_x, diff_grad_x);
-	//absdiff(c_grad_y, hls_grad_y, diff_grad_y);
 
 	xf::absDiff(c_grad_x, imgOutputx, diff_grad_x);
 	xf::absDiff(c_grad_y, imgOutputy, diff_grad_y);

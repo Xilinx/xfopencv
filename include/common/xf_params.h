@@ -158,7 +158,8 @@ enum _word_width
 	XF_32FW = 23,
 	XF_2UW = 24,
 	XF_48UW = 25,
-	XF_24UW = 26
+	XF_24UW = 26,
+	XF_48SW =27
 };
 typedef _word_width XF_word_width_e;
 
@@ -301,6 +302,7 @@ enum _pixeltype
 	XF_2UC1  = 8,
 	XF_8UC3  = 9,
 	XF_16UC3  = 10,
+	XF_16SC3 =11
 };
 typedef _pixeltype XF_npt_e;
 

@@ -48,9 +48,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *  			 Wx0*Wy3*data3[0] + Wx1*Wy3*data3[1] + Wx2*Wy3*data3[2] + Wx3*Wy3*data3[3] + Wx4*Wy3*data3[4] +
  *  			 Wx0*Wy4*data4[0] + Wx1*Wy4*data4[1] + Wx2*Wy4*data4[2] + Wx3*Wy4*data4[3] +; Wx4*Wy4*data4[4] +
  */
-static void CoreProcessDownArea(uchar_t *data0,uchar_t *data1,uchar_t *data2,uchar_t *data3,uchar_t *data4,uint16_t *Wx,uint16_t *Wy,uchar_t *pixel,int ioffset,int joffset)
+template<int PLANES>
+static void CoreProcessDownArea(ap_uint<24> *data0,ap_uint<24> *data1,ap_uint<24> *data2,ap_uint<24> *data3,ap_uint<24> *data4,uint16_t *Wx,uint16_t *Wy,ap_uint<24> *pixel,int ioffset,int joffset)
 {
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 	uint32_t W[5],temp0,temp1,temp2,temp3,temp4;
 #pragma HLS ARRAY_PARTITION variable=W complete dim=1
 	uchar_t i;
@@ -79,29 +80,35 @@ static void CoreProcessDownArea(uchar_t *data0,uchar_t *data1,uchar_t *data2,uch
 		// }
 		// cout << "Sum: " << sum << endl;
 	// }
+
 	ic++;
-	temp0 = (Wx[joffset0]*data0[joffset] + Wx[joffset1]*data0[joffset1] + Wx[joffset2]*data0[joffset2] + Wx[joffset3]*data0[joffset3] + Wx[joffset4]*data0[joffset4]);
+	for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+	{
+#pragma HLS UNROLL
+	temp0 = (Wx[joffset0]*data0[joffset].range(k+7,k) + Wx[joffset1]*data0[joffset1].range(k+7,k) + Wx[joffset2]*data0[joffset2].range(k+7,k) + Wx[joffset3]*data0[joffset3].range(k+7,k) + Wx[joffset4]*data0[joffset4].range(k+7,k));
 	W[0] = (temp0 >>8) * Wy[0];
 
-	temp1 = (Wx[joffset0]*data1[joffset] + Wx[joffset1]*data1[joffset1] + Wx[joffset2]*data1[joffset2] + Wx[joffset3]*data1[joffset3] + Wx[joffset4]*data1[joffset4]);
+	temp1 = (Wx[joffset0]*data1[joffset].range(k+7,k) + Wx[joffset1]*data1[joffset1].range(k+7,k) + Wx[joffset2]*data1[joffset2].range(k+7,k) + Wx[joffset3]*data1[joffset3].range(k+7,k) + Wx[joffset4]*data1[joffset4].range(k+7,k));
 	W[1] = (temp1 >>8) * Wy[1];
 
-	temp2 = (Wx[joffset0]*data2[joffset] + Wx[joffset1]*data2[joffset1] + Wx[joffset2]*data2[joffset2] + Wx[joffset3]*data2[joffset3] + Wx[joffset4]*data2[joffset4]);
+	temp2 = (Wx[joffset0]*data2[joffset].range(k+7,k) + Wx[joffset1]*data2[joffset1].range(k+7,k) + Wx[joffset2]*data2[joffset2].range(k+7,k) + Wx[joffset3]*data2[joffset3].range(k+7,k) + Wx[joffset4]*data2[joffset4].range(k+7,k));
 	W[2] = (temp2 >>8)* Wy[2];
 
-	temp3 = (Wx[joffset0]*data3[joffset] + Wx[joffset1]*data3[joffset1] + Wx[joffset2]*data3[joffset2] + Wx[joffset3]*data3[joffset3] + Wx[joffset4]*data3[joffset4]);
+	temp3 = (Wx[joffset0]*data3[joffset].range(k+7,k) + Wx[joffset1]*data3[joffset1].range(k+7,k) + Wx[joffset2]*data3[joffset2].range(k+7,k) + Wx[joffset3]*data3[joffset3].range(k+7,k) + Wx[joffset4]*data3[joffset4].range(k+7,k));
 	W[3] = (temp3 >>8)* Wy[3];
 
-	temp4 = (Wx[joffset0]*data4[joffset] + Wx[joffset1]*data4[joffset1] + Wx[joffset2]*data4[joffset2] + Wx[joffset3]*data4[joffset3] + Wx[joffset4]*data4[joffset4]);
+	temp4 = (Wx[joffset0]*data4[joffset].range(k+7,k) + Wx[joffset1]*data4[joffset1].range(k+7,k) + Wx[joffset2]*data4[joffset2].range(k+7,k) + Wx[joffset3]*data4[joffset3].range(k+7,k) + Wx[joffset4]*data4[joffset4].range(k+7,k));
 	W[4] = (temp4 >>8)* Wy[4];
 
-	pixel[ioffset] = (uchar_t)((W[0] + W[1] + W[2] + W[3] + W[4])>>24);
+
+	pixel[ioffset].range(k+7,k) = (uchar_t)((W[0] + W[1] + W[2] + W[3] + W[4])>>24);
+	}
 }
 /*
  * Processes the 8 pixel block
  * outputs 8 pixles packed into 64-bit
  */
-template<int DEPTH,int NPC,int WORDWIDTH, int DST_COLS>
+template<int DEPTH,int NPC,int WORDWIDTH, int DST_COLS,int PLANES>
 static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeight[DST_COLS][5],uint16_t *Hreq,uint16_t *Wy,XF_TNAME(DEPTH,NPC) *D0,XF_TNAME(DEPTH,NPC) *D1,XF_TNAME(DEPTH,NPC) *D2,XF_TNAME(DEPTH,NPC) *D3,XF_TNAME(DEPTH,NPC) *D4,ap_uint<13> blockstart,ap_uint<13> ind)
 {
 #pragma HLS INLINE
@@ -112,7 +119,8 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 #pragma HLS ARRAY_PARTITION variable=line3 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=line4 complete dim=1
 
-	uchar_t data0[5<<XF_BITSHIFT(NPC)],data1[5<<XF_BITSHIFT(NPC)],data2[5<<XF_BITSHIFT(NPC)],data3[5<<XF_BITSHIFT(NPC)],data4[5<<XF_BITSHIFT(NPC)];
+	//uchar_t data0[5<<XF_BITSHIFT(NPC)],data1[5<<XF_BITSHIFT(NPC)],data2[5<<XF_BITSHIFT(NPC)],data3[5<<XF_BITSHIFT(NPC)],data4[5<<XF_BITSHIFT(NPC)];
+	ap_uint<24> data0[5<<XF_BITSHIFT(NPC)*PLANES],data1[5<<XF_BITSHIFT(NPC)*PLANES],data2[5<<XF_BITSHIFT(NPC)*PLANES],data3[5<<XF_BITSHIFT(NPC)*PLANES],data4[5<<XF_BITSHIFT(NPC)*PLANES];
 #pragma HLS ARRAY_PARTITION variable=data0 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=data1 complete dim=1
 #pragma HLS ARRAY_PARTITION variable=data2 complete dim=1
@@ -121,7 +129,7 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 
 	uint16_t Wx[5<<XF_BITSHIFT(NPC)];
 #pragma HLS ARRAY_PARTITION variable=Wx complete dim=1
-	uchar_t Pixel[8];
+	ap_uint<24> Pixel[8];
 #pragma HLS ARRAY_PARTITION variable=Pixel complete dim=1
 
 	uchar_t i,j,k,input_read;
@@ -131,11 +139,11 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 
 	for(i=0;i<5;i++){
 #pragma HLS unroll
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line0,D0[i],i<<XF_BITSHIFT(NPC));
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line1,D1[i],i<<XF_BITSHIFT(NPC));
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line2,D2[i],i<<XF_BITSHIFT(NPC));
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line3,D3[i],i<<XF_BITSHIFT(NPC));
-		xfExtractPixels<NPC,WORDWIDTH,DEPTH>(line4,D4[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line0,D0[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line1,D1[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line2,D2[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line3,D3[i],i<<XF_BITSHIFT(NPC));
+		xfExtractPixels<NPC,WORDWIDTH,XF_DEPTH(DEPTH,NPC)>(line4,D4[i],i<<XF_BITSHIFT(NPC));
 	}
 
 	if(ind != 0)
@@ -146,7 +154,7 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 	XF_TNAME(DEPTH,NPC) val =0;
 	int shift = 0;
 
-	process_block_loop:for(i=0,j=0;i<(1<<XF_BITSHIFT(NPC));i++,j=j+5)
+	process_block_loop:for(i=0,j=0;i<((1<<XF_BITSHIFT(NPC)));i++,j=j+5)
 	{
 #pragma HLS UNROLL
 		xreq = Hreq[ind+i] - index_offset;
@@ -159,17 +167,19 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 		{
 			input_read = HOffset[index_offset] - block_start_ind;
 		}
-
+//	for(int c=0,w=0;c<PLANES;c++,w+=8)
+//	{
+//	#pragma HLS UNROLL
 		for(k=0;k<5;k++)
 		{
-#pragma HLS UNROLL
+			#pragma HLS UNROLL
 			if(k < xreq)
 			{
-				data0[j + k] = line0[input_read + k];
-				data1[j + k] = line1[input_read + k];
-				data2[j + k] = line2[input_read + k];
-				data3[j + k] = line3[input_read + k];
-				data4[j + k] = line4[input_read + k];
+				data0[j + k] = line0[input_read + k];//.range(w+7,w);
+				data1[j + k] = line1[input_read + k];//.range(w+7,w);
+				data2[j + k] = line2[input_read + k];//.range(w+7,w);
+				data3[j + k] = line3[input_read + k];//.range(w+7,w);
+				data4[j + k] = line4[input_read + k];//.range(w+7,w);
 				Wx[j+k] = HWeight[ind+i][k];
 			}
 			else
@@ -184,10 +194,20 @@ static XF_TNAME(DEPTH,NPC) ProcessBlockArea(ap_uint<13> *HOffset,uint16_t HWeigh
 		}
 		index_offset = Hreq[ind+i];
 
-		CoreProcessDownArea(data0,data1,data2,data3,data4,Wx,Wy,Pixel,i,j);
-		shift = i<<XF_BITSHIFT(NPC);
-		val.range(shift+7,shift) = Pixel[i];
+		CoreProcessDownArea<PLANES>(data0,data1,data2,data3,data4,Wx,Wy,Pixel,i,j);
+//		if(PLANES!=1)
+//		{
+			val = Pixel[i];
+//		}
+//		else
+//		{
+//			shift = i<<XF_BITSHIFT(NPC);
+//			val.range(shift+7,shift) = Pixel[i];
+//		}
+
+
 	}
+//	}
 	return val;
 }
 
@@ -201,8 +221,8 @@ static uint32_t xFUdivResizeDownArea(unsigned short in_n, unsigned short in_d)
 	 return out_div;
  }
  
-template<int SRC_ROWS,int SRC_COLS,int DEPTH,int NPC,int WORDWIDTH,int DST_ROWS,int DST_COLS,int SRC_TC,int DST_TC>
-void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::stream <XF_TNAME(DEPTH,NPC)> &resize_out, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
+template<int SRC_ROWS,int SRC_COLS,int PLANES,int DEPTH,int NPC,int WORDWIDTH,int DST_ROWS,int DST_COLS,int SRC_TC,int DST_TC>
+void xFResizeAreaDownScale(xf::Mat<DEPTH, SRC_ROWS, SRC_COLS, NPC> &stream_in, xf::Mat<DEPTH, DST_ROWS, DST_COLS, NPC> &resize_out, unsigned short height, unsigned short width, unsigned short out_height, unsigned short out_width)
 {
 #pragma HLS ALLOCATION instances=xf::Inverse limit=1 function
 #pragma HLS ALLOCATION instances=xFUdivResizeDownArea limit=1 function
@@ -250,7 +270,7 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 
 	ap_uint<13> block_start,read_offset;
 	uint16_t weight_index = 0, ylimit;
-
+	int read_index = 0, write_index = 0;
 	
 	//float Xscale_float = (width<<XF_BITSHIFT(NPC))/(float)(out_width<<XF_BITSHIFT(NPC));
 	// Xscale = ((width<<XF_BITSHIFT(NPC))*POW16 / (out_width<<XF_BITSHIFT(NPC)) );
@@ -378,7 +398,7 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 #pragma HLS PIPELINE
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS LOOP_TRIPCOUNT min=1 max=SRC_TC
-			lbuf_in[5][x] = stream_in.read();
+			lbuf_in[5][x] = stream_in.data[read_index++];
 			for(i=0;i<5;i++)
 			{
 			#pragma HLS UNROLL
@@ -440,7 +460,7 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 			{
 				if(i<(width<<XF_BITSHIFT(NPC)) && j<=height-5)
 				{
-					XF_TNAME(DEPTH,NPC) read_word = stream_in.read();
+					XF_TNAME(DEPTH,NPC) read_word = stream_in.data[read_index++];
 					lbuf_in[5][i>>XF_BITSHIFT(NPC)] = read_word;
 					for(int bufi=0;bufi<4;bufi++)
 					{
@@ -517,8 +537,8 @@ void xFResizeAreaDownScale(hls::stream <XF_TNAME(DEPTH,NPC)> &stream_in, hls::st
 						D4[k] = 0;
 					}
 				}
-				XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockArea<DEPTH,NPC,WORDWIDTH,DST_COLS>(Hoffset,Hweight,Hreq,Wy,D0,D1,D2,D3,D4,block_start,out_i);
-				resize_out.write(out_pix);
+				XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockArea<DEPTH,NPC,WORDWIDTH,DST_COLS,PLANES>(Hoffset,Hweight,Hreq,Wy,D0,D1,D2,D3,D4,block_start,out_i);
+				resize_out.data[write_index++] = (out_pix);
 				out_i += 1<<XF_BITSHIFT(NPC);
 			}
 			for(int bufi=0;bufi<5;bufi++)

@@ -1,20 +1,18 @@
-APPSOURCES =xf_otsuthreshold_tb.cpp xf_otsuthreshold_accel.cpp
+APPSOURCES = xf_otsuthreshold_tb.cpp  xf_otsuthreshold_accel.cpp
 EXECUTABLE = otsuthreshold.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::OtsuThreshold<0,1080,1920,1>" xf_otsuthreshold_accel.cpp -files ../../include/imgproc/xf_otsuthreshold.hpp -files ../../include/imgproc/xf_histogram.hpp -clkid 2 -sds-end -dmclkid 2 ${VERBOSE}
+-sds-hw "xf::OtsuThreshold<0, 2160,3840,1>"  xf_otsuthreshold_accel.cpp -files ../../include/imgproc/xf_otsuthreshold.hpp -files ../../include/imgproc/xf_histogram.hpp -clkid 2 -sds-end -dmclkid 2 ${VERBOSE}
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
+LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 
 
 CC = sds++ ${SDSCC_FLAGS}
-
-IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
-
-LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 LLIBS = -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -lopencv_imgcodecs -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann
 OLEVEL = -ggdb
-CFLAGS = -Wall ${OLEVEL} -c ${IDIRS} -DHLS_NO_XIL_FPO_LIB
+CFLAGS = -O0 -Wall ${OLEVEL} -c ${IDIRS} -DHLS_NO_XIL_FPO_LIB -mstrict-align -hls-target 1
 LFLAGS = ${OLEVEL} ${LDIRS} ${LLIBS}
 SOURCES := $(patsubst %,./%,$(APPSOURCES))
 OBJECTS := $(APPSOURCES:.cpp=.o)
@@ -30,7 +28,3 @@ clean:
 	${RM} ${EXECUTABLE} ${OBJECTS}
 ultraclean: clean
 	${RM} -rf _sds sd_card ${EXECUTABLE}.bit
-copy:
-	/bin/cp -prf ${XLNX_SRC_PATH}/otsuthreshold/example .
-	/bin/cp -prf ${XLNX_SRC_PATH}/otsuthreshold/src .
-	/bin/cp -prf ${XLNX_SRC_PATH}/histogram/src .

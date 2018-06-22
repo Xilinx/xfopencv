@@ -32,8 +32,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _XF_BILATERAL_FILTER_CONFIG_H_
 #include "hls_stream.h"
 #include "ap_int.h"
-#include "xf_config_params.h"
+
 #include "common/xf_common.h"
+#include "xf_config_params.h"
 #include "imgproc/xf_bilateral_filter.hpp"
 
 typedef unsigned short int  uint16_t;
@@ -58,5 +59,12 @@ typedef unsigned short int  uint16_t;
 #elif FILTER_SIZE_7
 #define FILTER_WIDTH 7
 #endif
-void bilateral_filter_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_dst, float sigma_color, float sigma_space);
+
+
+
+
+#define TYPE XF_8UC1
+
+
+void bilateral_filter_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst, float sigma_color, float sigma_space);
 #endif //_AU_BILATERAL_FILTER_CONFIG_H_

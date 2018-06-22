@@ -50,8 +50,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace xf{
 
-template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int COL_TRIP>
-void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
+template <int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH,int COL_TRIP>
+void xFMinMaxLocKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,
 		int &_minval1,  int &_maxval1,unsigned short int &_minlocx,unsigned short int &_minlocy,
 		unsigned short int &_maxlocx,unsigned short int &_maxlocy,uint16_t height,uint16_t width)
 {
@@ -114,7 +114,7 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 #pragma HLS pipeline
 
 			// reading the data from the stream
-			val_in = _src.read();
+			val_in = _src.data[i*width+j];
 			XF_PTNAME(DEPTH) pixel_buf[(1<<XF_BITSHIFT(NPC))+1];
 #pragma HLS ARRAY_PARTITION variable=pixel_buf complete dim=1
 
@@ -228,59 +228,25 @@ void xFMinMaxLoc_core(hls::stream<XF_SNAME(WORDWIDTH) >& _src,
 	_maxval1=_maxval;
 }
 
-/**
- * xFMinMaxLocKernel: This function acts as a wrapper and calls the kernel function
- *  xFMinMaxLoc_core.
- */
-template <int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFMinMaxLocKernel(hls::stream < XF_SNAME(WORDWIDTH) >& _src,
-		int &_minval, int &_maxval,unsigned short int &_minlocx,unsigned short int &_minlocy,
-		unsigned short int &_maxlocx,unsigned short int &_maxlocy,uint16_t height, uint16_t width)
-{
 
-	assert(((DEPTH == XF_8UP) || (DEPTH == XF_16UP) || (DEPTH == XF_16SP) ||
-			(DEPTH == XF_32UP) || (DEPTH == XF_32SP)) &&
-			"Depth must be XF_8UP, XF_16UP, XF_16SP, XF_32UP or XF_32SP");
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) &&
-			"NPC must be XF_NPPC1, XF_NPPC8 or XF_NPPC16");
-	assert(
-			((WORDWIDTH == XF_8UW) || (WORDWIDTH == XF_16UW)  ||
-			(WORDWIDTH == XF_32UW)  || (WORDWIDTH == XF_64UW)  ||
-			(WORDWIDTH == XF_128UW) || (WORDWIDTH == XF_256UW) ||
-			(WORDWIDTH == XF_512UW)) &&
-			"WORDWIDTH must be XF_8UW, XF_16UW, XF_32UW, XF_64UW, XF_128UW, XF_256UW or XF_512UW");
-
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	width=width>>XF_BITSHIFT(NPC);
-
-	xFMinMaxLoc_core<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))>(_src,_minval,_maxval,_minlocx,_minlocy,_maxlocx,_maxlocy,height,width);
-
-}
 //#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 template<int SRC_T,int ROWS,int COLS,int NPC=0>
 void minMaxLoc(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,int32_t *min_value, int32_t *max_value,uint16_t *_minlocx, uint16_t *_minlocy, uint16_t *_maxlocx, uint16_t *_maxlocy )
 {
-
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) &&
+				"NPC must be XF_NPPC1, XF_NPPC8 or XF_NPPC16");
+	assert(((_src.rows <= ROWS ) && (_src.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
 #pragma HLS inline off
 
-
-#pragma HLS dataflow
-	hls::stream<XF_TNAME(SRC_T, NPC)> _src_stream;
-	int TC = (ROWS * COLS >> XF_BITSHIFT(NPC));
-	Read_Mat_Loop: for (int i = 0; i < (_src.rows * (_src.cols >> XF_BITSHIFT(NPC))); i++) {
-#pragma HLS pipeline ii=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-		_src_stream.write(*(_src.data + i));
-
-	}
 	uint16_t _min_locx,_min_locy,_max_locx,_max_locy;
 	int32_t _min_val,_max_val;
+	uint16_t height = _src.rows;
+	uint16_t width = _src.cols>>XF_BITSHIFT(NPC);
 
-	xFMinMaxLocKernel<ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(_src_stream,_min_val,_max_val,_min_locx,_min_locy,_max_locx,_max_locy,_src.rows,_src.cols);
+	xFMinMaxLocKernel<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>(_src,_min_val,_max_val,_min_locx,_min_locy,_max_locx,_max_locy,height,width);
 
 	  *min_value =_min_val;
 	  *max_value=_max_val;

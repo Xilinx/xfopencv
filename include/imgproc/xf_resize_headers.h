@@ -37,11 +37,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define POW16		65536
 #define POW32	4294967296   // 2^32
 
-#include "imgproc/xf_resize_down_bilinear.hpp"
-#include "imgproc/xf_resize_down_nn.hpp"
+#include "imgproc/xf_resize_nn_bilinear.hpp"
 #include "imgproc/xf_resize_down_area.hpp"
-#include "imgproc/xf_resize_up_bilinear.hpp"
-#include "imgproc/xf_resize_up_nn.hpp"
 #include "imgproc/xf_resize_up_area.hpp"
 
 

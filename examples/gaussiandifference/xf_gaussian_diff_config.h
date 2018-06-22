@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -42,10 +42,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef unsigned short int  uint16_t;
 
-#define WIDTH 1920
-#define HEIGHT 1080
+#define WIDTH 3840
+#define HEIGHT 2160
 
-#define MAXDELAY 7860
+#define MAXDELAY 15360
 
 
 #if FILTER_SIZE_3

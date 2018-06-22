@@ -44,36 +44,41 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	in_gray = cv::imread(argv[1], 0); // reading in the color image
-	if(!in_gray.data)
+	in_img = cv::imread(argv[1], 0); // reading in the input image
+
+	if(!in_img.data)
 	{
 		printf("Failed to load the image ... !!!");
 		return -1;
 	}
 
 	// create memory for output image
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	
+	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
+	out_img.create(in_img.rows,in_img.cols,in_img.depth()); // create memory for output image
+
+	diff.create(in_img.rows,in_img.cols,in_img.depth());
+
+
 	float sigma_color = rng.uniform(0.0,1.0)*255;
 	float sigma_space = rng.uniform(0.0,1.0);
 	
 	std::cout << " sigma_color: " <<  sigma_color << " sigma_space: " << sigma_space << std::endl;
 	
 	// OpenCV bilateral filter function
-	cv::bilateralFilter(in_gray, ocv_ref, FILTER_WIDTH, sigma_color, sigma_space, cv::BORDER_REPLICATE);
+	cv::bilateralFilter(in_img, ocv_ref, FILTER_WIDTH, sigma_color, sigma_space, cv::BORDER_REPLICATE);
 
 	cv::imwrite("output_ocv.png", ocv_ref);
 
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth()); // create memory for output image
 
-	uint16_t width = in_gray.cols;
-	uint16_t height = in_gray.rows;
+	uint16_t width = in_img.cols;
+	uint16_t height = in_img.rows;
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _src(height,width);
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> _dst(height,width);
-	
-	_src = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> _src(height,width);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> _dst(height,width);
+
+
+	_src.copyTo(in_img.data);
+
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
@@ -96,9 +101,9 @@ int main(int argc, char **argv)
 
 	double minval=256,maxval=0;
 	int cnt = 0;
-	for (int i = 0; i < in_gray.rows; i++)
+	for (int i = 0; i < in_img.rows; i++)
 	{
-		for(int j = 0; j < in_gray.cols; j++)
+		for(int j = 0; j < in_img.cols; j++)
 		{
 			uchar v = diff.at<uchar>(i,j);
 			if (v>ERROR_THRESHOLD)
@@ -113,7 +118,7 @@ int main(int argc, char **argv)
 		}
 	}
 	imwrite("error.png", diff); // Save the difference image for debugging purpose
-	float err_per = 100.0*(float)cnt/(in_gray.rows * in_gray.cols);
+	float err_per = 100.0*(float)cnt/(in_img.rows * in_img.cols);
 	std::cout << "Minimum error in intensity = " << minval << std::endl;
 	std::cout << "Maximum error in intensity = " << maxval << std::endl;
 	std::cout << "Percentage of pixels above error threshold = " << err_per  << " Count: " << cnt << std::endl;

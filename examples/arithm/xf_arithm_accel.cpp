@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -32,25 +32,25 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_arithm_config.h"
 
 #if T_8U
-	void arithm_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &imgOutput)
+	void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput)
 	{
 	
-	//	xf::absdiff< XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//	xf::add<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//	xf::subtract<XF_CONVERT_POLICY_SATURATE, XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//	xf::bitwise_and<XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//	xf::bitwise_or<XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//	xf::bitwise_not<XF_8UC1, HEIGHT, WIDTH, NPC1>(imgInput1,imgOutput);
-	//	xf::bitwise_xor< XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-		xf::multiply< XF_CONVERT_POLICY_SATURATE,XF_8UC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput,0.05);
+//		xf::absdiff< TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	//	xf::add<XF_CONVERT_POLICY_SATURATE, TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+//		xf::subtract<XF_CONVERT_POLICY_SATURATE, TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	//	xf::bitwise_and<TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	//	xf::bitwise_or<TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	//	xf::bitwise_not<TYPE, HEIGHT, WIDTH, NPC1>(imgInput1,imgOutput);
+	//	xf::bitwise_xor< TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+		xf::multiply< XF_CONVERT_POLICY_SATURATE,TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput,0.05);
 	}
 #endif
 
 #if T_16S
-	void arithm_accel(xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> &imgOutput)
+	void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput)
 	{
-	//xf::add<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	//xf::subtract<XF_CONVERT_POLICY_SATURATE, XF_16SC1, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
-	xf::multiply< XF_CONVERT_POLICY_SATURATE,XF_16SC1, HEIGHT, WIDTH,NPC1 >(imgInput1,imgInput2,imgOutput,0.05);
+//	xf::add<XF_CONVERT_POLICY_SATURATE, TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	//xf::subtract<XF_CONVERT_POLICY_SATURATE, TYPE, HEIGHT, WIDTH, NPC1 >(imgInput1,imgInput2,imgOutput);
+	xf::multiply< XF_CONVERT_POLICY_SATURATE,TYPE, HEIGHT, WIDTH,NPC1 >(imgInput1,imgInput2,imgOutput,0.05);
 	}
 #endif

@@ -190,7 +190,7 @@ void ProcessMedian3x3(hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > & _src_mat,
 			}
 			else
 			{
-				_out_mat.write(src_buf[WIN_SZ>>1][WIN_SZ>>1]);
+				_out_mat.write(OutputValues[0]); //can use the disable medianblur filter flag at a later point
 			}
 		}
 		

@@ -225,22 +225,22 @@ namespace xf{
 	#pragma HLS RESOURCE variable=csIyiyO core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDixO core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDiyO core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=csIxixO inter WAR false
-	#pragma HLS DEPENDENCE variable=csIxiyO inter WAR false
-	#pragma HLS DEPENDENCE variable=csIyiyO inter WAR false
-	#pragma HLS DEPENDENCE variable=csDixO  inter WAR false
-	#pragma HLS DEPENDENCE variable=csDiyO  inter WAR false
+	#pragma HLS DEPENDENCE variable=csIxixO inter RAW false
+	#pragma HLS DEPENDENCE variable=csIxiyO inter RAW false
+	#pragma HLS DEPENDENCE variable=csIyiyO inter RAW false
+	#pragma HLS DEPENDENCE variable=csDixO  inter RAW false
+	#pragma HLS DEPENDENCE variable=csDiyO  inter RAW false
 
 	#pragma HLS RESOURCE variable=csIxixE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csIxiyE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csIyiyE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDixE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDiyE core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=csIxixE inter WAR false
-	#pragma HLS DEPENDENCE variable=csIxiyE inter WAR false
-	#pragma HLS DEPENDENCE variable=csIyiyE inter WAR false
-	#pragma HLS DEPENDENCE variable=csDixE  inter WAR false
-	#pragma HLS DEPENDENCE variable=csDiyE  inter WAR false
+	#pragma HLS DEPENDENCE variable=csIxixE inter RAW false
+	#pragma HLS DEPENDENCE variable=csIxiyE inter RAW false
+	#pragma HLS DEPENDENCE variable=csIyiyE inter RAW false
+	#pragma HLS DEPENDENCE variable=csDixE  inter RAW false
+	#pragma HLS DEPENDENCE variable=csDiyE  inter RAW false
 
 
 	#pragma HLS RESOURCE variable=cbIxixO core=RAM_2P_BRAM
@@ -248,12 +248,11 @@ namespace xf{
 	#pragma HLS RESOURCE variable=cbIyiyO core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDixO core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDiyO core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=cbIxixO inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIxiyO inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIyiyO inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDixO  inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDiyO  inter WAR false
-
+	#pragma HLS DEPENDENCE variable=cbIxixO inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIxiyO inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIyiyO inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDixO  inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDiyO  inter RAW false
 #if PLATFORM_ZCU104
 	#pragma HLS RESOURCE variable=cbIxixE core=XPM_MEMORY uram
 	#pragma HLS RESOURCE variable=cbIxiyE core=XPM_MEMORY uram
@@ -265,11 +264,11 @@ namespace xf{
 #endif
 	#pragma HLS RESOURCE variable=cbDixE core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDiyE core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=cbIxixE inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIxiyE inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIyiyE inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDixE  inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDiyE  inter WAR false
+	#pragma HLS DEPENDENCE variable=cbIxixE inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIxiyE inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIyiyE inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDixE  inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDiyE  inter RAW false
 
 	  int csIxixR0, csIxiyR0, csIyiyR0, csDixR0, csDiyR0;
 	  int csIxixR1, csIxiyR1, csIyiyR1, csDixR1, csDiyR1;
@@ -747,21 +746,21 @@ namespace xf{
 	#pragma HLS RESOURCE variable=csIyiy core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDix core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=csDiy core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=csIxix inter WAR false
-	#pragma HLS DEPENDENCE variable=csIxiy inter WAR false
-	#pragma HLS DEPENDENCE variable=csIyiy inter WAR false
-	#pragma HLS DEPENDENCE variable=csDix  inter WAR false
-	#pragma HLS DEPENDENCE variable=csDiy  inter WAR false
+	#pragma HLS DEPENDENCE variable=csIxix inter RAW false
+	#pragma HLS DEPENDENCE variable=csIxiy inter RAW false
+	#pragma HLS DEPENDENCE variable=csIyiy inter RAW false
+	#pragma HLS DEPENDENCE variable=csDix  inter RAW false
+	#pragma HLS DEPENDENCE variable=csDiy  inter RAW false
 	#pragma HLS RESOURCE variable=cbIxix core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbIxiy core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbIyiy core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDix core=RAM_2P_BRAM
 	#pragma HLS RESOURCE variable=cbDiy core=RAM_2P_BRAM
-	#pragma HLS DEPENDENCE variable=cbIxix inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIxiy inter WAR false
-	#pragma HLS DEPENDENCE variable=cbIyiy inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDix  inter WAR false
-	#pragma HLS DEPENDENCE variable=cbDiy  inter WAR false
+	#pragma HLS DEPENDENCE variable=cbIxix inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIxiy inter RAW false
+	#pragma HLS DEPENDENCE variable=cbIyiy inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDix  inter RAW false
+	#pragma HLS DEPENDENCE variable=cbDiy  inter RAW false
 
 	  int csIxixR, csIxiyR, csIyiyR, csDixR, csDiyR;
 
