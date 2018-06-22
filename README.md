@@ -67,6 +67,7 @@ June2018  | 4.0            | 2018.2 Xilinx release <br>
 
 3. Added synthesizable AXI interface functions.
 
+4. Added standalone HLS use model examples and documentation.
 
 5. Minor bug fixes.
 
