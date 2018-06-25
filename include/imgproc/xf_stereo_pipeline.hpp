@@ -123,9 +123,20 @@ void xFInitUndistortRectifyMapInverseKernel (
 #pragma HLS ARRAY_PARTITION variable=distCoeffsHLS complete dim=0
 #pragma HLS ARRAY_PARTITION variable=iRnewCameraMatrixHLS complete dim=0
 
-	memcpy(cameraMatrixHLS,cameraMatrix,4*CM_SIZE);
-	memcpy(distCoeffsHLS,distCoeffs,4*N);
-	memcpy(iRnewCameraMatrixHLS,ir,4*CM_SIZE);
+//#NO	memcpy(cameraMatrixHLS,cameraMatrix,4*CM_SIZE);
+//#NO	memcpy(distCoeffsHLS,distCoeffs,4*N);
+//#NO	memcpy(iRnewCameraMatrixHLS,ir,4*CM_SIZE);
+
+  for(int r = 0; r < CM_SIZE; r++)
+    {
+      cameraMatrixHLS[r]      = cameraMatrix[r];
+      iRnewCameraMatrixHLS[r] = ir[r];
+    }
+
+  for(int n = 0; n < N; n++)
+    {
+      distCoeffsHLS[n] = distCoeffs[n];
+    }
 
 	MAP_T mx;
 	MAP_T my;

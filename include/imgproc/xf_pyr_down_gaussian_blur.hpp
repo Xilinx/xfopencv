@@ -99,29 +99,31 @@ void xFPyrDownprocessgaussian(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
-		if(row < img_height && col < img_width)
-			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
-
 		for(int copy_buf_var=0;copy_buf_var<WIN_SZ;copy_buf_var++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 #pragma HLS UNROLL
-			if(	(row >(img_height-1)) && (copy_buf_var>(win_size-1-(row-(img_height-1)))))
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[win_size-1-(row-(img_height-1))])][col];
-			}
-			else
-			{
-				buf_cop[copy_buf_var] = buf[(row_ind[copy_buf_var])][col];
-			}
+           buf_cop[copy_buf_var] = buf[copy_buf_var][col];
 		}
+
+        if(row < img_height && col < img_width)
+            buf    [row_ind[win_size-1]][col] =
+            buf_cop[row_ind[win_size-1]]      = _src_mat.read(); // Read data
+
 		for(int extract_px=0;extract_px<WIN_SZ;extract_px++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 #pragma HLS UNROLL
 			if(col<img_width)
 			{
-				src_buf[extract_px][win_size-1] = buf_cop[extract_px];
+               if(	(row >(img_height-1)) && (extract_px>(win_size-1-(row-(img_height-1)))))
+               {
+                  src_buf[extract_px][win_size-1] = buf_cop[(row_ind[win_size-1-(row-(img_height-1))])];
+               }
+               else
+               {
+                  src_buf[extract_px][win_size-1] = buf_cop[(row_ind[extract_px])];
+               }
 			}
 			else
 			{
@@ -158,7 +160,7 @@ void xFPyrDownprocessgaussian(hls::stream< XF_TNAME(DEPTH,NPC) > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC,int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM>
 void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_out_mat, ap_uint<8> win_size,
 		uint16_t img_height, uint16_t img_width)
@@ -181,8 +183,12 @@ void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	XF_TNAME(DEPTH,NPC) P0;
 
 	XF_TNAME(DEPTH,NPC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))];
-#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+#pragma HLS ARRAY_RESHAPE variable=buf complete dim=1 	
+if (USE_URAM) {
+#pragma HLS RESOURCE variable=buf core=XPM_MEMORY uram
+} else {
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
+}
 
 //initializing row index
 	
@@ -209,11 +215,13 @@ void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 		for(col = 0; col < img_width; col++)
 		{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
+    #pragma HLS pipeline
+			XF_TNAME(DEPTH,NPC) const bufTemp = buf[row_ind[win_size>>1]][col];
 			for(int init_buf=0; init_buf < WIN_SZ>>1;init_buf++)
 			{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=WIN_SZ
 	#pragma HLS UNROLL
-				buf[init_buf][col] = buf[row_ind[win_size>>1]][col];
+				buf[init_buf][col] = bufTemp;
 			}
 		}
 	
@@ -237,7 +245,7 @@ void xf_pyrdown_gaussian_nxn(hls::stream< XF_TNAME(DEPTH,NPC) > &_src_mat,
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ>
+template<int ROWS,int COLS,int DEPTH,int NPC,int WORDWIDTH,int PIPELINEFLAG, int WIN_SZ, int WIN_SZ_SQ, bool USE_URAM>
 void xFPyrDownGaussianBlur(
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_src,
 		hls::stream< XF_TNAME(DEPTH,NPC) > &_dst, ap_uint<8> win_size,
@@ -249,7 +257,7 @@ void xFPyrDownGaussianBlur(
 
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 
-	xf_pyrdown_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ>(_src, _dst,WIN_SZ,imgheight,imgwidth);
+	xf_pyrdown_gaussian_nxn<ROWS,COLS,DEPTH,NPC,WORDWIDTH,(COLS>>XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ_SQ, USE_URAM>(_src, _dst,WIN_SZ,imgheight,imgwidth);
 
 }
 

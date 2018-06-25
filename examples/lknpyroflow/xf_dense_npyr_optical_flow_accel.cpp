@@ -31,6 +31,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void dense_non_pyr_of_accel(xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf0, xf::Mat<XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC> &buf1, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowx, xf::Mat<XF_32FC1,MAX_HEIGHT, MAX_WIDTH, NPPC> &flowy)
 {	
-	xf::DenseNonPyrLKOpticalFlow<KMED, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC>(buf0, buf1, flowx, flowy);
+	xf::DenseNonPyrLKOpticalFlow<KMED, XF_8UC1, MAX_HEIGHT, MAX_WIDTH, NPPC, XF_USE_URAM>(buf0, buf1, flowx, flowy);
 }
 

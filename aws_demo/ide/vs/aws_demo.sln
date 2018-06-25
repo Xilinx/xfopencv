@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "examples", "examples.vcxproj", "{4ABDD7A8-F903-4D12-B736-4BEF47FB6F4B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gaussian_Filter", "Gaussian_Filter.vcxproj", "{4F175088-E060-4DD3-B199-92A67421ACE2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Stereo_Pipeline", "Stereo_Pipeline.vcxproj", "{BE04D816-584B-4836-9C40-FBA3C41593F2}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4ABDD7A8-F903-4D12-B736-4BEF47FB6F4B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4ABDD7A8-F903-4D12-B736-4BEF47FB6F4B}.Debug|Win32.Build.0 = Debug|Win32
+		{4ABDD7A8-F903-4D12-B736-4BEF47FB6F4B}.Release|Win32.ActiveCfg = Release|Win32
+		{4ABDD7A8-F903-4D12-B736-4BEF47FB6F4B}.Release|Win32.Build.0 = Release|Win32
+		{4F175088-E060-4DD3-B199-92A67421ACE2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{4F175088-E060-4DD3-B199-92A67421ACE2}.Debug|Win32.Build.0 = Debug|Win32
+		{4F175088-E060-4DD3-B199-92A67421ACE2}.Release|Win32.ActiveCfg = Release|Win32
+		{4F175088-E060-4DD3-B199-92A67421ACE2}.Release|Win32.Build.0 = Release|Win32
+		{BE04D816-584B-4836-9C40-FBA3C41593F2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{BE04D816-584B-4836-9C40-FBA3C41593F2}.Debug|Win32.Build.0 = Debug|Win32
+		{BE04D816-584B-4836-9C40-FBA3C41593F2}.Release|Win32.ActiveCfg = Release|Win32
+		{BE04D816-584B-4836-9C40-FBA3C41593F2}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

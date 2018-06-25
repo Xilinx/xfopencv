@@ -29,29 +29,38 @@
  ***************************************************************************/
 #ifndef __XF_PYR_DENSE_OPTICAL_FLOW_OFLOW_PROCESS__
 #define __XF_PYR_DENSE_OPTICAL_FLOW_OFLOW_PROCESS__
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int WINSIZE, int IT_WIDTH, int IT_INT, int SIXIY_WIDTH, int SIXIY_INT, int SIXYIT_WIDTH, int SIXYIT_INT>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int WINSIZE, int IT_WIDTH, int IT_INT, int SIXIY_WIDTH, int SIXIY_INT, int SIXYIT_WIDTH, int SIXYIT_INT, bool USE_URAM>
 void find_G_and_b_matrix(hls::stream< ap_int<9> > &strmIx, hls::stream< ap_int<9> > &strmIy, hls::stream< ap_fixed<IT_WIDTH,IT_INT> > &strmIt,
 		hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &sigmaIx2, hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &sigmaIy2, hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &sigmaIxIy,
 		hls::stream< ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> > &sigmaIxIt, hls::stream< ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> > &sigmaIyIt, unsigned int rows, unsigned int cols, int level) {
 #pragma HLS inline off
 	// bufLines is used to buffer Ix, Iy, It in that order
 	ap_int<9> bufLines_ix[WINSIZE][MAXWIDTH+(WINSIZE>>1)];
-#pragma HLS array_partition variable=bufLines_ix complete dim=1
+#pragma HLS array_reshape variable=bufLines_ix complete dim=1
 	ap_int<9> bufLines_iy[WINSIZE][MAXWIDTH+(WINSIZE>>1)];
-#pragma HLS array_partition variable=bufLines_iy complete dim=1
+#pragma HLS array_reshape variable=bufLines_iy complete dim=1
 	ap_fixed<IT_WIDTH,IT_INT> bufLines_it[WINSIZE][MAXWIDTH+(WINSIZE>>1)];
-#pragma HLS array_partition variable=bufLines_it complete dim=1
+#pragma HLS array_reshape variable=bufLines_it complete dim=1
 
 	ap_fixed<SIXIY_WIDTH,SIXIY_INT>  colsum_IxIx[MAXWIDTH+(WINSIZE>>1)];
 	ap_fixed<SIXIY_WIDTH,SIXIY_INT>  colsum_IxIy[MAXWIDTH+(WINSIZE>>1)];
 	ap_fixed<SIXIY_WIDTH,SIXIY_INT>  colsum_IyIy[MAXWIDTH+(WINSIZE>>1)];
 	ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> colsum_IxIt[MAXWIDTH+(WINSIZE>>1)];
 	ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> colsum_IyIt[MAXWIDTH+(WINSIZE>>1)];
-#pragma HLS RESOURCE variable=colsum_IxIx core=RAM_T2P_BRAM
-#pragma HLS RESOURCE variable=colsum_IxIy core=RAM_T2P_BRAM
-#pragma HLS RESOURCE variable=colsum_IyIy core=RAM_T2P_BRAM
-#pragma HLS RESOURCE variable=colsum_IxIt core=RAM_T2P_BRAM
-#pragma HLS RESOURCE variable=colsum_IyIt core=RAM_T2P_BRAM
+
+#pragma HLS ARRAY_MAP variable=bufLines_ix instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=bufLines_iy instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=bufLines_it instance=buffers vertical
+
+#pragma HLS ARRAY_MAP variable=colsum_IxIx instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=colsum_IxIy instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=colsum_IyIy instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=colsum_IxIt instance=buffers vertical
+#pragma HLS ARRAY_MAP variable=colsum_IyIt instance=buffers vertical
+
+if (USE_URAM) {
+#pragma HLS RESOURCE variable=bufLines_ix core=XPM_MEMORY uram
+}
 
 	ap_fixed<SIXIY_WIDTH,SIXIY_INT>  colsum_prevWIN_IxIx[WINSIZE];
 	ap_fixed<SIXIY_WIDTH,SIXIY_INT>  colsum_prevWIN_IxIy[WINSIZE];

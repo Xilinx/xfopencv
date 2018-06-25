@@ -232,7 +232,7 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 } // end find_flow()
 
 
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, bool USE_URAM>
 void xFLKOpticalFlowDenseKernel(unsigned char *currImg, unsigned char *nextImg, unsigned int *strmFlowin, unsigned int *strmFlow, const unsigned int rows, const unsigned int cols, const unsigned int prev_rows, const unsigned int prev_cols, const int level, const bool scale_up_flag, float scale_in, ap_uint<1> init_flag) {
 
 const int WINDOW_SIZE  = WINDOW_SIZE_FL;
@@ -290,22 +290,20 @@ const int ITCMP_INT    = FLOW_INT+12;
 	split_stream_int_fixed<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT>(strmFlowin, strmFlowU_split, strmFlowV_split, prev_rows, prev_cols, level);
 	
 	//scaling up U and V streams whenever scaleup is enabled
-	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT>( strmFlowU_split, strmFlowU_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
-	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT>( strmFlowV_split, strmFlowV_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
+	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT, USE_URAM>( strmFlowU_split, strmFlowU_scaled, strmFlowV_split, strmFlowV_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
 	
 	//Finding the Temporal and space gradients for the input set of images
-	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
+	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT, USE_URAM>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
 
 	//finding the hessian matrix
-	find_G_and_b_matrix<MAXHEIGHT, MAXWIDTH, WINSIZE, IT_WIDTH, IT_INT, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT>(strmIx, strmIy, strmIt_float,  sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, rows, cols, level);
+	find_G_and_b_matrix<MAXHEIGHT, MAXWIDTH, WINSIZE, IT_WIDTH, IT_INT, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT, USE_URAM>(strmIx, strmIy, strmIt_float,  sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, rows, cols, level);
 	
 	//computing the the optical flow
 	
 	find_flow<MAXHEIGHT, MAXWIDTH, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT, FLOW_WIDTH, FLOW_INT, DET_WIDTH, DET_INT, DIVBY_WIDTH, DIVBY_INT, FLCMP_WIDTH, FLCMP_INT, WINSIZE>(sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, strmFlowU_in1, strmFlowV_in1, strmFlowU_fil, strmFlowV_fil, flagU, flagV, rows, cols,level,scale_up_flag,init_flag);
 	
 	//filtering the flow vectors using median blur
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT> (strmFlowU_fil, strmFlowU_fil_out, flagU, WINDOW_SIZE,1,rows,cols);
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT> (strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
+	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT, USE_URAM> (strmFlowU_fil, strmFlowU_fil_out, flagU, strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
 	
 	//stitching the U and V flow streams to a single flow stream
 	stitch_stream_fixed_int<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT>(strmFlowU_fil_out, strmFlowV_fil_out, strmFlow, rows, cols, level);
