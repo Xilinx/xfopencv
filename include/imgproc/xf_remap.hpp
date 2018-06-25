@@ -60,6 +60,18 @@ void xFRemapNNI(
 
 	ap_uint<64> bufUram[WIN_ROW][(COLS+7)/8];
 #pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
+    //additional separation of URAM buffer to single URAMs to exclude their built-in cascading and thus limited timing
+    //due to inability of VHLS to schedule built-in cascade register (OREG_CAS) 
+    enum {
+      BUF_DEPTH = WIN_ROW * ((COLS+7)/8),
+      URAM_DEPTH = 4096,
+      BUF_URAMS = (BUF_DEPTH + URAM_DEPTH-1) / URAM_DEPTH,
+      PART_FACTOR = BUF_URAMS != 2 ? BUF_URAMS : 1 // exluding factor=2 as it leads to II degradation, so built-in cascading is left for the case of just 2 URAMs
+    };
+    if (USE_URAM) {
+      assert(PART_FACTOR <= ((COLS+7)/8));
+      #pragma HLS array_partition variable=bufUram dim=2 factor=PART_FACTOR block
+    }
 	SRC_T sx8[8];
 #pragma HLS ARRAY_PARTITION variable=sx8 complete dim=1
 
@@ -146,6 +158,18 @@ void xFRemapLI(
     //URAM storage garnularity is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
     ap_uint<72> bufUram[(WIN_ROW+1)/2][(COLS+1)/2];
 #pragma HLS RESOURCE variable=bufUram core=XPM_MEMORY uram
+    //additional separation of URAM buffer to single URAMs to exclude their built-in cascading and thus limited timing
+    //due to inability of VHLS to schedule built-in cascade register (OREG_CAS) 
+    enum {
+      BUF_DEPTH = ((WIN_ROW+1)/2) * ((COLS+1)/2),
+      URAM_DEPTH = 4096,
+      BUF_URAMS = (BUF_DEPTH + URAM_DEPTH-1) / URAM_DEPTH,
+      PART_FACTOR = BUF_URAMS != 2 ? BUF_URAMS : 1 // exluding factor=2 as it leads to II degradation, so built-in cascading is left for the case of just 2 URAMs
+    };
+    if (USE_URAM) {
+      assert(PART_FACTOR <= ((COLS+1)/2));
+      #pragma HLS array_partition variable=bufUram dim=2 factor=PART_FACTOR block
+    }
     SRC_T lineBuf[COLS]; //addtitional cashing as VHLS doesn't support URAM Byte Enables
 	SRC_T s3x3[2][9]; //URAM-wide word is doubled to resolve pipelining read/write dependency
 #pragma HLS ARRAY_PARTITION complete variable=s3x3 dim=0
