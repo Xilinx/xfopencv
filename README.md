@@ -23,14 +23,14 @@ Where 'xfopencv' is the name of the directory where the repository will be store
 ## HARDWARE and SOFTWARE REQUIREMENTS
 The xfOpenCV library is designed to work with Zynq and Zynq Ultrascale+ FPGAs. The library has been verified on zcu102 and zcu104 boards.
 SDSoC 2018.2 Development Environment is required to work with the library.
-zcu102 reVISION platform is required to run the library on zcu102 board and zcu104 reVISION platform to run on zcu104 board. Please download it from here: [reVISION Platform] (link yet to be updated)
+zcu102 reVISION platform is required to run the library on zcu102 board and zcu104 reVISION platform to run on zcu104 board. Please download it from here: [reVISION Platform]
 
 ## OTHER INFORMATION
 Full User Guide for xfOpenCV and using OpenCV on Xilinx devices Check here:
 [Xilinx OpenCV User Guide][]
 
 For information on getting started with the reVISION stack check here:
-[reVISION Getting Started Guide] (link yet to be updated)
+[reVISION Getting Started Guide]
 
 For more information about SDSoC check here:
 [SDSoC User Guides][]
@@ -75,8 +75,8 @@ June2018  | 4.0            | 2018.2 Xilinx release <br>
 1. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
 
 
-[reVISION Getting Started Guide]: http://www.wiki.xilinx.com/reVISION+Getting+Started+Guide
-[reVISION Platform]: https://www.xilinx.com/member/forms/download/design-license-xef.html?akdm=1&filename=zcu102-rv-ss-2017-4.zip
+[reVISION Getting Started Guide]: https://github.com/Xilinx/Revision-Getting-Started-Guide
+[reVISION Platform]: https://github.com/Xilinx/Revision-Getting-Started-Guide/blob/master/software-tools-system-requirements.md#32-software
 [SDSoC Forums]: https://forums.xilinx.com/t5/SDSoC-Development-Environment/bd-p/sdsoc
 [SDSoC User Guides]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_2/ug1027-sdsoc-user-guide.pdf
 [3-Clause BSD License]: LICENSE.txt
