@@ -11,3 +11,4 @@ void resize (xf::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> &_src, xf::Mat<TYPE, DST_ROW
 MAX_DOWN_SCALE	- Set to 2 for all 1-pixel modes, and for upscale in x direction.
 When down scaling in x direction in 8-pixel mode, please set this parameter to the next highest integer value of the down scale factor i.e., if downscaling from 1920 columns to 1280 columns, set to 2. For 1920 to 640, set to 3.
 
+
