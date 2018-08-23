@@ -73,6 +73,7 @@ June2018  | 4.0            | 2018.2 Xilinx release <br>
 
 #### Known Issues:
 1. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
+2. Missing template parameter in the description of Resize function in UG1233. Details [here](https://github.com/Xilinx/xfopencv/tree/master/examples/resize/resize_doc_errata.md).
 
 
 [reVISION Getting Started Guide]: https://github.com/Xilinx/Revision-Getting-Started-Guide
