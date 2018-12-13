@@ -72,33 +72,33 @@ December2018  | 5.0            | 2018.3 Xilinx release <br>
 
 3. Added UltraRAM support for the following  functions:
 
-  • Box Filter
+      • Box Filter
 
-  • Canny Edge Detection
+      • Canny Edge Detection
 
-  • Demosaicing
+      • Demosaicing
 
-  • Dense Pyramidal Optical Flow
+      • Dense Pyramidal Optical Flow
 
-  • Harris Corner
+      • Harris Corner
 
-  • Histogram Of Gradients (HOG)
+      • Histogram Of Gradients (HOG)
 
-  • Kalman Filter
+      • Kalman Filter
 
-  • Non-Pyramidal Optical Flow
+      • Non-Pyramidal Optical Flow
 
-  • Pyramid down
+      • Pyramid down
 
-  • Remap
+      • Remap
 
-  • Sobel filter
+      • Sobel filter
 
-  • StereoLBM
+      • StereoLBM
 
-  • Stereo Pipeline
+      • Stereo Pipeline
 
-  • Warp Transform
+      • Warp Transform
 
 
 
