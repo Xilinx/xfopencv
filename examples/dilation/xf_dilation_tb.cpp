@@ -45,9 +45,10 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img,in_img1,out_img,ocv_ref;
 	cv::Mat in_gray,in_gray1,diff;
-
+#if GRAY
 	// reading in the color image
 	in_gray = cv::imread(argv[1], 0);
+#endif
 
 
 	if (in_gray.data == NULL)
@@ -57,24 +58,39 @@ int main(int argc, char** argv)
 	}
 
 
-
-		//cvtColor(in_gray,in_gray,CV_BGR2GRAY);
+#if GRAY
 		// create memory for output images
 		ocv_ref.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		out_img.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		diff.create(in_gray.rows,in_gray.cols,CV_8UC1);
-		///////////////// 	Opencv  Reference  ////////////////////////
-		cv::Mat element = cv::getStructuringElement( 0,cv::Size(3, 3), cv::Point(-1, -1));
-		cv::dilate(in_gray, ocv_ref, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
+#endif
+
+
+
+		cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
+		cv::dilate(in_gray, ocv_ref, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 		cv::imwrite("out_ocv.jpg", ocv_ref);
+	/////////////////////	End of OpenCV reference	 ////////////////
 
-
+	////////////////////	HLS TOP function call	/////////////////
 
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 
-	//imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+#if __SDSCC__
+	unsigned char *structure_element=(unsigned char *)sds_alloc_non_cacheable(sizeof(unsigned char)*FILTER_SIZE*FILTER_SIZE);
+#else
+	unsigned char structure_element[FILTER_SIZE*FILTER_SIZE];
+#endif
+
+
+	for(int i=0;i<(FILTER_SIZE*FILTER_SIZE);i++)
+	{
+		structure_element[i]=element.data[i];
+	}
+
+//	unsigned char iterations=2;
 
 	imgInput.copyTo(in_gray.data);
 
@@ -85,7 +101,7 @@ int main(int argc, char** argv)
 	hw_ctr.start();
 	#endif
 
-	dilation_accel(imgInput, imgOutput);
+	dilation_accel(imgInput, imgOutput, structure_element);
 
 	#if __SDSCC__
 	hw_ctr.stop();

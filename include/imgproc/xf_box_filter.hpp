@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -183,7 +183,7 @@ void ProcessBox3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
  * Output : _dst_mat --> output image of input type
  */
 template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
-int WORDWIDTH_DST, int COLS_COUNT>
+int WORDWIDTH_DST, int COLS_COUNT,bool USE_URAM>
 void xFBoxFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst, uint16_t img_height, uint16_t img_width)
 {
@@ -205,8 +205,15 @@ void xFBoxFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 
 	XF_SNAME(WORDWIDTH_SRC) P0;
 	XF_SNAME(WORDWIDTH_SRC) buf[3][COLS>>XF_BITSHIFT(NPC)];								// Line Buffer to hold image row data
+if(USE_URAM)
+{
+#pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
+#pragma HLS array reshape variable=buf dim=1 factor=3 cyclic	
+}
+else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+}
 
 	bufColLoop:
 	for(col = 0; col < img_width; col++)
@@ -448,7 +455,7 @@ void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * Inputs : _src_mat --> input image of type XF_8U, XF_16U or XF_16S
  * Output : _dst_mat --> output image of input type
  */
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int WORDWIDTH_AP, int TC>
+template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int WORDWIDTH_AP, int TC,bool USE_URAM>
 void xFBoxFilter5x5(hls::stream < XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 		hls::stream < XF_SNAME(WORDWIDTH_DST) > &_dst_mat, uint16_t img_height, uint16_t img_width)
 {
@@ -477,9 +484,15 @@ void xFBoxFilter5x5(hls::stream < XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 	XF_SNAME(WORDWIDTH_DST) inter_val = 0;
 	// Temporary buffer to hold image data from five rows
 	XF_SNAME(WORDWIDTH_SRC)  buf[5][(COLS >> XF_BITSHIFT(NPC))];
+if(USE_URAM)
+{
+#pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
+#pragma HLS array reshape variable=buf dim=1 factor=5 cyclic	
+}
+else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
-
+}
 	row_ind = 2;
 
 	Clear_Row_Loop:
@@ -898,7 +911,7 @@ void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
  * Output : _dst_mat --> output image of input type
  */
 template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
-int WORDWIDTH_DST,int WORDWIDTH_AP, int TC>
+int WORDWIDTH_DST,int WORDWIDTH_AP, int TC,bool USE_URAM>
 void xFBoxFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst_mat, uint16_t img_height, uint16_t img_width)
 {
@@ -925,8 +938,15 @@ void xFBoxFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 	uint16_t shiftx = 0;
 
 	XF_SNAME(WORDWIDTH_SRC) buf[7][(COLS >> XF_BITSHIFT(NPC))];
+if(USE_URAM)
+{
+#pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
+#pragma HLS array reshape variable=buf dim=1 factor=7 cyclic	
+}
+else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+}
 	row_ind = 3;
 
 	Clear_Row_Loop:
@@ -1026,7 +1046,7 @@ void xFBoxFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
  * xFBoxFilter : This function calls the filter operations depending upon the
  * filter type. This acts as a wrapper function.
  */
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
+template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,bool USE_URAM>
 void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst,uint8_t _filter_type, uint8_t _border_type,uint16_t img_height,
 		uint16_t img_width)
@@ -1042,24 +1062,24 @@ void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 	if(_filter_type == XF_FILTER_3X3)
 	{
 		xFBoxFilter3x3<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-		WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+		WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 	}
 	else if(_filter_type == XF_FILTER_5X5)
 	{
 		if(NPC == XF_NPPC16)
 		{
 			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 		else if(NPC == XF_NPPC8)
 		{
 			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 		else
 		{
 			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 	}
 
@@ -1068,17 +1088,17 @@ void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 		if(NPC == XF_NPPC16)
 		{
 			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 		else if(NPC == XF_NPPC8)
 		{
 			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 		else
 		{
 			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC))>(_src,_dst, img_height, img_width);
+			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
 		}
 	}
 
@@ -1089,7 +1109,7 @@ void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
-template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T, int ROWS, int COLS,int NPC>
+template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1,bool USE_URAM=false>
 void boxFilter(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
@@ -1112,7 +1132,7 @@ void boxFilter(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, C
 	}
 
 
-	xFBoxFilterKernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC)>(_src,_dst,FILTER_TYPE,BORDER_TYPE,_src_mat.rows,_src_mat.cols);
+	xFBoxFilterKernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC),USE_URAM>(_src,_dst,FILTER_TYPE,BORDER_TYPE,_src_mat.rows,_src_mat.cols);
 
 
 	for(int i=0; i<_dst_mat.rows;i++)

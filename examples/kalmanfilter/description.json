@@ -1,0 +1,22 @@
+{
+    "example" : "KalmanFilter - File I/O",
+    "overview" : "KalmanFilter",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss",
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "KalmanFilter",
+            "location" : "<LIBRARY>/include/imgproc/xf_kalmanfilter.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

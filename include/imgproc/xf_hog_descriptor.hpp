@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,7 +48,7 @@ namespace xf {
 #pragma SDS data copy("_in_mat.data"[0:"_in_mat.size"])
 #pragma SDS data copy("_desc_mat.data"[0:"_desc_mat.size"])
 template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int BLOCK_HEIGHT, int BLOCK_WIDTH, int CELL_HEIGHT, int CELL_WIDTH, 
-int NOB, int DESC_SIZE, int IMG_COLOR, int OUTPUT_VARIANT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1>
+int NOB, int DESC_SIZE, int IMG_COLOR, int OUTPUT_VARIANT, int SRC_T, int DST_T, int ROWS, int COLS, int NPC = XF_NPPC1,bool USE_URAM=false>
 void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, DESC_SIZE, NPC> &_desc_mat)
 {
 	hls::stream< XF_TNAME(SRC_T,NPC) > in_strm;
@@ -71,17 +71,17 @@ void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, D
 
 	// Process function: performs HoG over the input stream and writes the descriptor data to the output stream
 	xFDHOG < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,BLOCK_HEIGHT,BLOCK_WIDTH,CELL_HEIGHT,CELL_WIDTH,
-	NOB,ROWS,COLS,XF_8UP,XF_16UP,XF_NPPC1,XF_8UW,XF_576UW,IMG_COLOR > (in,_block_strm,_in_mat.rows,_in_mat.cols);
+	NOB,ROWS,COLS,XF_8UP,XF_16UP,XF_NPPC1,XF_8UW,XF_576UW,IMG_COLOR,USE_URAM > (in,_block_strm,_in_mat.rows,_in_mat.cols);
 
 	if (OUTPUT_VARIANT == XF_HOG_RB) {
 		// writes the Descriptor data Window wise
 		xFWriteHOGDescRB < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,CELL_HEIGHT,CELL_WIDTH,NOB,
-		ROWS,COLS,XF_16UP,XF_16UP,XF_NPPC1,XF_576UW,XF_32UW > (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
+		ROWS,COLS,XF_16UP,XF_16UP,XF_NPPC1,XF_576UW,XF_32UW,USE_URAM > (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
 	}
 	else if (OUTPUT_VARIANT == XF_HOG_NRB) {
 		// writes the block data and the descriptors are formed on the host
 		xFWriteHOGDescNRB < BLOCK_HEIGHT,BLOCK_WIDTH,CELL_HEIGHT,CELL_WIDTH,NOB,XF_DHOG,
-		ROWS,COLS,XF_16UP,XF_NPPC1,XF_576UW,XF_TNAME(DST_T,NPC) > (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
+		ROWS,COLS,XF_16UP,XF_NPPC1,XF_576UW,XF_TNAME(DST_T,NPC)> (_block_strm,desc_strm,_in_mat.rows,_in_mat.cols);
 	}
 
 	int OUT_TC=(ROWS*COLS>>XF_BITSHIFT(NPC));

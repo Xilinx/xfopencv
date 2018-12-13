@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -51,11 +51,11 @@ namespace xf{
 #pragma SDS data data_mover("_next_image.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_streamFlowin.data":AXIDMA_SIMPLE)
 #pragma SDS data data_mover("_streamFlowout.data":AXIDMA_SIMPLE)
-template<int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, int TYPE, int ROWS, int COLS, int NPC>
+template<int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, int TYPE, int ROWS, int COLS, int NPC, bool USE_URAM = false>
 void densePyrOpticalFlow(xf::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _current_img, xf::Mat<XF_8UC1,ROWS,COLS,XF_NPPC1> & _next_image, xf::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowin, xf::Mat<XF_32UC1,ROWS,COLS,XF_NPPC1> & _streamFlowout, const int level, const unsigned char scale_up_flag, float scale_in, ap_uint<1> init_flag)
 {
 	#pragma HLS INLINE OFF
-	xFLKOpticalFlowDenseKernel<ROWS, COLS, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, FLOW_WIDTH, FLOW_INT>((unsigned char *)_current_img.data, (unsigned char *)_next_image.data, (unsigned int *)_streamFlowin.data, (unsigned int *)_streamFlowout.data, _current_img.rows, _current_img.cols, _streamFlowin.rows, _streamFlowin.cols, level, scale_up_flag, scale_in, init_flag);
+	xFLKOpticalFlowDenseKernel<ROWS, COLS, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, FLOW_WIDTH, FLOW_INT, USE_URAM>((unsigned char *)_current_img.data, (unsigned char *)_next_image.data, (unsigned int *)_streamFlowin.data, (unsigned int *)_streamFlowout.data, _current_img.rows, _current_img.cols, _streamFlowin.rows, _streamFlowin.cols, level, scale_up_flag, scale_in, init_flag);
 }
 }	
 #endif

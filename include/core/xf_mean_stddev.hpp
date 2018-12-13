@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -100,29 +100,18 @@ int p=0;
 			}
 		}
 	}
-//	printf("the kernel tmp_var_vals values are %ld %ld %ld\n",(unsigned int)tmp_var_vals[0],(unsigned int)tmp_var_vals[1],(unsigned int)tmp_var_vals[2]);
 
-	for ( j = 0; j<((1<<XF_BITSHIFT(NPC))*PLANES);j++)
-	{
-#pragma HLS UNROLL
-#if GRAY
-		sum[0] = (sum[0] + tmp_sum_vals[j]);
-#else
-		sum[j]=0;
-		sum[j] = (sum[j] + tmp_sum_vals[j]);
-#endif
+	for ( j = 0; j<(1<<XF_BITSHIFT(NPC));j++) {
+		for(int c=0;c<PLANES;c++) {
+			#pragma HLS UNROLL
+			sum[c] = (sum[c] + tmp_sum_vals[c*(1<<XF_BITSHIFT(NPC))+j]);
+		}
+		for(int c=0;c<PLANES;c++) {
+			#pragma HLS UNROLL
+			var[c] =(ap_uint<64>)((ap_uint<64>) var[c] + (ap_uint<64>)tmp_var_vals[c*(1<<XF_BITSHIFT(NPC))+j]);
+			}
 	}
 
-	for ( j = 0; j<((1<<XF_BITSHIFT(NPC))*PLANES);j++)
-	{
-#pragma HLS UNROLL
-#if GRAY
-		var[0] =(ap_uint<64>)((ap_uint<64>) var[0]+ (ap_uint<64>)tmp_var_vals[j]);
-#else
-		var[j]=0;
-		var[j] =(ap_uint<64>)((ap_uint<64>) var[j]+ (ap_uint<64>)tmp_var_vals[j]);
-#endif
-	}
 
 		for(int c=0;c<PLANES;c++)
 		{
@@ -150,8 +139,7 @@ void xFMeanStddev(hls::stream< XF_SNAME(WORDWIDTH) >& _src_mat,unsigned short* _
 {
 
 
-	assert(
-			(DEPTH == XF_8UP) || (DEPTH == XF_24UP) && "Input image and output image DEPTH should be same");
+	assert((DEPTH == XF_8UP)  && "Input image and output image DEPTH should be same");
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
 			&& " NPC must be XF_NPPC1, XF_NPPC8");

@@ -6,52 +6,19 @@
     "sources": [ "include" ],
     "settings" : {
         "compiler" : {
-            "symbols" : [
-                "HLS_NO_XIL_FPO_LIB"
-            ],
-            "includepaths" : [
-                "${SYSROOT}/usr/include/c++/6.2.1",
-                "${SYSROOT}/usr/include/c++/6.2.1/aarch64-xilinx-linux",
-                "${SYSROOT}/usr/include/c++/6.2.1/backward",
-                "${SYSROOT}/usr/include",
-                "${SYSROOT}/usr/include/glib-2.0",
-                "${SYSROOT}/usr/lib/glib-2.0/include",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/aarch64-linux-gnu",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include/c++/6.2.1/backward",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/lib/gcc/aarch64-linux-gnu/6.2.1/include-fixed",
-                "${XILINX_SDK}/gnu/aarch64/nt/aarch64-linux/aarch64-linux-gnu/include"
-            ],
-            "options" : "-Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare"
+            "options" : "-Wno-overloaded-virtual -Wno-unused-label -Wno-strict-overflow -Wno-uninitialized -Wno-unused-function -Wno-unused-variable -Wno-unknown-attributes -Wno-unused-local-typedefs -Wno-sign-compare -mstrict-align -hls-target 1"
         },
         "linker" : {
             "libraries" : [
-                "video",
                 "opencv_videoio",
-                "glib-2.0",
-                "drm",
-                "v4l2subdev",
-                "mediactl",
                 "opencv_imgcodecs",
                 "opencv_core",
-                "lzma",
-                "tiff",
-                "png16",
-                "z",
-                "jpeg",
                 "opencv_imgproc",
-                "dl",
-                "rt",
-                "webp",
                 "opencv_features2d",
-                "opencv_flann"
+                "opencv_flann",
+				"opencv_video"
             ],
-            "librarypaths" : [
-                "/lib",
-                "/usr/lib"
-            ],
-            "options" : "--sysroot=${SYSROOT} -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib -sdcard ../src/data"
+            "options" : "-sdcard ../src/data"
         }
     }
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -213,7 +213,7 @@ void xFHOGReadFromStream( hls::stream<INPUT_TYPE> &in_stream,
  ********************************************************************************/
 template < int NOB, int WIN_STRIDE, int CELL_HEIGHT, int CELL_WIDTH, int NOVBPW,
 int NOHBPW, int NOVW, int NOHW, int NOVB, int NOHB, int ROWS, int COLS, int DEPTH_SRC,
-int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int loop_count >
+int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int loop_count,bool USE_URAM >
 void xFWriteHOGDescKernelRB(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _block_strm,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _desc_strm,uint16_t novw, uint16_t nohw, uint16_t novb, uint16_t nohb)
@@ -222,6 +222,10 @@ void xFWriteHOGDescKernelRB(
 	XF_SNAME(WORDWIDTH_SRC) feature_buf[NOVBPW][NOHB],
 			block_data_1,
 			block_data_2;
+if (USE_URAM){
+#pragma HLS RESOURCE variable=feature_buf core=RAM_1P_URAM
+}
+
 
 	// indexes for accessing the feature buffer
 	static ap_uint16_t row_idx = 0;
@@ -376,7 +380,7 @@ void xFWriteHOGDescKernelRB(
  *
  ******************************************************************************************************/
 template < int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int CELL_HEIGHT, int CELL_WIDTH, int NOB,
-int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST >
+int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,bool USE_URAM >
 void xFWriteHOGDescRB(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _block_strm,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _desc_strm,uint16_t _height,uint16_t _width)
@@ -403,7 +407,7 @@ void xFWriteHOGDescRB(
 	NPC,
 	WORDWIDTH_SRC,
 	WORDWIDTH_DST,
-	(sizeof(XF_SNAME(WORDWIDTH_SRC))/sizeof(XF_SNAME(WORDWIDTH_DST))) > (_block_strm,_desc_strm,novw,nohw,novb,nohb);
+	(sizeof(XF_SNAME(WORDWIDTH_SRC))/sizeof(XF_SNAME(WORDWIDTH_DST))),USE_URAM > (_block_strm,_desc_strm,novw,nohw,novb,nohb);
 }
 
 
@@ -422,7 +426,7 @@ void xFWriteHOGDescKernelNRB( hls::stream<XF_SNAME(WORDWIDTH)>& _block_strm,
 	uint32_t offset = 0;
 	uchar_t step = word_size<<3;
 	int k=0;
-	ap_uint<16> i;
+	int i;
 	ap_uint<8> j;
 
 	write_loop_1:

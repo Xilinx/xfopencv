@@ -45,6 +45,8 @@ int main(int argc, char **argv)
 
 	cv::Mat img_raw,img,in_gray;
 
+//	printf("%s\n",CV_MAJOR_VERSION);
+
 	// Test image
 	img_raw = cv::imread(argv[1],1); // load as color image through command line argument
 

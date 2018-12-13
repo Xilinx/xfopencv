@@ -3,15 +3,15 @@ EXECUTABLE = colordetect.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::RGB2HSV< 7,2160, 3840,1 >"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_rgb2hsv.hpp -clkid 2 -sds-end -dmclkid 2\
--sds-hw "xf::colorthresholding< 7,0,3,2160, 3840,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_inrange.hpp -clkid 2 -sds-end -dmclkid 2\
--sds-hw "xf::erode<0,0,2160, 3840,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_erosion.hpp -clkid 2 -sds-end -dmclkid 2\
--sds-hw "xf::dilate<0,0,2160, 3840,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_dilation.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::RGB2HSV<7, 2160,3840,1 >"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_rgb2hsv.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::colorthresholding<7, 0,3,2160,3840,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_colorthresholding.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::erode<1, 0,2160,3840,0,3,3,1,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_erosion.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::dilate<1, 0,2160,3840,0,3,3,1,1>"  xf_colordetect_accel.cpp -files ../../include/imgproc/xf_dilation.hpp -clkid 2 -sds-end -dmclkid 2
+
+CC = sds++ ${SDSCC_FLAGS}
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
-
-CC = sds++ ${SDSCC_FLAGS}
 
 LLIBS = -lopencv_imgcodecs -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann 
 #LLIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs 

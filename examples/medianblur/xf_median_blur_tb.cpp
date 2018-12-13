@@ -65,8 +65,7 @@ int main(int argc, char** argv)
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
 
 	
-	//imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
-	imgInput.copyTo(in_gray.data);
+	imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
 
 	#if __SDSCC__
 	perf_counter hw_ctr;		

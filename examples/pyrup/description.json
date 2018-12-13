@@ -3,7 +3,8 @@
     "overview" : "pyrup",
     "board" : [
         "zcu102_es2_rv_ss",
-        "zcu102_rv_ss"
+        "zcu102_rv_ss",
+        "zcu104_rv_ss"
     ],
     "os" : [
         "Linux"

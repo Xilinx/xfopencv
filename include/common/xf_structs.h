@@ -39,21 +39,9 @@
 #include <assert.h>
 #include "xf_types.h"
 #include "hls_stream.h"
-
+#include <math.h>
 #if __SDSCC__
 #include "sds_lib.h"
-
-
-class perf_counter
-{
-public:
-     uint64_t tot, cnt, calls;
-     perf_counter() : tot(0), cnt(0), calls(0) {};
-     inline void reset() { tot = cnt = calls = 0; }
-     inline void start() { cnt = sds_clock_counter(); calls++; };
-     inline void stop() { tot += (sds_clock_counter() - cnt); };
-     inline uint64_t avg_cpu_cycles() { std::cout << "elapsed time "<< ((tot+(calls>>1)) / calls) << std::endl; return ((tot+(calls>>1)) / calls); };
-};
 #endif
 
 namespace xf {
@@ -424,7 +412,7 @@ Mat<T, ROWS, COLS, NPC>::Mat(const Mat& src)
 #endif
 #endif
 			for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
-				data[i] = src.data[i];
+					data[i] = src.data[i];
 			}
 		}
 
@@ -462,7 +450,7 @@ Mat<T, ROWS, COLS, NPC>& Mat<T, ROWS, COLS, NPC>::operator=(const Mat& src)
 	#endif
 #endif
 #endif
-		for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
+			for(int i =0; i< (rows*(cols>>(XF_BITSHIFT(NPC))));++i){
 					data[i] = src.data[i];
 			}
 

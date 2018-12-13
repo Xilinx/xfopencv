@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #ifndef _XF_HOG_DESCRIPTOR_GRADIENTS_HPP_
 #define _XF_HOG_DESCRIPTOR_GRADIENTS_HPP_
@@ -240,7 +240,7 @@ void xFHOGcomputeColGrad(
 
 
 template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC,
-int WORDWIDTH_DST, int NOS_SRC, int TC, int PIX_COUNT>
+int WORDWIDTH_DST, int NOS_SRC, int TC, int PIX_COUNT,bool USE_URAM>
 void xFHOGgradientsKernel(hls::stream<XF_SNAME( WORDWIDTH_SRC)> _src_strm[NOS_SRC],
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>&  _gradx_strm,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>&  _grady_strm,uint16_t _height,uint16_t _width)
@@ -273,8 +273,16 @@ void xFHOGgradientsKernel(hls::stream<XF_SNAME( WORDWIDTH_SRC)> _src_strm[NOS_SR
 
 	// Line buffer to hold image data
 	XF_SNAME(WORDWIDTH_SRC) buf[NOS_SRC][3][(COLS >> XF_BITSHIFT(NPC))];
+
+	if (USE_URAM){
+#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+#pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
+#pragma HLS ARRAY_RESHAPE variable=buf cyclic factor=3 dim=2
+	}
+	else{
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=2
+	}
 
 	row_ind = 1;
 
@@ -429,7 +437,7 @@ void xFHOGgradientsKernel(hls::stream<XF_SNAME( WORDWIDTH_SRC)> _src_strm[NOS_SR
  * 				depending upon the configurations.
  **************************************************************************/
 template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
-int WORDWIDTH_SRC, int WORDWIDTH_DST, int NOS_SRC>
+int WORDWIDTH_SRC, int WORDWIDTH_DST, int NOS_SRC,bool USE_URAM>
 void xFHOGgradients(hls::stream<XF_SNAME(WORDWIDTH_SRC)> _src[NOS_SRC],
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _gradx,
 		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _grady,
@@ -456,7 +464,7 @@ void xFHOGgradients(hls::stream<XF_SNAME(WORDWIDTH_SRC)> _src[NOS_SRC],
 			"input_image_type must be either XF_GRAY or XF_RGB");
 
 	xFHOGgradientsKernel < ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,
-	WORDWIDTH_DST,NOS_SRC,(COLS >> XF_BITSHIFT(NPC)),(XF_NPIXPERCYCLE(NPC)) > (_src,_gradx,_grady,_height,_width);
+	WORDWIDTH_DST,NOS_SRC,(COLS >> XF_BITSHIFT(NPC)),(XF_NPIXPERCYCLE(NPC)),USE_URAM > (_src,_gradx,_grady,_height,_width);
 
 }
 // xFHOGgradients

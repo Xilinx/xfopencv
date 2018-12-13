@@ -60,7 +60,7 @@ int main(int argc,char **argv){
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_height,in_width);
 	static xf::Mat<TYPE, NEWHEIGHT, NEWWIDTH, NPC1> imgOutput(out_height,out_width);
 	
-	imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+	imgInput.copyTo(img.data);
 
 	#ifdef __SDSCC__
 	perf_counter hw_ctr;

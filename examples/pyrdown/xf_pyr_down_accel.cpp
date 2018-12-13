@@ -31,5 +31,5 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void pyr_down_accel(xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> &_dst)
 {	
-	xf::pyrDown <TYPE, HEIGHT, WIDTH,  XF_NPPC1> (_src, _dst);
+	xf::pyrDown <TYPE, HEIGHT, WIDTH,  XF_NPPC1,XF_USE_URAM> (_src, _dst);
 }

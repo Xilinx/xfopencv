@@ -4,7 +4,7 @@ VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM}  ${VERBOSE} \
 -sds-hw "xf::filter2D<0, 3,3,0,0,2160,3840,1>"  xf_custom_convolution_accel.cpp -files ../../include/imgproc/xf_custom_convolution.hpp -clkid 2 -sds-end -dmclkid 2
-#xFfilter2D<XF_BORDER_CONSTANT,FILTER_WIDTH,FILTER_HEIGHT,XF_8UC1,XF_16SC1,HEIGHT, WIDTH,XF_NPPC1>
+
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

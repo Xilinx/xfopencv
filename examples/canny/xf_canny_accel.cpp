@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2016, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 
 #include "xf_canny_config.h"
@@ -34,15 +34,21 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void canny_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> &_src,xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> &_dst,xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> &_dst1,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> &_dst2,unsigned char low_threshold,unsigned char high_threshold)
 {
 
-	#pragma SDS async(1)
+#pragma SDS async(1)
 
-	xf::Canny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE>(_src,_dst,low_threshold,high_threshold);
+	xf::Canny<FILTER_WIDTH,NORM_TYPE,XF_8UC1,XF_2UC1,HEIGHT, WIDTH,INTYPE,OUTTYPE,XF_USE_URAM>(_src,_dst,low_threshold,high_threshold);
 
-	#pragma SDS wait(1)
+#pragma SDS wait(1)
 
+
+#if __SDSCC__
 	_dst1.data = (ap_uint<64>*)_dst.data;
+#else
+	_dst1.copyTo(_dst.data);
+#endif
 
-	xf::EdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8>(_dst1,_dst2);
+
+	xf::EdgeTracing<XF_2UC1,XF_8UC1,HEIGHT, WIDTH, XF_NPPC32,XF_NPPC8,XF_USE_URAM>(_dst1,_dst2);
 }
 
 

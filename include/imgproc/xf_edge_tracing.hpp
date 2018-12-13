@@ -1,4 +1,32 @@
+/***************************************************************************
+Copyright (c) 2018, Xilinx, Inc.
+All rights reserved.
 
+Redistribution and use in source and binary forms, with or without modification, 
+are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, 
+this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, 
+this list of conditions and the following disclaimer in the documentation 
+and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors 
+may be used to endorse or promote products derived from this software 
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+***************************************************************************/
 
 #ifndef _XF_EDGE_TRACING_HPP_
 #define _XF_EDGE_TRACING_HPP_
@@ -13,21 +41,23 @@
 #include <ap_int.h>
 #include <string.h>
 
-#define BRAMS_SETS			36
-#define BRAM_DEPTH			512
-#define INTRA_ITERATIONS	8
-#define INTER_ITERATIONS	2
-#define SLICES				4
-#define PIXELS				34
-#define PACK_PIXEL_BITS		128
 
-#define	MIN(x, y)			(((x) < (y)) ? (x) : (y))
-#define PIXEL_PROCESS_BITS	68
-#define BRAMS_TOTAL			BRAMS_SETS+2
+
+#define INTRA_ITERATIONS    8
+#define INTER_ITERATIONS    2
+#define SLICES              4
+#define PIXELS              34
+#define MIN_OVERLAP         10
+#define PIXEL_PROCESS_BITS  68
+
+#define MIN(x, y)             (((x) < (y)) ? (x) : (y))
+#define DIV_CEIL(x, y)        (((x)+(y)-1)/(y))
+#define ADJUST_MULTIPLE(x, y) (DIV_CEIL(x, y)*(y))
 
 namespace xf{
 
-static void applyEqn(ap_uint<2>& x0, ap_uint<2>& x1, ap_uint<2>& x2, ap_uint<2>& x3,
+static void applyEqn (
+		ap_uint<2>& x0, ap_uint<2>& x1, ap_uint<2>& x2, ap_uint<2>& x3,
 		ap_uint<2>& a, ap_uint<2>& x4, ap_uint<2>& x5, ap_uint<2>& x6,
 		ap_uint<2>& x7) {
 #pragma HLS inline
@@ -36,35 +66,30 @@ static void applyEqn(ap_uint<2>& x0, ap_uint<2>& x1, ap_uint<2>& x2, ap_uint<2>&
 	bool a0 = a.range(1, 1);
 	bool a1 = a.range(0, 0);
 
-	//# if center pixel is weak
-	CASE_1: if (a0 == false && a1 == true) {
-		//# if any of the surrounding pixel is strong, center pixel changes to strong. Otherwise remains weak
-		a1 |= (x0.range(1, 1) | x1.range(1, 1) | x2.range(1, 1) | x3.range(1, 1)
-				| x4.range(1, 1) | x5.range(1, 1) | x6.range(1, 1)
-				| x7.range(1, 1));
-	}
-	//# if center pixel is strong
-	CASE_2: if (a0 == true && a1 == true) {
-		x0.range(1, 1) = x0.range(1, 1) | x0.range(0, 0);
-		x1.range(1, 1) = x1.range(1, 1) | x1.range(0, 0);
-		x2.range(1, 1) = x2.range(1, 1) | x2.range(0, 0);
-		x3.range(1, 1) = x3.range(1, 1) | x3.range(0, 0);
-		x4.range(1, 1) = x4.range(1, 1) | x4.range(0, 0);
-		x5.range(1, 1) = x5.range(1, 1) | x5.range(0, 0);
-		x6.range(1, 1) = x6.range(1, 1) | x6.range(0, 0);
-		x7.range(1, 1) = x7.range(1, 1) | x7.range(0, 0);
-	}
+	a0 = (x0.range(1, 1) | x1.range(1, 1) | x2.range(1, 1) | x3.range(1, 1) |
+			x4.range(1, 1) | x5.range(1, 1) | x6.range(1, 1) | x7.range(1, 1) | a.range(1,1)) & (a.range(0,0));
+
+	x0.range(1, 1) = (a0 & x0.range(0, 0)) | x0.range(1, 1);
+	x1.range(1, 1) = (a0 & x1.range(0, 0)) | x1.range(1, 1);
+	x2.range(1, 1) = (a0 & x2.range(0, 0)) | x2.range(1, 1);
+	x3.range(1, 1) = (a0 & x3.range(0, 0)) | x3.range(1, 1);
+	x4.range(1, 1) = (a0 & x4.range(0, 0)) | x4.range(1, 1);
+	x5.range(1, 1) = (a0 & x5.range(0, 0)) | x5.range(1, 1);
+	x6.range(1, 1) = (a0 & x6.range(0, 0)) | x6.range(1, 1);
+	x7.range(1, 1) = (a0 & x7.range(0, 0)) | x7.range(1, 1);
+
 	//# Center pixel update
 	a.range(1, 1) = a0;
 	a.range(0, 0) = a1;
 }
 
 template<int n>
-void PixelProcessNew(ap_uint<PIXEL_PROCESS_BITS> k1,
-		ap_uint<PIXEL_PROCESS_BITS> k2, ap_uint<PIXEL_PROCESS_BITS> k3,
-		ap_uint<PIXEL_PROCESS_BITS>& l1, ap_uint<PIXEL_PROCESS_BITS>& l2,
-		ap_uint<PIXEL_PROCESS_BITS>& l3) {
+void PixelProcessNew (
+		ap_uint<PIXEL_PROCESS_BITS>  k1, ap_uint<PIXEL_PROCESS_BITS>  k2, ap_uint<PIXEL_PROCESS_BITS>  k3,
+		ap_uint<PIXEL_PROCESS_BITS>& l1, ap_uint<PIXEL_PROCESS_BITS>& l2, ap_uint<PIXEL_PROCESS_BITS>& l3){
+
 #pragma HLS inline off
+
 	ap_uint<2> x1[PIXELS], x2[PIXELS], x3[PIXELS];
 	ap_uint<2> y1[PIXELS], y2[PIXELS], y3[PIXELS];
 	ap_uint<2> z1[PIXELS], z2[PIXELS], z3[PIXELS];
@@ -78,8 +103,7 @@ void PixelProcessNew(ap_uint<PIXEL_PROCESS_BITS> k1,
 
 	PL_1: for (int i = 1; i < PIXELS - 1; i += 3) {
 #pragma HLS unroll
-		applyEqn(x1[i - 1], x1[i], x1[i + 1], x2[i - 1], x2[i], x2[i + 1],
-				x3[i - 1], x3[i], x3[i + 1]);
+		applyEqn (x1[i - 1], x1[i], x1[i + 1], x2[i - 1], x2[i], x2[i + 1], x3[i - 1], x3[i], x3[i + 1]);
 	}
 
 	for (int i = 0; i < PIXELS; i++) {
@@ -91,8 +115,7 @@ void PixelProcessNew(ap_uint<PIXEL_PROCESS_BITS> k1,
 
 	PL_2: for (int i = 2; i < PIXELS; i += 3) {
 #pragma HLS unroll
-		applyEqn(y1[i - 1], y1[i], y1[i + 1], y2[i - 1], y2[i], y2[i + 1],
-				y3[i - 1], y3[i], y3[i + 1]);
+		applyEqn (y1[i - 1], y1[i], y1[i + 1], y2[i - 1], y2[i], y2[i + 1], y3[i - 1], y3[i], y3[i + 1]);
 	}
 
 	for (int i = 0; i < PIXELS; i++) {
@@ -104,8 +127,7 @@ void PixelProcessNew(ap_uint<PIXEL_PROCESS_BITS> k1,
 
 	PL_3: for (int i = 3; i < PIXELS - 1; i += 3) {
 #pragma HLS unroll
-		applyEqn(z1[i - 1], z1[i], z1[i + 1], z2[i - 1], z2[i], z2[i + 1],
-				z3[i - 1], z3[i], z3[i + 1]);
+		applyEqn (z1[i - 1], z1[i], z1[i + 1], z2[i - 1], z2[i], z2[i + 1], z3[i - 1], z3[i], z3[i + 1]);
 	}
 
 	for (int i = 0, j = 0; i < PIXEL_PROCESS_BITS; i += 2, j++) {
@@ -115,211 +137,225 @@ void PixelProcessNew(ap_uint<PIXEL_PROCESS_BITS> k1,
 	}
 }
 
-template<int BRAMS, int DEPTH>
-void TopDown(ap_uint<64> iBuff[BRAMS][DEPTH], uint16_t width) {
+template<int BRAMS, int BRAMS_SETS_BY_3, int DEPTH>
+void TopDown(ap_uint<64> iBuff[BRAMS][DEPTH], uint16_t width, uint16_t height, int bramsetsval, int bramtotal, int bdrows, int ram_row_depth) {
 
-	ap_uint<64> arr1[BRAMS_TOTAL], arr2[BRAMS_TOTAL], arr4[BRAMS_TOTAL];
+	ap_uint<64> arr1[BRAMS], arr2[BRAMS], arr4[BRAMS];
 #pragma HLS array_partition variable=arr1 complete
 #pragma HLS array_partition variable=arr2 complete
 #pragma HLS array_partition variable=arr4 complete
 
-	ap_uint<4> arr3[BRAMS_TOTAL], arr5[BRAMS_TOTAL];
+	ap_uint<4> arr3[BRAMS],arr5[BRAMS];
 #pragma HLS array_partition variable=arr3 complete
+#pragma HLS array_partition variable=arr5 complete
+
+
+	int countind = 0 ;
 
 	for (int j = 0; j < 3; j++) {
-		RD_INIT: for (int i = 0; i < BRAMS_TOTAL; i++) {
+
+		RD_INIT: for (int i = 0; i < BRAMS; i++) {
 #pragma HLS unroll
+#pragma HLS loop_tripcount min=38 max=38
+
 			arr1[i] = iBuff[i][0];
-			arr3[i] = 0;
+			arr3[i] = arr1[i].range(3,0);
 		}
 
-		ap_uint<PIXEL_PROCESS_BITS> k1[15], k2[15], k3[15];
-		ap_uint<PIXEL_PROCESS_BITS> l1[15], l2[15], l3[15];
+		// Elements per RAM
+		ELEMENTS_P_RAM: for (int el = 1; el < (ram_row_depth * bdrows); el++) { // (width/32)*number of rows possible in one bram(512 depth)//(ram_row_depth * bdrows)
+#pragma HLS loop_tripcount min=480 max=480
+#pragma HLS pipeline II=1
+#pragma HLS loop_flatten off
+#pragma HLS DEPENDENCE variable=arr1 inter false
+#pragma HLS DEPENDENCE variable=arr2 inter false
 
-		//# Elements per row
-		ELEMENTS_P_ROW: for (int el = 1; el < (width >> 2); el++) {
-
-#pragma HLS pipeline
-			RD: for (int i = 0; i < BRAMS_TOTAL; i++) {
+			RD: for (int i = 0; i < BRAMS; i++) {
 #pragma HLS unroll
-				arr2[i] = arr1[i];
+#pragma HLS loop_tripcount min=38 max=38
+
+				arr2[i].range(3,0) = arr3[i];
+				arr2[i].range(63,4) = arr1[i].range(63,4);
 				arr1[i] = iBuff[i][el];
-				arr3[i] = arr1[i].range(3, 0);
-			}
-
-			RL11: for (int i = 1, k = 0; i < BRAMS_SETS - 1; i += 3, k++) {
-#pragma HLS unroll
-				k1[k].range(63, 0) = arr2[i + j - 1];
-				k1[k].range(PIXEL_PROCESS_BITS - 1, 64) = arr1[i + j - 1].range(
-						3, 0);
-				k2[k].range(63, 0) = arr2[i + j];
-				k2[k].range(PIXEL_PROCESS_BITS - 1, 64) = arr1[i + j].range(3,
-						0);
-				k3[k].range(63, 0) = arr2[i + j + 1];
-				k3[k].range(PIXEL_PROCESS_BITS - 1, 64) = arr1[i + j + 1].range(
-						3, 0);
-			}
-
-			for (int i = 0; i < BRAMS_TOTAL; i++) {
-#pragma HLS unroll
+				arr3[i] = arr1[i].range(3,0);
 				arr4[i] = arr2[i];
 			}
-#if 1
-			RL12: for (int k = 0; k < 12; k++) {
+
+			RD1: for (int i = 1,k=0; i < BRAMS-3; i+=3,k++) {
 #pragma HLS unroll
-				PixelProcessNew<1>(k1[k], k2[k], k3[k], l1[k], l2[k], l3[k]);
-			}
-#else
-			PixelProcessNew<1>(k1[0], k2[0], k3[0], l1[0], l2[0], l3[0]);
-			PixelProcessNew<2>(k1[1], k2[1], k3[1], l1[1], l2[1], l3[1]);
-			PixelProcessNew<3>(k1[2], k2[2], k3[2], l1[2], l2[2], l3[2]);
+#pragma HLS loop_tripcount min=38 max=38
 
-			PixelProcessNew<4>(k1[3], k2[3], k3[3], l1[3], l2[3], l3[3]);
-			PixelProcessNew<5>(k1[4], k2[4], k3[4], l1[4], l2[4], l3[4]);
-			PixelProcessNew<6>(k1[5], k2[5], k3[5], l1[5], l2[5], l3[5]);
+				ap_uint<PIXEL_PROCESS_BITS> k1, k2, k3;
+				ap_uint<PIXEL_PROCESS_BITS> l1, l2, l3;
 
-			PixelProcessNew<7>(k1[6], k2[6], k3[6], l1[6], l2[6], l3[6]);
-			PixelProcessNew<8>(k1[7], k2[7], k3[7], l1[7], l2[7], l3[7]);
-			PixelProcessNew<9>(k1[8], k2[8], k3[8], l1[8], l2[8], l3[8]);
+				k1.range(63, 0) = arr2[i + j - 1];
+				k2.range(63, 0) = arr2[i + j + 0];
+				k3.range(63, 0) = arr2[i + j + 1];
 
-			PixelProcessNew<10>(k1[9], k2[9], k3[9], l1[9], l2[9], l3[9]);
-			PixelProcessNew<11>(k1[10], k2[10], k3[10], l1[10], l2[10], l3[10]);
-			PixelProcessNew<12>(k1[11], k2[11], k3[11], l1[11], l2[11], l3[11]);
 
-			PixelProcessNew<13>(k1[12], k2[12], k3[12], l1[12], l2[12], l3[12]);
-			PixelProcessNew<14>(k1[13], k2[13], k3[13], l1[13], l2[13], l3[13]);
-			PixelProcessNew<15>(k1[14], k2[14], k3[14], l1[14], l2[14], l3[14]);
+				k1.range(PIXEL_PROCESS_BITS-1, 64) = arr1[i + j - 1].range(3, 0);
+				k2.range(PIXEL_PROCESS_BITS-1, 64) = arr1[i + j + 0].range(3, 0);
+				k3.range(PIXEL_PROCESS_BITS-1, 64) = arr1[i + j + 1].range(3, 0);
 
-#endif
+				PixelProcessNew<1> (k1, k2, k3, l1, l2, l3);
 
-			RL13: for (int i = 1, k = 0; i < BRAMS_SETS - 1; i += 3, k++) {
-#pragma HLS unroll
-				arr4[i + j - 1] = l1[k].range(63, 0);
-				arr3[i + j - 1] = l1[k].range(PIXEL_PROCESS_BITS - 1, 64);
-				arr4[i + j] = l2[k].range(63, 0);
-				arr3[i + j] = l2[k].range(PIXEL_PROCESS_BITS - 1, 64);
-				arr4[i + j + 1] = l3[k].range(63, 0);
-				arr3[i + j + 1] = l3[k].range(PIXEL_PROCESS_BITS - 1, 64);
+				arr4[i + j - 1] = l1.range(63, 0);
+				arr4[i + j + 0] = l2.range(63, 0);
+				arr4[i + j + 1] = l3.range(63, 0);
+
+				arr3[i + j - 1] = l1.range(PIXEL_PROCESS_BITS-1, 64);
+				arr3[i + j + 0] = l2.range(PIXEL_PROCESS_BITS-1, 64);
+				arr3[i + j + 1] = l3.range(PIXEL_PROCESS_BITS-1, 64);
+
+
 			}
 
-			for (int i = 0; i < BRAMS_TOTAL; i++) {
+			RD2: for (int ii = 0; ii < BRAMS; ii++) {
 #pragma HLS unroll
-				//# Accurate
-				//					arr1[i].range(3,0) = arr3[i];
-				if (el == 1) {
-					arr5[i] = arr3[i];
+#pragma HLS loop_tripcount min=38 max=38
+
+				if ((ii==0) && (el<=ram_row_depth*(bdrows-1))) {
+					iBuff[0][ram_row_depth+el-1] = arr4[bramtotal-1];
 				} else {
-					arr4[i].range(3, 0) = arr5[i];
-					arr5[i] = arr3[i];
+					iBuff[ii][el - 1] = arr4[ii];
 				}
 			}
-
-			WR: for (int i = 0; i < BRAMS_TOTAL; i++) {
-#pragma HLS unroll
-				iBuff[i][el - 1] = arr4[i];
-			}
 		}
+
 	}
 }
+
 
 /**
  * xfEdgeTracing : Connects edge
  */
-static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_in,
-		uint16_t height, uint16_t width) {
+template<int HEIGHT, int WIDTH,bool USE_URAM>
+static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_in, uint16_t height, uint16_t width) {
 
-	//# BRAMs to store 280 rows of NMS output
-	ap_uint<64> iBuff[1 + BRAMS_SETS + 1][BRAM_DEPTH];
+
+#define BRAM_DEPTH (USE_URAM ? 4096 : 1024)
+
+	enum
+	{
+		RAM_ROW_DEPTH  = (WIDTH / 32),                      // 64-bit width = 32 pixels; Gives depth of ram a row occupies
+		NUM_ROWS_RAM   = (BRAM_DEPTH / RAM_ROW_DEPTH),      // Gives No.of rows per BRAM
+		SLICE_H        = (HEIGHT / SLICES),                 // Gives height of each Slice
+		BRAM_SETS_TEMP = DIV_CEIL((SLICE_H + MIN_OVERLAP), NUM_ROWS_RAM),
+		BRAMS_SETS     = ADJUST_MULTIPLE(BRAM_SETS_TEMP, 3), // Making BRAM_CNT divisible by 3
+		ACTUAL_ROWS    = BRAMS_SETS * NUM_ROWS_RAM,
+		OVERLAP        = ACTUAL_ROWS - SLICE_H,
+		BRAMS_TOTAL    = BRAMS_SETS + 2
+	};
+
+	ap_uint<64> iBuff[BRAMS_TOTAL][BRAM_DEPTH];
+
+	if(USE_URAM){
+#pragma HLS RESOURCE variable=iBuff core=RAM_T2P_URAM
 #pragma HLS array_partition variable=iBuff dim=1
-#pragma HLS resource variable=iBuff core=RAM_S2P_BRAM
+	}
+	else{
+#pragma HLS RESOURCE variable=iBuff core=RAM_T2P_BRAM
+#pragma HLS array_partition variable=iBuff dim=1
+	}
+
 
 	//# I/P & O/P Registers
 	ap_uint<64> iReg[1];
 	ap_uint<64> oReg[1];
 
-	int offarray[4];
-	int lBarray[4];
+	int slice_h       = (height >> 2); // = height / SLICES
+	int ram_row_depth = (width >> 5);  // = width / 32
+	int bdrows        = BRAM_DEPTH / ram_row_depth;
+	int bramsetsval   = ADJUST_MULTIPLE(DIV_CEIL((slice_h + MIN_OVERLAP), bdrows), 3);
+	int overlap       = (bramsetsval * bdrows) - slice_h;
+	int bramtotal     = bramsetsval + 2;
 
 	//# Inter Iterations
-	INTER_ITERATION_LOOP: for (int inter_i = 0; inter_i < INTER_ITERATIONS;
-			inter_i++) {
+
+	INTER_ITERATION_LOOP: for (int inter_i = 0; inter_i < INTER_ITERATIONS; inter_i++) {
 
 		//# Loop for Reading chunks of NMS output
-		unsigned short offset = 0;
-		unsigned short lBound = 0;
+		unsigned int offset = 0;
+		unsigned int lBound = 0;
+
 		SLICE_LOOP: for (int slice = 0; slice < SLICES; slice++) {
-			int row = slice * (height >> 2);			// 4-slices
+
+			lBound = ram_row_depth * (slice_h + ((slice==3) ? 0 : overlap));
+
 			if (inter_i == 0) {
-				offset = row * (width << 1) / 64;
-				offarray[slice] = offset;
-				lBound = (width << 1) / 64* MIN((height>>2)+18, height-row);
-				lBarray[slice] = lBound;
+				offset = slice * slice_h * ram_row_depth;
 			} else {
-				offset =
-						((offarray[3 - slice] - height) < 0) ?
-								0 : (offarray[3 - slice] - height);
-				lBound = lBarray[slice];
+				offset = (slice==3) ? 0 : ((((3 - slice) * slice_h) - overlap) * ram_row_depth);
 			}
 
-			ap_uint<10> idx1 = 0, dep = 0;
-			ap_uint<6> idx2 = 1;
-			bool rbound = false, lbound = false;
+			ap_uint<16> idx1 = 0, dep = 0;
+			ap_uint<16> idx2 = 1;
+			int cnt = 0;
 
-			Read_N_Arrange: for (unsigned short i = 0; i < lBound; i++) {
+			Read_N_Arrange: for (unsigned int i = 0; i < lBound; i++) {
 #pragma HLS loop_tripcount min=16200 max=16800
-#pragma HLS pipeline
-				iReg[0] = *(nms_in + offset + i);
+#pragma HLS pipeline II=1
+#pragma HLS DEPENDENCE variable=iBuff inter false
+#pragma HLS DEPENDENCE variable=iBuff intra false
+				int ind_1=0,ind_2=0,val_ind=0;
+				iReg[0] = *(nms_in + offset + i); // Reading Input
 
-				if (idx1 == 60) {
+				if (idx1 == ram_row_depth) {
 					idx1 = 0;
 					idx2++;
 				}
-				if (idx2 == BRAMS_SETS) {
-					lbound = true;
-				} else {
-					lbound = false;
-				}
-				if (idx2 == BRAMS_SETS + 1) {
+
+				if (idx2 == bramsetsval + 1) {
 					idx2 = 1;
-					dep += 60;
-					rbound = true;
-				} else {
-					rbound = false;
+					dep += ram_row_depth;
 				}
 
-				ap_uint<11> index = idx1 + dep;
+				ap_uint<16> index = idx1 + dep;
 				iBuff[idx2][index] = iReg[0];
-#if 0
-				if(rbound)
-					iBuff[46][index-60] = iReg[0];
-				if(lbound)
-					iBuff[0][index+60] = iReg[0];
-#endif
+
+				// Filling edge row buffers (i.e., iBuff[0] and iBuff[bramsetsval+1])
+				// This is done by replicating the rows
+				if (idx2 == 1) {
+					if (dep == 0) {
+						iBuff[0][index] = 0;
+					}
+					else {
+						iBuff[bramsetsval+1][index - ram_row_depth] = iReg[0];
+					}
+				}
+				else if (idx2 == bramsetsval) {
+					if (dep == ((bdrows-1)*ram_row_depth)) {
+						iBuff[bramsetsval+1][index] = 0;
+
+					}
+					else {
+						iBuff[0][index + ram_row_depth] = iReg[0];
+					}
+				}
+
 				idx1++;
 			}
 
-#if 1
 			//# Intra Iterations
-			INTRA_ITERATION_LOOP: for (int intra_i = 0;
-					intra_i < INTRA_ITERATIONS; intra_i++) {
-				TopDown<BRAMS_SETS + 2, BRAM_DEPTH>(iBuff, width);
+			INTRA_ITERATION_LOOP: for (int intra_i = 0; intra_i < INTRA_ITERATIONS; intra_i++) {
+				TopDown<BRAMS_TOTAL, BRAMS_SETS/3, BRAM_DEPTH> (iBuff, width, height, bramsetsval, bramtotal, bdrows, ram_row_depth);
 			}
-
-#endif
 
 			idx1 = 0;
 			idx2 = 1;
-			dep = 0;
-			Write: for (unsigned short i = 0; i < lBound; i++) {
+			dep  = 0;
+
+			Write: for (unsigned int i = 0; i < lBound; i++) {
 #pragma HLS loop_tripcount min=16200 max=16800
 #pragma HLS pipeline
-				if (idx1 == 60) {
+
+				if (idx1 == ram_row_depth) {
 					idx1 = 0;
 					idx2++;
 				}
-				if (idx2 == BRAMS_SETS + 1) {
+				if (idx2 == bramsetsval + 1) {
 					idx2 = 1;
-					dep += 60;
+					dep += ram_row_depth;
 				}
 
 				oReg[0] = iBuff[idx2][idx1 + dep];
@@ -328,16 +364,24 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 				idx1++;
 			}
 		}
-
 	}
 
-	ap_uint<64> oBuff[BRAM_DEPTH], oRegF[1];
+	ap_uint<64> oBuff[RAM_ROW_DEPTH], oRegF[1];
 	//# Write the final output as 8-bit / pixel
-	FIN_WR_LOOP: for (int ii = 0; ii < height >> 3; ii++) {
-		memcpy(oBuff, nms_in + ii * (width >> 2), width << 1);
+	FIN_WR_LOOP: for (int ii = 0; ii < height ; ii++) {
+		//memcpy(oBuff, nms_in + ii * (width >> 2), width << 1);
+#pragma HLS loop_tripcount min=HEIGHT max=HEIGHT
+		for(int k=0;k<ram_row_depth;k++)
+		{
+#pragma HLS pipeline
+#pragma HLS loop_tripcount min=RAM_ROW_DEPTH max=RAM_ROW_DEPTH
+			oBuff[k] = *(nms_in + (ii * ram_row_depth)+k);
+		}
+
 		ap_uint<3> id = 0;
 		ap_uint<9> pixel = 0;
-		WR_FIN_PIPE: for (int j = 0, bit = 0; j < width; j++, bit += 16) {
+		WR_FIN_PIPE: for (int j = 0, bit = 0; j < width/8; j++, bit += 16) {
+#pragma HLS loop_tripcount min=WIDTH/8 max=WIDTH/8
 #pragma HLS pipeline
 			if (id == 4) {
 				id = 0;
@@ -352,7 +396,7 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 					oRegF[0].range(l + 7, l) = 0;
 			}
 			id++;
-			*(_dst_mat + ii * width + j) = oRegF[0];
+			*(_dst_mat + ii * width/8 + j) = oRegF[0];
 		}
 	}
 
@@ -361,12 +405,11 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 #pragma SDS data access_pattern("_src.data":RANDOM, "_dst.data":RANDOM)
 #pragma SDS data zero_copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 
-template<int SRC_T, int DST_T, int ROWS, int COLS,int NPC_SRC,int NPC_DST>
+template<int SRC_T, int DST_T, int ROWS, int COLS,int NPC_SRC,int NPC_DST,bool USE_URAM=false>
 void EdgeTracing(xf::Mat<SRC_T, ROWS, COLS, NPC_SRC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC_DST> & _dst)
 {
-	xfEdgeTracing((unsigned long long *)_dst.data,(unsigned long long *)_src.data,_dst.rows,_dst.cols);
+	xfEdgeTracing<ROWS ,COLS,USE_URAM>((unsigned long long *)_dst.data,(unsigned long long *)_src.data,_dst.rows,_dst.cols);
 }
 
 }
 #endif
-

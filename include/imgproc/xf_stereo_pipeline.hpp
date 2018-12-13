@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -36,13 +36,56 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "hls_stream.h"
-#include "hls_video.h"
+#include "utils/x_hls_traits.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
 #define _XF_INTER_BITS_ 5
 
 namespace xf {
+
+template<typename T>
+struct xfInitUndistortRectifyMap_traits {
+    typedef T FRAMET;
+    typedef T FRAME2T;
+};
+
+// Approximation of 1/x around x=1.
+// In most cases (e.g. float), we just do computation in type T.
+template<typename T>
+T xf_one_over_x_approx(T x) {
+    return T(1.0)/x;
+}
+
+// if x is ~ 1+delta, then 1/x is 1-delta+..., or 2-x;
+template <int W, int I, ap_q_mode Q, ap_o_mode O>
+ap_fixed<W,I,Q,O> xf_one_over_x_approx(ap_fixed<W,I,Q,O> x) {
+    return 2-x;
+}
+
+template <int W, int I, ap_q_mode Q, ap_o_mode O>
+ap_ufixed<W,I,Q,O> xf_one_over_x_approx(ap_ufixed<W,I,Q,O> x) {
+    return 2-x;
+}
+
+// Approximation of 1/(1+x) around x=0.
+// In most cases (e.g. float), we just do computation in type T.
+template<typename T>
+T xf_one_over_one_plus_x_approx(T x) {
+    return T(1.0)/(T(1.0)+x);
+}
+
+// if x is ~ 1+delta, then 1/x is 1-delta+delta^2-...
+template <int W, int I, ap_q_mode Q, ap_o_mode O>
+ap_fixed<W,I,Q,O> xf_one_over_one_plus_x_approx(ap_fixed<W,I,Q,O> x) {
+    return 1-x;
+}
+
+template <int W, int I, ap_q_mode Q, ap_o_mode O>
+ap_ufixed<W,I,Q,O> xf_one_over_one_plus_x_approx(ap_ufixed<W,I,Q,O> x) {
+    return 1-x;
+}
+
 template <typename FRAMET, typename FRAME2T, typename ROWT, typename COLT, typename ROWOUTT, typename COLOUTT, typename CM_T, int CM_SIZE, int N>
 void xFComputeUndistortCoordinates(
 		CM_T *cameraMatrix,
@@ -85,7 +128,7 @@ void xFComputeUndistortCoordinates(
 		y=_y;
 	} else {
 		FRAMET w=i*ir[7] + j * ir[6] + ir[8];
-		FRAMET winv = hls::one_over_x_approx(w);
+		FRAMET winv = xf_one_over_x_approx(w);
 		x = (FRAMET)(_x*winv);
 		y = (FRAMET)(_y*winv);
 	}
@@ -98,7 +141,7 @@ void xFComputeUndistortCoordinates(
 	FRAMET kr = (1 + FRAMET(FRAMET(k3*r2 + k2)*r2 + k1)*r2);
 	FRAME2T krd = FRAMET(FRAMET(k6*r2 + k5)*r2 + k4)*r2;
 
-	if(N >5) kr = kr*hls::one_over_one_plus_x_approx(krd);
+	if(N >5) kr = kr*xf_one_over_one_plus_x_approx(krd);
 
 	u = fx*(FRAMET(x*kr) + FRAMET(p1*_2xy) + FRAMET(p2*(2*x2 + r2))) + u0;
 	v = fy*(FRAMET(y*kr) + FRAMET(p1*(r2 + 2*y2)) + FRAMET(p2*_2xy)) + v0;
@@ -141,9 +184,6 @@ void xFInitUndistortRectifyMapInverseKernel (
 	assert(rows <= ROWS);
 	assert(cols <= COLS);
 
-	static hls::RangeAnalyzer<float> rau, rav;
-	static hls::RangeAnalyzer<float> rauerr, raverr;
-
 	int idx = 0;
 	loop_height: for(int i=0; i< rows; i++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
@@ -158,7 +198,7 @@ void xFInitUndistortRectifyMapInverseKernel (
 			ap_fixed<1+BitWidth<COLS>::Value+_XF_INTER_BITS_, 1+BitWidth<COLS>::Value, AP_RND, AP_SAT> u;
 			ap_fixed<1+BitWidth<ROWS>::Value+_XF_INTER_BITS_, 1+BitWidth<ROWS>::Value, AP_RND, AP_SAT> v;
 			xFComputeUndistortCoordinates
-			<typename hls::InitUndistortRectifyMap_traits<CM_T>::FRAMET, typename hls::InitUndistortRectifyMap_traits<CM_T>::FRAME2T,
+			<typename xfInitUndistortRectifyMap_traits<CM_T>::FRAMET, typename xfInitUndistortRectifyMap_traits<CM_T>::FRAME2T,
 			ROWT,COLT,ap_fixed<1+BitWidth<COLS>::Value+_XF_INTER_BITS_, 1+BitWidth<COLS>::Value, AP_RND, AP_SAT>,ap_fixed<1+BitWidth<ROWS>::Value+_XF_INTER_BITS_, 1+BitWidth<ROWS>::Value, AP_RND, AP_SAT>,
 			CM_T,CM_SIZE,N>
 			(cameraMatrixHLS,distCoeffsHLS,iRnewCameraMatrixHLS,noRotation,ifixed,jfixed,u,v);

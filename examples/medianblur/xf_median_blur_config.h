@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _AU_MEDIAN_BLUR_CONFIG_
-#define _AU_MEDIAN_BLUR_CONFIG_
+#ifndef _XF_MEDIAN_BLUR_CONFIG_
+#define _XF_MEDIAN_BLUR_CONFIG_
 
 #include "hls_stream.h"
 #include "ap_int.h"
@@ -36,7 +36,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_config_params.h"
 #include "imgproc/xf_median_blur.hpp"
 
-#if NO==1
+#if NO
 #define NPxPC XF_NPPC1
 #else
 #define NPxPC XF_NPPC8

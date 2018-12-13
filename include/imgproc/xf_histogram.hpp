@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #ifndef _XF_HISTOGRAM_HPP_
 #define _XF_HISTOGRAM_HPP_
@@ -71,11 +71,15 @@ void xFHistogramKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t his
 		HISTOGRAM_COL_LOOP:
 		for(ap_uint<13> col=0; col < (imgwidth ) ; col = col+2)
 		{
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE II=2
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS LOOP_TRIPCOUNT min=SRC_TC max=SRC_TC
 			in_buf = _src_mat.data[row*(imgwidth) + col];
-			in_buf1 = _src_mat.data[row*(imgwidth) + col+1];
+
+			if(col==(imgwidth-1) )
+				in_buf1 = 0;
+			else
+				in_buf1=_src_mat.data[row*(imgwidth) + col+1];
 
 			EXTRACT_UPDATE:
 			for(ap_uint<9> i=0,j=0; i < ((8 << XF_BITSHIFT(NPC))*PLANES);j++, i+= 8)
@@ -91,8 +95,8 @@ void xFHistogramKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t his
 				uint32_t tmpval = tmp_hist[j][val];
 				uint32_t tmpval1 = tmp_hist1[j][val1];
 				tmp_hist[j][val] = tmpval+1;
-				tmp_hist1[j][val1] = tmpval1+1;
-
+				if(!(col==(imgwidth-1)))
+					tmp_hist1[j][val1] = tmpval1+1;
 			}
 		}
 	}
@@ -111,8 +115,8 @@ void xFHistogramKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t his
 			cnt = cnt + value;
 			if(PLANES != 1)
 			{
-			plane[p]=cnt;
-			p++;cnt=0;value=0;
+				plane[p]=cnt;
+				p++;cnt=0;value=0;
 			}
 		}
 		if(PLANES==1)
@@ -142,9 +146,9 @@ template<int SRC_T,int ROWS, int COLS,int NPC=1>
 void calcHist(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, uint32_t *histogram)
 {
 
-		assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) )
-				&& "NPC must be XF_NPPC1, XF_NPPC8 ");
-		assert(((_src.rows <= ROWS ) && (_src.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) )
+			&& "NPC must be XF_NPPC1, XF_NPPC8 ");
+	assert(((_src.rows <= ROWS ) && (_src.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
 #pragma HLS INLINE OFF
 
@@ -155,8 +159,8 @@ void calcHist(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, uint32_t *histogram)
 	xFHistogramKernel<SRC_T, ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), ((COLS>>(XF_BITSHIFT(NPC)))>>1), XF_CHANNELS(SRC_T,NPC)>
 	(_src, hist_array, height, width);
 
-for(int i=0;i< (XF_CHANNELS(SRC_T,NPC));i++)
-{
+	for(int i=0;i< (XF_CHANNELS(SRC_T,NPC));i++)
+	{
 		for(int j=0;j<256;j++)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=256

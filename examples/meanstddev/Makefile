@@ -3,7 +3,7 @@ EXECUTABLE = mean_std.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::meanStdDev<0,  2160, 3840, 1>"  xf_mean_stddev_accel.cpp -files ../../include/core/xf_mean_stddev.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::meanStdDev<0,  2160, 3840, 1>"  xf_mean_stddev_accel.cpp -files ../../include/core/xf_mean_stddev.hpp -clkid 2 -sds-end -dmclkid 2
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib

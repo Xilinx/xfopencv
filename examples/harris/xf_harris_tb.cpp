@@ -232,7 +232,7 @@ int main(int argc,char **argv)
 
 	printf("Commmon = %d\t Success = %f\t Loss = %f\t Gain = %f\n",ncommon,persuccess,perloss,pergain);
 
-	if(persuccess < 60)
+	if(persuccess < 60 || totalhls == 0)
 		return 1;
 
 

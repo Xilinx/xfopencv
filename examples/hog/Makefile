@@ -1,9 +1,18 @@
 APPSOURCES =  xf_hog_descriptor_tb.cpp  xf_hog_descriptor_accel.cpp
 EXECUTABLE = hog_descriptor.elf
 VERBOSE = #-verbose
-PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::HOGDescriptor<128, 64,8,16,16,8,8,9,576468,1,1,0,3,1080,1920,1>"  xf_hog_descriptor_accel.cpp -files ../../include/imgproc/xf_hog_descriptor.hpp -clkid 2 -sds-end -dmclkid 2
+PLATFORM ?= <Path-to-reVISION-Platform>
+
+URAM_ENA := 0
+
+ifeq ($(URAM_ENA), 1)
+   URAM_ENA_FLAG := -DXF_USE_URAM=true
+else
+   URAM_ENA_FLAG := -DXF_USE_URAM=false
+endif
+
+SDSCC_FLAGS = -sds-pf ${PLATFORM}  ${VERBOSE} ${URAM_ENA_FLAG} \
+-sds-hw "xf::HOGDescriptor<128, 64,8,16,16,8,8,9,2319318,1,1,0,3,2160,3840,1,${URAM_ENA}>"  xf_hog_descriptor_accel.cpp -files ../../include/imgproc/xf_hog_descriptor.hpp -clkid 2 -sds-end -dmclkid 2
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib

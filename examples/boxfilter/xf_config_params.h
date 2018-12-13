@@ -16,3 +16,5 @@
 #elif FILTER_SIZE_7
 #define FILTER_WIDTH   7
 #endif
+
+#define XF_USE_URAM false

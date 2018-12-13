@@ -37,10 +37,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "imgproc/xf_hog_descriptor.hpp"
 #include "xf_config_params.h"
 
-/* set the max sizes when needed */
-#define 	XF_HEIGHT 		1080
-#define 	XF_WIDTH  		1920
-
 /* set the various hog parameters */
 #define		XF_WIN_STRIDE		8
 #define 	XF_BLOCK_HEIGHT	    	16

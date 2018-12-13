@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -52,12 +52,13 @@ namespace xf{
  */
 template<int SRC_T, int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST, int COLS_TRIP>
-void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat, bool _thresh_type,
-		short _binary_thresh_val, short _upper_range, short _lower_range, unsigned short height, unsigned short width)
+void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat, ap_uint<8> _thresh_type,
+		short int _thresh,short int maxval, unsigned short height, unsigned short width)
 {
 	XF_SNAME(WORDWIDTH_SRC) val_src;
 	XF_SNAME(WORDWIDTH_DST) val_dst;
-	XF_PTNAME(DEPTH) result, p;
+	XF_PTNAME(DEPTH)  p;//,out;
+	XF_PTNAME(DEPTH)  thresh=(XF_PTNAME(DEPTH))_thresh;
 
 	ap_uint<13> i, j, k;
 	rowLoop:
@@ -74,43 +75,33 @@ void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T
 
 			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.data[i*width+j]);  //reading the source stream _src into val_src
 
-			//Binary Thresholding
-			if(_thresh_type == XF_THRESHOLD_TYPE_BINARY)
+			for(k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));k += XF_PIXELDEPTH(DEPTH))
 			{
-				procBinaryLoop:
-				for(k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
-						k += XF_PIXELDEPTH(DEPTH))
-				{
 #pragma HLS unroll
-					p = val_src.range(k + (XF_PIXELDEPTH(DEPTH)-1), k);	//packing a pixel value into p
+				p=val_src.range(k+(XF_PIXELDEPTH(DEPTH)-1),k);
 
-					if(p > _binary_thresh_val)
-						val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = 255;
-					else
-						val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = 0;
+				switch(_thresh_type)
+				{
+				case XF_THRESHOLD_TYPE_BINARY:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = ( p > thresh) ?  (XF_PTNAME(DEPTH))maxval : (ap_uint<8>)0;
+				break;
+				case XF_THRESHOLD_TYPE_BINARY_INV:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = (p > thresh) ?   (ap_uint<8>)0 : (XF_PTNAME(DEPTH))maxval;
+				break;
+				case XF_THRESHOLD_TYPE_TRUNC:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = (p > thresh) ?   (XF_PTNAME(DEPTH))thresh : p;
+				break;
+				case XF_THRESHOLD_TYPE_TOZERO:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = (p > thresh) ?   p : (ap_uint<8>)0;
+				break;
+				case XF_THRESHOLD_TYPE_TOZERO_INV:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = (p > thresh) ?   (ap_uint<8>)0 : p;
+				break;
+				default:
+					val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = p;
 				}
 			}
 
-			//Range thresholding
-			if(_thresh_type == XF_THRESHOLD_TYPE_RANGE)
-			{
-				procRangeLoop:
-				for(k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
-						k += XF_PIXELDEPTH(DEPTH))
-				{
-#pragma HLS unroll
-					p = val_src.range(k + (XF_PIXELDEPTH(DEPTH)-1), k);  //packing a pixel value into p
-
-					if((p > _upper_range) || (p < _lower_range))
-					{
-						val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = 0;
-					}
-					else
-					{
-						val_dst.range(k + (XF_PIXELDEPTH(DEPTH)-1), k) = 255;
-					}
-				}
-			}
 			_dst_mat.data[i*width+j] = (val_dst);  //writing the val_dst into output stream _dst
 		}
 	}
@@ -121,12 +112,10 @@ void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 
 
 template<int THRESHOLD_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
-void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short thresh_val,short thresh_upper,short thresh_lower)
+void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short int thresh,short int maxval )
 {
 
 	unsigned short width = _src_mat.cols >> XF_BITSHIFT(NPC);
@@ -137,23 +126,18 @@ void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, C
 			"NPC must be XF_NPPC1, XF_NPPC8");
 
 	assert(((THRESHOLD_TYPE == XF_THRESHOLD_TYPE_BINARY) ||
-			(THRESHOLD_TYPE == XF_THRESHOLD_TYPE_RANGE)) &&
-			"_thresh_type must be either XF_THRESHOLD_TYPE_BINARY or XF_THRESHOLD_TYPE_BINARY");
-	assert(((thresh_val >= 0) && (thresh_val <= 255)) &&
+			 (THRESHOLD_TYPE == XF_THRESHOLD_TYPE_BINARY_INV) || (THRESHOLD_TYPE == XF_THRESHOLD_TYPE_TRUNC) || (THRESHOLD_TYPE == XF_THRESHOLD_TYPE_TOZERO) ||(THRESHOLD_TYPE == XF_THRESHOLD_TYPE_TOZERO_INV)) &&
+			"_thresh_type must be either XF_THRESHOLD_TYPE_BINARY or XF_THRESHOLD_TYPE_BINARY or XF_THRESHOLD_TYPE_BINARY_INV or XF_THRESHOLD_TYPE_TRUNC or XF_THRESHOLD_TYPE_TOZERO or XF_THRESHOLD_TYPE_TOZERO_INV");
+	assert(((thresh >= 0) && (thresh <= 255)) &&
 			"_binary_thresh_val must be with the range of 0 to 255");
-	assert(((thresh_upper >= 0) && (thresh_upper <= 255)) &&
-			"_upper_range must be with the range of 0 to 255");
-	assert(((thresh_lower >= 0) && (thresh_lower <= 255)) &&
-			"_lower_range must be with the range of 0 to 255");
-	assert((thresh_upper >= thresh_lower)  &&
-			"_upper_range must be greater than _lower_range");
+
 
 	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
 
 #pragma HLS INLINE OFF
 
 	xFThresholdKernel<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>
-	(_src_mat,_dst_mat,THRESHOLD_TYPE,thresh_val,thresh_upper,thresh_lower,height,width);
+	(_src_mat,_dst_mat,THRESHOLD_TYPE,thresh,maxval,height,width);
 
 }
 }

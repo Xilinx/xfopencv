@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -121,7 +121,7 @@ void xFPackNMS(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src_mat,hls::stream< XF_
 // xFDuplicate_rows
 
 template <int ROWS, int COLS, int DEPTH_IN,int DEPTH_OUT, int NPC,
-int WORDWIDTH_SRC, int WORDWIDTH_DST,int TC,int TC1,int FILTER_TYPE>
+int WORDWIDTH_SRC, int WORDWIDTH_DST,int TC,int TC1,int FILTER_TYPE,bool USE_URAM>
 void xFCannyKernel(
 		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST)>& _dst_mat,
@@ -148,7 +148,7 @@ void xFCannyKernel(
 
 #pragma HLS DATAFLOW
 		xFAverageGaussianMask3x3<ROWS,COLS,DEPTH_IN, NPC, WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))>(_src_mat,gaussian_mat,imgheight,imgwidth);
-		xFSobel<ROWS,COLS,DEPTH_IN,XF_16SP,NPC,WORDWIDTH_SRC,XF_128UW,FILTER_TYPE>(gaussian_mat,gradx_mat, grady_mat,XF_BORDER_REPLICATE, imgheight, imgwidth);
+		xFSobel<ROWS,COLS,DEPTH_IN,XF_16SP,NPC,WORDWIDTH_SRC,XF_128UW,FILTER_TYPE,USE_URAM>(gaussian_mat,gradx_mat, grady_mat,XF_BORDER_REPLICATE, imgheight, imgwidth);
 		xFDuplicate_rows<ROWS, COLS, XF_16SP, NPC, XF_128UW,TC>(gradx_mat,grady_mat,gradx1_mat,gradx2_mat, grady1_mat, grady2_mat,imgheight,imgwidth);
 		xFMagnitude<ROWS, COLS, XF_16SP,XF_16SP, NPC, XF_128UW,XF_128UW>(gradx1_mat,grady1_mat,magnitude_mat,_norm_type,imgheight,imgwidth);
 		xFAngle<ROWS, COLS, XF_16SP,XF_8UP, NPC, XF_128UW,XF_64UW>(gradx2_mat,grady2_mat,phase_mat,imgheight,imgwidth);
@@ -178,7 +178,7 @@ void xFCannyKernel(
 
 #pragma HLS DATAFLOW
 		xFAverageGaussianMask3x3<ROWS,COLS,DEPTH_IN, NPC, WORDWIDTH_SRC,(COLS>>XF_BITSHIFT(NPC))>(_src_mat,gaussian_mat,imgheight,imgwidth);
-		xFSobel<ROWS,COLS,DEPTH_IN,XF_16SP,NPC,WORDWIDTH_SRC,XF_16UW,FILTER_TYPE>(gaussian_mat,gradx_mat, grady_mat,XF_BORDER_REPLICATE, imgheight, imgwidth);
+		xFSobel<ROWS,COLS,DEPTH_IN,XF_16SP,NPC,WORDWIDTH_SRC,XF_16UW,FILTER_TYPE,USE_URAM>(gaussian_mat,gradx_mat, grady_mat,XF_BORDER_REPLICATE, imgheight, imgwidth);
 		xFDuplicate_rows<ROWS, COLS, XF_16SP, NPC, XF_16UW,	TC>(gradx_mat,grady_mat,gradx1_mat,gradx2_mat, grady1_mat, grady2_mat,imgheight,imgwidth);
 		xFMagnitude<ROWS, COLS, XF_16SP,XF_16SP, NPC, XF_16UW,XF_16UW>(gradx1_mat,grady1_mat,magnitude_mat,_norm_type,imgheight,imgwidth);
 		xFAngle<ROWS, COLS, XF_16SP,XF_8UP, NPC, XF_16UW,XF_8UW>(gradx2_mat,grady2_mat,phase_mat,imgheight,imgwidth);
@@ -193,7 +193,7 @@ void xFCannyKernel(
  * xFCanny :  Calls the Main Function depends on requirements
  **********************************************************************/
 template<int ROWS, int COLS, int DEPTH_IN,int DEPTH_OUT, int NPC,
-int WORDWIDTH_SRC, int WORDWIDTH_DST,int FILTER_TYPE>
+int WORDWIDTH_SRC, int WORDWIDTH_DST,int FILTER_TYPE,bool USE_URAM>
 void xFCannyEdgeDetector(hls::stream< XF_SNAME(WORDWIDTH_SRC)>&   _src_mat,
 		hls::stream< XF_SNAME(WORDWIDTH_DST)>& out_strm,
 		unsigned char _lowthreshold, unsigned char _highthreshold,int _norm_type, uint16_t imgheight,uint16_t imgwidth)
@@ -204,7 +204,7 @@ void xFCannyEdgeDetector(hls::stream< XF_SNAME(WORDWIDTH_SRC)>&   _src_mat,
 
 
 	xFCannyKernel<ROWS, COLS, DEPTH_IN, DEPTH_OUT, NPC, WORDWIDTH_SRC, WORDWIDTH_DST,
-	(COLS>>XF_BITSHIFT(NPC)),((COLS>>XF_BITSHIFT(NPC))*3),FILTER_TYPE>(_src_mat, out_strm, _lowthreshold, _highthreshold,_norm_type,imgheight,imgwidth);
+	(COLS>>XF_BITSHIFT(NPC)),((COLS>>XF_BITSHIFT(NPC))*3),FILTER_TYPE,USE_URAM>(_src_mat, out_strm, _lowthreshold, _highthreshold,_norm_type,imgheight,imgwidth);
 
 }
 
@@ -212,7 +212,7 @@ void xFCannyEdgeDetector(hls::stream< XF_SNAME(WORDWIDTH_SRC)>&   _src_mat,
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 
-template<int FILTER_TYPE,int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC,int NPC1>
+template<int FILTER_TYPE,int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC,int NPC1,bool USE_URAM=false>
 void Canny(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC1> & _dst_mat,unsigned char _lowthreshold,unsigned char _highthreshold)
 {
 
@@ -234,7 +234,7 @@ void Canny(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS,
 		}
 	}
 
-	xFCannyEdgeDetector<ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC1),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC1),FILTER_TYPE>(_src,_dst,_lowthreshold,_highthreshold,NORM_TYPE,_src_mat.rows,_src_mat.cols);
+	xFCannyEdgeDetector<ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC1),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC1),FILTER_TYPE,USE_URAM>(_src,_dst,_lowthreshold,_highthreshold,NORM_TYPE,_src_mat.rows,_src_mat.cols);
 
 	for(int i=0; i<_dst_mat.rows;i++)
 	{

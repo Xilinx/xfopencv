@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #ifndef _XF_HOG_DESCRIPTOR_HIST_NORM_HPP_
 #define _XF_HOG_DESCRIPTOR_HIST_NORM_HPP_
@@ -55,7 +55,7 @@ template < int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
 int WORD_WIDTH_SRC, int WORD_WIDTH_DST, int WIN_HEIGHT, int WIN_WIDTH,
 int WIN_STRIDE, int CELL_HEIGHT, int CELL_WIDTH, int NOB, int NOHCPB,
 int NOVCPB, int NOVW, int NOHW, int NOVC, int NOHC, int NOVB, int NOHB,
-int BIN_STRIDE >
+int BIN_STRIDE ,bool USE_URAM>
 void xFDHOGDescriptorKernel (
 		hls::stream<XF_SNAME(WORD_WIDTH_SRC)>& _phase_strm,
 		hls::stream<XF_SNAME(WORD_WIDTH_SRC)>& _mag_strm,
@@ -66,14 +66,23 @@ void xFDHOGDescriptorKernel (
 	ap_uint<23> HA_1[NOHC][NOB], HA_2[NOHC][NOB], HA_3[NOHC][NOB];
 
 	// partitioning across the dim-2 to restrict the BRAM utilization
+	if(USE_URAM){
+#pragma HLS ARRAY_RESHAPE variable=HA_1 cyclic factor=9 dim=2
+#pragma HLS ARRAY_RESHAPE variable=HA_2 cyclic factor=9 dim=2
+#pragma HLS ARRAY_RESHAPE variable=HA_3 cyclic factor=9 dim=2
+#pragma HLS RESOURCE variable=HA_1 core=RAM_S2P_URAM
+#pragma HLS RESOURCE variable=HA_2 core=RAM_S2P_URAM
+#pragma HLS RESOURCE variable=HA_3 core=RAM_S2P_URAM
+	}
+	else{
 #pragma HLS ARRAY_PARTITION variable=HA_1 complete dim=2
 #pragma HLS ARRAY_PARTITION variable=HA_2 complete dim=2
 #pragma HLS ARRAY_PARTITION variable=HA_3 complete dim=2
-
-	// specifying the dual-port BRAM
+		// specifying the dual-port BRAM
 #pragma HLS RESOURCE variable=HA_1 core=RAM_S2P_BRAM
 #pragma HLS RESOURCE variable=HA_2 core=RAM_S2P_BRAM
 #pragma HLS RESOURCE variable=HA_3 core=RAM_S2P_BRAM
+	}
 
 	// array to hold the sum of squared values of each cell
 	ap_uint<45> ssv_1[NOHC], ssv_2[NOHC], ssv_3[NOHC];
@@ -170,7 +179,7 @@ void xFDHOGDescriptorKernel (
  *****************************************************************************/
 template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int CELL_HEIGHT,
 int CELL_WIDTH, int NOB, int NOHCPB, int NOVCPB, int ROWS, int COLS,
-int DEPTH_SRC, int DEPTH_DST,int NPC,int WORDWIDTH_SRC, int WORDWIDTH_DST>
+int DEPTH_SRC, int DEPTH_DST,int NPC,int WORDWIDTH_SRC, int WORDWIDTH_DST,bool USE_URAM>
 void xFDHOGDescriptor(
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _phase_strm,
 		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _mag_strm,
@@ -234,7 +243,7 @@ void xFDHOGDescriptor(
 	(COLS/CELL_WIDTH),
 	((ROWS/CELL_HEIGHT)-1),
 	((COLS/CELL_WIDTH)-1),
-	(180/NOB)>
+	(180/NOB),USE_URAM>
 	(_phase_strm,_mag_strm,_block_strm,_height,_width,novw,nohw,novc,nohc,novb,nohb);
 }
 

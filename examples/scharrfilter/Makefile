@@ -4,7 +4,7 @@ VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM}  ${VERBOSE} \
 -sds-hw "xf::Scharr<0, 0,0,2160, 3840,1>"  xf_scharr_accel.cpp -files ../../include/imgproc/xf_scharr.hpp -clkid 2 -sds-end -dmclkid 2
-#Scharr<XF_BORDER_CONSTANT,XF_8UC1,XF_16UC1,HEIGHT, WIDTH,XF_NPPC8>(imgInput, imgOutputx,imgOutputy);
+
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 

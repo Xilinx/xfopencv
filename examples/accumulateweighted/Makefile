@@ -3,11 +3,10 @@ EXECUTABLE = accumulate_weighted.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::accumulateWeighted<0, 1,2160,3840,1>"  xf_accumulate_weighted_accel.cpp -files ../../include/imgproc/xf_accumulate_weighted.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::accumulateWeighted<0, 1,2160,3840,1>"  xf_accumulate_weighted_accel.cpp -files ../../include/imgproc/xf_accumulate_weighted.hpp -clkid 2 -sds-end -dmclkid 2
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
-CC = sds++ ${SDSCC_FLAGS}
 
 CC = sds++ ${SDSCC_FLAGS}
 

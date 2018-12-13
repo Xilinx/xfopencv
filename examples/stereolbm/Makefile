@@ -1,17 +1,27 @@
 APPSOURCES =  xf_stereoBM_tb.cpp  xf_stereoBM_accel.cpp 
 EXECUTABLE = stereoBM.elf
 VERBOSE = #-verbose
-PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::StereoBM<11, 32,32,0,1,1080,1920,1>"  xf_stereoBM_accel.cpp -files ../../include/imgproc/xf_stereoBM.hpp -clkid 2 -sds-end -dmclkid 2
+PLATFORM ?= <Path-to-reVISION-Platform>
+
+URAM_ENA := 0
+
+ifeq ($(URAM_ENA), 1)
+   URAM_ENA_FLAG := -DXF_USE_URAM=true
+else
+   URAM_ENA_FLAG := -DXF_USE_URAM=false
+endif
+
+
+SDSCC_FLAGS = -sds-pf ${PLATFORM}  ${VERBOSE} ${URAM_ENA_FLAG} \
+-sds-hw "xf::StereoBM<11, 32,32,0,1,1080,1920,1,${URAM_ENA}>"  xf_stereoBM_accel.cpp -files ../../include/imgproc/xf_stereoBM.hpp -clkid 2 -sds-end -dmclkid 2
+
+CC = sds++ ${SDSCC_FLAGS} -impl-strategy Performance_Explore
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 
-CC = sds++ ${SDSCC_FLAGS} -impl-strategy Performance_Explore
-
 LLIBS = -lopencv_imgcodecs -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann -lopencv_calib3d
-#LLIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs 
+
 OLEVEL = -ggdb
 CFLAGS = -O0 -Wall ${OLEVEL} -c ${IDIRS} -DHLS_NO_XIL_FPO_LIB -mstrict-align -hls-target 1
 LFLAGS = ${OLEVEL} ${LDIRS} ${LLIBS}

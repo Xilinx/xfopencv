@@ -9,3 +9,4 @@
 #define FILTER_SIZE_5  0
 #define FILTER_SIZE_7  0
 
+#define XF_USE_URAM false

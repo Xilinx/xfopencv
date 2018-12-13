@@ -54,13 +54,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if T_8U
 #define TYPE XF_8UC1
-void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 #if T_16S
 #define TYPE XF_16SC1
-void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
 #endif
 
-
+#if ARRAY
+void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
+#endif
+#if SCALAR
+void arithm_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgInput1, unsigned char scl[XF_CHANNELS(TYPE,NPC1)],xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &imgOutput);
+#endif
 #endif // end of _XF_ARITHM_CONFIG_H_
 

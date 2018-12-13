@@ -3,11 +3,10 @@ EXECUTABLE = color.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
--sds-hw "xf::iyuv2nv12<0,  6, 1080, 1920, 1,1>"  xf_cvt_color_accel.cpp -files ../../include/imgproc/xf_cvt_color.hpp -clkid 2 -sds-end -dmclkid 2\
+-sds-hw "xf::iyuv2nv12<0,  6, 1080, 1920, 1,1>"  xf_cvt_color_accel.cpp -files ../../include/imgproc/xf_cvt_color.hpp -clkid 2 -sds-end -dmclkid 2
 
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
-CC = sds++ ${SDSCC_FLAGS}
 
 CC = sds++ ${SDSCC_FLAGS}
 

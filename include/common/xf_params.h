@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -85,14 +85,40 @@ enum _convert_bit_depth
 typedef _convert_bit_depth XF_convert_bit_depth_e;
 
 
+
+
 //Thresholding types
 enum _threshold_type
 {
-	XF_THRESHOLD_TYPE_BINARY,
-	XF_THRESHOLD_TYPE_RANGE
+	XF_THRESHOLD_TYPE_BINARY = 0,
+	XF_THRESHOLD_TYPE_BINARY_INV = 1,
+	XF_THRESHOLD_TYPE_TRUNC = 2,
+	XF_THRESHOLD_TYPE_TOZERO = 3,
+	XF_THRESHOLD_TYPE_TOZERO_INV = 4,
 };
 typedef _threshold_type XF_threshold_type_e;
 
+//Comparision types
+enum _comparison_op
+{
+	XF_CMP_EQ = 0,
+	XF_CMP_GT = 1,
+	XF_CMP_GE = 2,
+	XF_CMP_LT = 3,
+	XF_CMP_LE = 4,
+	XF_CMP_NE = 5
+};
+typedef _comparison_op _comparison_op_e;
+
+//Comparision types
+enum _reduction_op
+{
+	REDUCE_SUM  = 0,
+	REDUCE_AVG  = 1,
+	REDUCE_MAX  = 2,
+	REDUCE_MIN  = 3
+};
+typedef _reduction_op _reduction_op_e;
 
 //Pixel Per Cycle
 enum _pixel_per_cycle
@@ -126,6 +152,11 @@ enum _pixel_type
 	XF_9SP = 13,
 	XF_9UP = 14,
 	XF_24UP = 15,
+	XF_64UP = 16,
+	XF_10UP = 17,
+	XF_12UP = 18,
+	XF_40UP = 19,
+	XF_48UP = 20		 
 };
 typedef _pixel_type XF_pixel_type_e;
 
@@ -159,7 +190,14 @@ enum _word_width
 	XF_2UW = 24,
 	XF_48UW = 25,
 	XF_24UW = 26,
-	XF_48SW =27
+	XF_48SW =27,
+	XF_10UW = 28,
+	XF_12UW = 29,
+	XF_40UW = 30,
+	XF_20UW = 31,
+	XF_80UW = 32,
+	XF_96UW = 33,
+	XF_192UW = 34		  
 };
 typedef _word_width XF_word_width_e;
 
@@ -208,6 +246,13 @@ enum _border_type
 };
 typedef _border_type XF_border_type_e;
 
+enum _structuring_element_shape
+{
+	XF_SHAPE_RECT=0,
+	XF_SHAPE_ELLIPSE=1,
+	XF_SHAPE_CROSS=2,
+
+};
 //Phase computation
 enum _phase_params
 {
@@ -279,6 +324,14 @@ enum XF_stereo_prefilter_type
 	XF_STEREO_PREFILTER_NORM_TYPE
 };
 /****************************new************************/
+//enumerations for Demosaicing
+enum XF_demosaicing
+{
+	XF_BAYER_BG,
+	XF_BAYER_GB,
+	XF_BAYER_GR,
+	XF_BAYER_RG,
+};				   
 //typedef XF_stereo_prefilter_type XF_stereo_pre_filter_type_e;
 //enum _pixel_percycle
 //{
@@ -302,8 +355,14 @@ enum _pixeltype
 	XF_2UC1  = 8,
 	XF_8UC3  = 9,
 	XF_16UC3  = 10,
-	XF_16SC3 =11
+	XF_16SC3 =11,
+	XF_16UC4 = 12,
+	XF_10UC1 = 13,
+	XF_10UC4 = 14,
+	XF_12UC1 = 15,
+	XF_12UC4 = 16			  
 };
 typedef _pixeltype XF_npt_e;
 
 #endif//_XF_PARAMS_H_
+

@@ -3,9 +3,9 @@
 ############################################################
 open_project dilation_project
 set_top dilation_accel
-add_files ./xf_dilation_accel.cpp -cflags "-D__XFCV_HLS_MODE__ -I../../include -I../../include/src --std=c++0x"
+add_files ./xf_dilation_accel.cpp -cflags "-D__XFCV_HLS_MODE__ -I../../include --std=c++0x"
 add_files -tb ./testcase55.jpg
-add_files -tb ./xf_dilation_tb.cpp -cflags "-D__XFCV_HLS_MODE__ -I../../include -I../../include/src --std=c++0x"
+add_files -tb ./xf_dilation_tb.cpp -cflags "-D__XFCV_HLS_MODE__ -I../../include --std=c++0x"
 open_solution "solution1"
 set_part {xczu9eg-ffvb1156-2-i} -tool vivado
 create_clock -period 10 -name default

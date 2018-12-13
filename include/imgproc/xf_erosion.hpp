@@ -1,305 +1,370 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
-All rights reserved.
+ Copyright (c) 2018, Xilinx, Inc.
+ All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met:
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
-this list of conditions and the following disclaimer.
+ 1. Redistributions of source code must retain the above copyright notice,
+ this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
-and/or other materials provided with the distribution.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+ this list of conditions and the following disclaimer in the documentation
+ and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
-without specific prior written permission.
+ 3. Neither the name of the copyright holder nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
+#ifndef _XF_MEDIAN_BLUR_
+#define _XF_MEDIAN_BLUR_
 
-#ifndef _XF_EROSION_HPP_
-#define _XF_EROSION_HPP_
-
-#ifndef __cplusplus
-#error C++ is needed to include this header
-#endif
-
-
-typedef unsigned short  uint16_t;
-
+#include "ap_int.h"
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
 namespace xf{
-
-template<int DEPTH>
-XF_PTNAME(DEPTH) xFapplyerode3x3(XF_PTNAME(DEPTH) D1, XF_PTNAME(DEPTH) D2, XF_PTNAME(DEPTH) D3,
-		XF_PTNAME(DEPTH) D4, XF_PTNAME(DEPTH) D5, XF_PTNAME(DEPTH) D6,
-		XF_PTNAME(DEPTH) D7, XF_PTNAME(DEPTH) D8, XF_PTNAME(DEPTH) D9)
-		{
-#pragma HLS INLINE off
-	XF_PTNAME(DEPTH) array[9]={D1, D2, D3, D4, D5, D6, D7, D8, D9};
-	#pragma HLS ARRAY_PARTITION variable = array complete dim = 1
-
-		XF_PTNAME(DEPTH) min = array[0];
-
-		Mask_Max:
-		for (ap_uint<5> c = 1 ; c < 9; c++)
-		{
-	#pragma HLS unroll
-			if(array[c] < min)
-			{
-				min = array[c];
-			}
-		}
-		return min;
-		}
-
-template<int NPC,int PLANES,int DEPTH>
-void xFErode3x3(
-		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
-		XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2])
+////////////////////////	Core Processing		//////////////////////////////
+template<int PLANES,int DEPTH, int K_ROWS, int K_COLS>
+void function_apply(XF_PTUNAME(DEPTH) *OutputValue, XF_PTUNAME(DEPTH) src_buf[K_ROWS][K_COLS],unsigned char kernel[K_ROWS][K_COLS])
 {
 #pragma HLS INLINE
-	XF_PTNAME(DEPTH) out_val;
-	Compute_Grad_Loop:
-	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++)
+
+
+	XF_PTUNAME(DEPTH) packed_val=0, depth=XF_DTPIXELDEPTH(DEPTH,XF_NPPC1)/PLANES;
+
+	Apply_dilate_Loop:
+	for(ap_uint<5> c=0,k=0; c < PLANES; c++,k+=depth)
 	{
-		for(ap_uint<5> c=0,k=0;c<PLANES; c++,k+=8)
-		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=PLANES
 #pragma HLS UNROLL
-			out_val.range(k+7,k) = xFapplyerode3x3<DEPTH>(src_buf1[j].range(k+7,k), src_buf1[j+1].range(k+7,k), src_buf1[j+2].range(k+7,k),src_buf2[j].range(k+7,k), src_buf2[j+1].range(k+7,k), src_buf2[j+2].range(k+7,k)
-					,src_buf3[j].range(k+7,k), src_buf3[j+1].range(k+7,k), src_buf3[j+2].range(k+7,k));
+		XF_PTNAME(DEPTH) max = 255;
+		for(ap_uint<13> k_rows=0; k_rows<K_ROWS; k_rows++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+#pragma HLS UNROLL
+			for (ap_uint<13> k_cols=0; k_cols<K_COLS; k_cols++)
+			{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_COLS
+#pragma HLS UNROLL
+				if(kernel[k_rows][k_cols])
+				{
+					if(src_buf[k_rows][k_cols].range(k+(depth-1),k) < max)
+					{
+						max =src_buf[k_rows][k_cols].range(k+(depth-1),k);
+					}
+				}
+
+			}
 
 		}
-		OutputValues[j]=out_val;
+		packed_val.range(k+(depth-1),k) = max;
 	}
+
+
+	*OutputValue = packed_val;
+	return;
 }
 
-template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void ProcessErode3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
-		XF_SNAME(WORDWIDTH) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
-		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom,
-		ap_uint<13> row, int &rd_ind, int &wr_ind)
+template<int ROWS, int COLS,int PLANES, int TYPE, int NPC, int WORDWIDTH, int TC, int K_ROWS,int K_COLS>
+void Process_function(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, unsigned char kernel[K_ROWS][K_COLS],xf::Mat<TYPE, ROWS, COLS, NPC> & _out_mat,
+		XF_TNAME(TYPE,NPC) buf[K_ROWS][(COLS >> XF_BITSHIFT(NPC))], XF_PTUNAME(TYPE) src_buf[K_ROWS][XF_NPIXPERCYCLE(NPC)+(K_COLS-1)],
+		XF_TNAME(TYPE,NPC) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[K_ROWS], ap_uint<13> row, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 
-	XF_SNAME(WORDWIDTH) buf0, buf1, buf2;
+	XF_TNAME(TYPE,NPC) buf_cop[K_ROWS];
+	XF_PTUNAME(TYPE) OutputValue;
+#pragma HLS ARRAY_PARTITION variable=buf_cop complete dim=1
+
 	uint16_t npc = XF_NPIXPERCYCLE(NPC);
-	ap_uint<5> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
+	uint16_t col_loop_var = (((K_COLS>>1)+(npc-1))/npc);
+
+	///////////////////////////////	Initializing src_buf buffer to zero	///////////////////////
+	for(int k_row=0;k_row<K_ROWS;k_row++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+#pragma HLS unroll
+		for(int k_col=0; k_col<(npc + K_COLS - 1); k_col++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_COLS
+#pragma HLS unroll
+			src_buf[k_row][k_col] = 0;
+			src_buf[k_row][k_col].b_not();//-1;
+		}
+	}
 
 	Col_Loop:
-	for(ap_uint<13> col = 0; col < img_width; col++)
+	for(ap_uint<13> col = 0; col < ((img_width)>>XF_BITSHIFT(NPC)) + col_loop_var; col++) // Image width should be multiple of NPC
 	{
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
+#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
-		if(row < img_height)
-			buf[bottom][col] = _src_mat.data[rd_ind++]; // Read data
-		else
-			buf[bottom][col] = 255;
+#pragma HLS LOOP_FLATTEN OFF
 
-		buf0 = buf[tp][col];
-		buf1 = buf[mid][col];
-		buf2 = buf[bottom][col];
-
-			if(NPC == XF_NPPC8)
+		if(col < (img_width>>XF_BITSHIFT(NPC)))
 		{
-			xfExtractPixels<NPC, WORDWIDTH, DEPTH>(&src_buf1[2], buf0, 0);
-			xfExtractPixels<NPC, WORDWIDTH, DEPTH>(&src_buf2[2], buf1, 0);
-			xfExtractPixels<NPC, WORDWIDTH, DEPTH>(&src_buf3[2], buf2, 0);
-		}
-		else
-		{
-			src_buf1[2] =  buf0;
-			src_buf2[2] =  buf1;
-			src_buf3[2] =  buf2;
-		}
-
-		xFErode3x3<NPC,PLANES, DEPTH>(OutputValues,src_buf1, src_buf2, src_buf3);
-
-		if(col == 0)
-		{
-			shift_x = 0;
-			P0 = 0;
-			
-				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 1, (npc-1), shift_x);
-			
-
-		}
-		else
-		{
-			
-				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 0, 1, shift_x);
-			
-
-			_dst_mat.data[wr_ind++] = P0;
-
-			shift_x = 0;
-			P0 = 0;
-			
-				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 1, (npc-1), shift_x);
-			
-
-		}
-
-		src_buf1[0] = src_buf1[buf_size-2];
-		src_buf1[1] = src_buf1[buf_size-1];
-		src_buf2[0] = src_buf2[buf_size-2];
-		src_buf2[1] = src_buf2[buf_size-1];
-		src_buf3[0] = src_buf3[buf_size-2];
-		src_buf3[1] = src_buf3[buf_size-1];
-	} // Col_Loop
-}
-
-
-
-template<int SRC_T, int ROWS, int COLS,int PLANES, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void xFErosion3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
-		uint16_t img_height, uint16_t img_width)
-{
-	ap_uint<13> row_ind;
-	ap_uint<2> tp, mid, bottom;
-	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
-	uint16_t shift_x = 0;
-	ap_uint<13> row, col;
-	int rd_ind = 0, wr_ind = 0;
-
-	XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)];
-
-#pragma HLS ARRAY_PARTITION variable=OutputValues complete dim=1
-
-
-	XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2], src_buf2[XF_NPIXPERCYCLE(NPC)+2],src_buf3[XF_NPIXPERCYCLE(NPC)+2];
-#pragma HLS ARRAY_PARTITION variable=src_buf1 complete dim=1
-#pragma HLS ARRAY_PARTITION variable=src_buf2 complete dim=1
-#pragma HLS ARRAY_PARTITION variable=src_buf3 complete dim=1
-
-	XF_SNAME(WORDWIDTH) P0;
-
-	XF_SNAME(WORDWIDTH) buf[3][(COLS >> XF_BITSHIFT(NPC))];
-#pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
-#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
-	row_ind = 1;
-
-	Clear_Row_Loop:
-	for(col = 0; col < img_width; col++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-#pragma HLS pipeline
-		buf[0][col] = 255;
-		buf[row_ind][col] = _src_mat.data[rd_ind++];
-	}
-	row_ind++;
-
-	Row_Loop:
-	for(row = 1; row < img_height+1; row++)
-	{
-#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
-		if(row_ind == 2)
-		{
-			tp = 0; mid = 1; bottom = 2;
-		}
-		else if(row_ind == 0)
-		{
-			tp = 1; mid = 2; bottom = 0;
-		}
-		else if(row_ind == 1)
-		{
-			tp = 2; mid = 0; bottom = 1;
-		}
-
-		src_buf1[0] = src_buf1[1] = 16777215;
-		src_buf2[0] = src_buf2[1] = 16777215;
-		src_buf3[0] = src_buf3[1] = 16777215;
-
-
-		P0 = 0;
-		ProcessErode3x3<SRC_T, ROWS, COLS,PLANES, DEPTH, NPC, WORDWIDTH, TC>
-		(_src_mat, _dst_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row, rd_ind, wr_ind);
-
-
-		if((NPC == XF_NPPC8))
-		{
-
-			OutputValues[0] = xFapplyerode3x3<DEPTH>(
-					src_buf1[buf_size-2],src_buf1[buf_size-1], 255,
-					src_buf2[buf_size-2],src_buf2[buf_size-1], 255,
-					src_buf3[buf_size-2],src_buf3[buf_size-1], 255);
-
-
-		}
-		else
-		{
-			for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
+			if(row<img_height)
 			{
-//			OutputValues[0] = xFapplyerode3x3<DEPTH>(
-//					src_buf1[buf_size-3], src_buf1[buf_size-2], 255,
-//					src_buf2[buf_size-3], src_buf2[buf_size-2], 255,
-//					src_buf3[buf_size-3], src_buf3[buf_size-2], 255);
-			#pragma HLS UNROLL
-				ap_uint<8> srcbuf10=src_buf1[buf_size-3].range(k+7,k);ap_uint<8> srcbuf11=src_buf1[buf_size-2].range(k+7,k);
-				ap_uint<8> srcbuf20=src_buf2[buf_size-3].range(k+7,k);ap_uint<8> srcbuf21=src_buf2[buf_size-2].range(k+7,k);
-				ap_uint<8> srcbuf30=src_buf3[buf_size-3].range(k+7,k);ap_uint<8> srcbuf31=src_buf3[buf_size-2].range(k+7,k);
-
-				OutputValues[0].range(k+7,k)=xFapplyerode3x3<DEPTH>(srcbuf10, srcbuf11, 16777215,srcbuf20, srcbuf21, 16777215, srcbuf30, srcbuf31, 16777215);
-
+				buf[row_ind[K_ROWS-1]][col] = _src_mat.data[rd_ind]; // Read data
+				rd_ind++;
+			}
+			else
+			{
+				buf[row_ind[K_ROWS-1]][col]  =0;//-1;
+				buf[row_ind[K_ROWS-1]][col].b_not();
 			}
 		}
 
-		xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 0, 1, shift_x);
-
-
-		_dst_mat.data[wr_ind++] = P0;
-
-
-		shift_x = 0;
-		P0 = 0;
-
-		row_ind++;
-		if(row_ind == 3)
+		for(int idx=0; idx<K_ROWS; idx++)
 		{
-			row_ind = 0;
+#pragma HLS LOOP_TRIPCOUNT min=K_ROWS max=K_ROWS
+#pragma HLS UNROLL
+			if(col < (img_width>>XF_BITSHIFT(NPC)))
+				buf_cop[idx] = buf[(row_ind[idx])][col];
+			else
+			{
+				buf_cop[idx] =0;// buf_cop[idx];
+				buf_cop[idx].b_not();
+			}
 		}
+
+
+
+		XF_PTUNAME(TYPE) src_buf_temp_copy[K_ROWS][XF_NPIXPERCYCLE(NPC)];
+		XF_PTUNAME(TYPE) src_buf_temp_copy_extract[XF_NPIXPERCYCLE(NPC)];
+
+			/////////////////////	Extracting 8 pixels from packed data ////////////////////////
+			for(int extract_px=0;extract_px<K_ROWS;extract_px++)
+			{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+#pragma HLS unroll
+
+
+				xfExtractPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(src_buf_temp_copy_extract,  buf_cop[extract_px], 0);
+				for(int ext_copy=0; ext_copy<npc; ext_copy++)
+				{
+#pragma HLS unroll
+					src_buf[extract_px][(K_COLS-1)+ext_copy] = src_buf_temp_copy_extract[ext_copy];
+
+				}
+			}
+		///////////////////////  Actual Process function cal	///////////////////////////////////
+
+		XF_PTUNAME(TYPE) src_buf_temp_med_apply[K_ROWS][K_COLS];
+		XF_PTUNAME(TYPE) OutputValues[XF_NPIXPERCYCLE(NPC)];
+
+
+		for(int iter = 0; iter < npc; iter++)
+		{
+#pragma HLS pipeline
+			for(int copyi = 0; copyi < K_ROWS; copyi++){
+				for(int copyj = 0; copyj < K_COLS; copyj++){
+					src_buf_temp_med_apply[copyi][copyj] = src_buf[copyi][copyj+iter];
+				}
+			}
+
+			function_apply<PLANES,TYPE, K_ROWS, K_COLS>(&OutputValue,src_buf_temp_med_apply,kernel);//processing 8-pixels
+			OutputValues[iter] = OutputValue;
+		}
+
+		//////////////////////	writing Processed pixel onto DDR //////////////////////////////////////////
+		int start_write =(((K_COLS>>1)+(npc-1))/npc);
+		if(NPC==XF_NPPC8)
+		{
+			if(col==0)
+			{
+				shift_x = 0;P0 = 0;
+				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(&OutputValues[0], P0, (K_COLS>>1), (npc-(K_COLS>>1)), shift_x);
+
+			}
+			else
+			{
+
+				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(&OutputValues[0], P0, 0, (K_COLS>>1), shift_x);
+				_out_mat.data[wr_ind] = P0;
+				shift_x = 0;P0 = 0;
+				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC),  XF_DEPTH(TYPE,NPC)>(&OutputValues[0], P0, (K_COLS>>1), (npc-(K_COLS>>1)), shift_x);
+
+				wr_ind++;
+
+			}
+		}
+		if(NPC==XF_NPPC1)
+		{
+			if(col >= start_write){
+				_out_mat.data[wr_ind] = OutputValue;
+				wr_ind++;
+			}
+
+
+		}
+
+		////////////////////	Shifting the buffers in 8-pixel mode////////////////////////
+
+			for(ap_uint<13> extract_px=0;extract_px<K_ROWS;extract_px++)
+			{
+#pragma HLS LOOP_TRIPCOUNT min=K_ROWS max=K_ROWS
+				for(ap_uint<13> col_warp=0; col_warp<(K_COLS-1);col_warp++)
+				{
+#pragma HLS UNROLL
+#pragma HLS LOOP_TRIPCOUNT min=K_COLS max=K_COLS
+
+					src_buf[extract_px][col_warp] = src_buf[extract_px][col_warp + npc];// Shifting the 2 colums of src_buf to process next pixel
+
+				}
+
+			}
+
+	} // Col_Loop
+
+}//	end of processDilate
+
+
+
+template<int ROWS, int COLS,int PLANES, int TYPE, int NPC, int WORDWIDTH, int TC,int K_ROWS,int K_COLS>
+void xferode(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst, uint16_t img_height, uint16_t img_width, unsigned char kernel[K_ROWS][K_COLS])
+{
+	ap_uint<13> row_ind[K_ROWS];
+#pragma HLS ARRAY_PARTITION variable=row_ind complete dim=1
+
+	uint16_t shift_x = 0;
+	ap_uint<13> row, col;
+
+
+	XF_PTUNAME(TYPE) src_buf[K_ROWS][XF_NPIXPERCYCLE(NPC)+(K_COLS-1)];
+#pragma HLS ARRAY_PARTITION variable=src_buf complete dim=1
+#pragma HLS ARRAY_PARTITION variable=src_buf complete dim=2
+
+	XF_TNAME(TYPE,NPC) P0;
+
+	XF_TNAME(TYPE,NPC) buf[K_ROWS][(COLS >> XF_BITSHIFT(NPC))];
+#pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
+#pragma HLS ARRAY_PARTITION variable=buf complete dim=1
+
+
+	//initializing row index
+
+	for(int init_row_ind=0; init_row_ind<K_ROWS; init_row_ind++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+		row_ind[init_row_ind] = init_row_ind; 
+	}
+
+	int rd_ind = 0;
+
+	//Reading the first row of image and initializing the buf
+	read_lines:
+	for(ap_uint<13> i_row=(K_ROWS>>1); i_row < (K_ROWS-1) ;i_row++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+		for(ap_uint<13> i_col = 0; i_col < img_width>>XF_BITSHIFT(NPC) ; i_col++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
+#pragma HLS pipeline
+#pragma HLS LOOP_FLATTEN OFF
+			buf[i_row][i_col] = _src.data[rd_ind];//reading the rows of image
+			rd_ind++;
+		}
+	}
+
+	//takes care of top borders ( intializing them with first row of image)
+	init_boarder:
+	for(ap_uint<13> i_row=0; i_row < K_ROWS>>1;i_row++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+		for(ap_uint<13> i_col = 0; i_col < img_width>>XF_BITSHIFT(NPC); i_col++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
+#pragma HLS UNROLL
+			buf[i_row][i_col] =-1;// buf[K_ROWS>>1][i_col];
+		}
+	}
+
+
+	int wr_ind = 0;
+	Row_Loop:
+	for(row = (K_ROWS>>1); row < img_height+(K_ROWS>>1); row++)
+	{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
+
+		P0 = 0;
+		Process_function<ROWS, COLS,PLANES, TYPE, NPC, WORDWIDTH, TC, K_ROWS,K_COLS> (_src, kernel, _dst, buf, src_buf, P0, img_width, img_height, shift_x, row_ind, row, rd_ind, wr_ind);
+
+		//update indices (by cyclic shifting )
+		ap_uint<13> zero_ind = row_ind[0];
+		for(ap_uint<13> init_row_ind=0; init_row_ind<K_ROWS-1; init_row_ind++)
+		{
+#pragma HLS LOOP_TRIPCOUNT min=1 max=K_ROWS
+#pragma HLS UNROLL
+			row_ind[init_row_ind] = row_ind[init_row_ind + 1];
+		}
+		row_ind[K_ROWS-1] = zero_ind;
 	} // Row_Loop
 }
 
 
-#pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
-#pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
-#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-
-
-template<int BORDER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
-void erode(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
+#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
+#pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
+template<int BORDER_TYPE, int TYPE, int ROWS, int COLS,int K_SHAPE,int K_ROWS,int K_COLS, int ITERATIONS, int NPC=1>
+void erode (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst,unsigned char _kernel[K_ROWS*K_COLS])
 {
-
-
 #pragma HLS INLINE OFF
 
-	uint16_t imgwidth = _src_mat.cols >> XF_BITSHIFT(NPC);
-	uint16_t imgheight = _src_mat.rows;
+	unsigned short imgheight = _src.rows;
+	unsigned short imgwidth = _src.cols;
+	assert(BORDER_TYPE == XF_BORDER_REPLICATE && "Only XF_BORDER_REPLICATE is supported");
+	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
 
-	xFErosion3x3<SRC_T,ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC))>
-	(_src_mat,_dst_mat,imgheight,imgwidth);
 
-}
-}
 
-#endif //_XF_EROSION_HPP_
+
+	if( K_SHAPE==XF_SHAPE_RECT)	// iterations >1 is not supported for ELLIPSE and  CROSS
+	{
+
+	#define  NEW_K_ROWS 	(K_ROWS + ((ITERATIONS-1)*(K_ROWS-1)))
+	#define  NEW_K_COLS 	(K_COLS + ((ITERATIONS-1)*(K_COLS-1)))
+
+		unsigned char kernel_new[NEW_K_ROWS][NEW_K_COLS];
+	#pragma HLS array partition variable=kernel_new dim=0
+		for(unsigned char i = 0; i < NEW_K_ROWS; i++)
+		{
+			for(unsigned char j = 0; j < NEW_K_COLS; j++)
+			{
+				kernel_new[i][j]=1;// _kernel[i*NEW_K_COLS+j];
+			}
+		}
+
+		xferode<ROWS, COLS, XF_CHANNELS(TYPE,NPC), TYPE, NPC, 0, (COLS>>XF_BITSHIFT(NPC))+(NEW_K_ROWS>>1),NEW_K_ROWS, NEW_K_COLS>(_src, _dst, imgheight, imgwidth,kernel_new);
+	}
+	else
+	{
+		unsigned char kernel[K_ROWS][K_COLS];
+	#pragma HLS array partition variable=kernel complete dim=0
+		for(unsigned char i = 0; i < K_ROWS; i++)
+		{
+			for(unsigned char j = 0; j < K_COLS; j++)
+			{
+				kernel[i][j]= _kernel[i*K_COLS+j];
+			}
+		}
+		xferode<ROWS, COLS, XF_CHANNELS(TYPE,NPC), TYPE, NPC, 0, (COLS>>XF_BITSHIFT(NPC))+(K_COLS>>1), K_ROWS, K_COLS>(_src, _dst, imgheight, imgwidth,kernel);
+	}
+
+	return;
+}//erode
+}//xf
+#endif

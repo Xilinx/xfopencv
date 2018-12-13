@@ -5,9 +5,10 @@ PLATFORM = <path-to-reVISION-platform>
 SDSCC_FLAGS = -sds-pf ${PLATFORM} \
 -sds-hw "xf::resize <2,  0, 2160, 3840,1080,1920, 1, 2>"  xf_resize_accel.cpp -files ../../include/imgproc/xf_resize.hpp -clkid 2 -sds-end -dmclkid 2
 
+CC = sds++ ${SDSCC_FLAGS}
+
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
 LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
-CC = sds++ ${SDSCC_FLAGS}
 
 LLIBS = -lopencv_imgcodecs -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann 
 #LLIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs 

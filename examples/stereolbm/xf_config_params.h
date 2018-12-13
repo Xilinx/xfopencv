@@ -6,3 +6,5 @@
 
 /* NO_OF_DISPARITIES must not be lesser than PARALLEL_UNITS and NO_OF_DISPARITIES/PARALLEL_UNITS must be a non-fractional number */
 #define PARALLEL_UNITS		32
+
+#define XF_USE_URAM false

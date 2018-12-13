@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -37,7 +37,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
-#include "imgproc/xf_inrange.hpp"
+#include "imgproc/xf_colorthresholding.hpp"
 #include "imgproc/xf_rgb2hsv.hpp"
 #include "imgproc/xf_erosion.hpp"
 #include "imgproc/xf_dilation.hpp"
@@ -48,6 +48,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MAXCOLORS   3
 #define NPIX	XF_NPPC1
 
+#define FILTER_SIZE 3
+
+#define KERNEL_SHAPE XF_SHAPE_RECT
+
+#define ITERATIONS 1
+
 void colordetect_accel(xf::Mat<XF_8UC4, HEIGHT, WIDTH, NPIX> &_src,
 		xf::Mat<XF_8UC4, HEIGHT, WIDTH, NPIX> &_rgb2hsv,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter1,
@@ -55,5 +61,5 @@ void colordetect_accel(xf::Mat<XF_8UC4, HEIGHT, WIDTH, NPIX> &_src,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter3,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_inter4,
 		xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst,
-		unsigned char *low_thresh,unsigned char *high_thresh);
+		unsigned char *low_thresh,unsigned char *high_thresh,unsigned char kernel[FILTER_SIZE*FILTER_SIZE]);
 #endif

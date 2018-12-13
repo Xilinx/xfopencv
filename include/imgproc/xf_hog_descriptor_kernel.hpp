@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -58,7 +58,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int CELL_HEIGHT,
 int CELL_WIDTH, int NOB, int NOHCPB, int NOVCPB, int MAT_WW, int ROWS,
 int COLS, int DEPTH, int DEPTH_BLOCK, int NPC, int WORDWIDTH, int WORDWIDTH_BLOCK,
-int NOC>
+int NOC,bool USE_URAM>
 void xFDHOGKernel( hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
 		hls::stream<XF_SNAME(WORDWIDTH_BLOCK)>& _block_stream,uint16_t _height,uint16_t _width)
 {
@@ -69,7 +69,7 @@ void xFDHOGKernel( hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
 #pragma HLS DATAFLOW
 
 	//  gradient computation
-	xFHOGgradients < ROWS,COLS,DEPTH,XF_9SP,XF_NPPC1,WORDWIDTH,MAT_WW,NOC>
+	xFHOGgradients < ROWS,COLS,DEPTH,XF_9SP,XF_NPPC1,WORDWIDTH,MAT_WW,NOC,USE_URAM>
 	(_in_stream,grad_x_stream,grad_y_stream,XF_BORDER_CONSTANT,_height,_width);
 
 	// finding the magnitude and the phase for the gradient data
@@ -78,7 +78,7 @@ void xFDHOGKernel( hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
 
 	// Descriptor function where the histogram is computed and the blocks are normalized
 	xFDHOGDescriptor < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,CELL_HEIGHT,CELL_WIDTH,NOB,NOHCPB,
-	NOVCPB,ROWS,COLS,XF_16UP,DEPTH_BLOCK,XF_NPPC1, XF_16UW,WORDWIDTH_BLOCK >
+	NOVCPB,ROWS,COLS,XF_16UP,DEPTH_BLOCK,XF_NPPC1, XF_16UW,WORDWIDTH_BLOCK,USE_URAM >
 	(phase_stream,mag_stream,_block_stream,_height,_width);
 }
 
@@ -94,7 +94,7 @@ void xFDHOGKernel( hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
  ***********************************************************************/
 template<int WIN_HEIGHT, int WIN_WIDTH, int WIN_STRIDE, int BLOCK_HEIGHT, int BLOCK_WIDTH,
 int CELL_HEIGHT, int CELL_WIDTH, int NOB, int ROWS, int COLS, int DEPTH, int DEPTH_BLOCK,
-int NPC, int WORDWIDTH, int WORDWIDTH_BLOCK, int NOC>
+int NPC, int WORDWIDTH, int WORDWIDTH_BLOCK, int NOC,bool USE_URAM>
 void xFDHOG (
 		hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
 		hls::stream<XF_SNAME(WORDWIDTH_BLOCK)>& _block_stream,
@@ -111,7 +111,7 @@ void xFDHOG (
 	{
 		xFDHOGKernel < WIN_HEIGHT,WIN_WIDTH,WIN_STRIDE,CELL_HEIGHT,CELL_WIDTH,
 		NOB,(BLOCK_WIDTH/CELL_WIDTH),(BLOCK_HEIGHT/CELL_HEIGHT),XF_9UW,ROWS,COLS,
-		DEPTH,DEPTH_BLOCK,NPC,WORDWIDTH,WORDWIDTH_BLOCK,NOC >
+		DEPTH,DEPTH_BLOCK,NPC,WORDWIDTH,WORDWIDTH_BLOCK,NOC,USE_URAM >
 		(_in_stream,_block_stream,_height,_width);
 	}
 }

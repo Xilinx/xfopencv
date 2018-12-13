@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -52,7 +52,7 @@ namespace xf{
  * xFCornerHarrisDetector : CornerHarris function to find corners in the image
  ************************************************************************/
 template<int ROWS, int COLS,int CHANNELINFO, int IN_DEPTH, int NPC, int IN_WW,
-int OUT_WW, int TC,int GRAD_WW, int DET_WW>
+int OUT_WW, int TC,int GRAD_WW, int DET_WW,bool USE_URAM>
 void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream < XF_SNAME(IN_WW) > &_dst_mat, uint16_t img_height, uint16_t img_width,
 		uint16_t _filter_width, uint16_t _block_width,uint16_t _nms_radius, uint16_t _threshold, uint16_t k)
@@ -79,7 +79,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream< XF_SNAME(DET_WW) > gradx_mat, grady_mat;
 		hls::stream< XF_SNAME(DET_WW) > gradx1_mat, grady1_mat;
 		hls::stream< XF_SNAME(DET_WW) > gradx2_mat, grady2_mat;
-		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_32SP, NPC, IN_WW, DET_WW>(_src_mat, gradx_mat, grady_mat, _filter_width,XF_BORDER_CONSTANT,img_height, img_width);
+		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_32SP, NPC, IN_WW, DET_WW,USE_URAM>(_src_mat, gradx_mat, grady_mat, _filter_width,XF_BORDER_CONSTANT,img_height, img_width);
 
 		xFDuplicate<ROWS, COLS, XF_32SP, NPC, DET_WW,
 		TC>(gradx_mat, gradx1_mat, gradx2_mat, img_height,img_width);
@@ -100,7 +100,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		hls::stream< XF_SNAME(GRAD_WW) > gradx1_mat, grady1_mat;
 		hls::stream< XF_SNAME(GRAD_WW) > gradx2_mat, grady2_mat;
 
-		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_16SP, NPC, IN_WW, GRAD_WW>(_src_mat, gradx_mat, grady_mat, _filter_width, XF_BORDER_CONSTANT,img_height, img_width);
+		xFSobelFilter<ROWS, COLS,CHANNELINFO, IN_DEPTH, XF_16SP, NPC, IN_WW, GRAD_WW,USE_URAM>(_src_mat, gradx_mat, grady_mat, _filter_width, XF_BORDER_CONSTANT,img_height, img_width);
 
 		xFDuplicate<ROWS, COLS, XF_16SP, NPC, GRAD_WW,
 		TC>(gradx_mat, gradx1_mat, gradx2_mat, img_height, img_width);
@@ -118,9 +118,9 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		GRAD_WW, GRAD_WW, TC>(gradx2_mat, grady2_mat, gradxy, scale, _filter_width, img_height, img_width);
 	}
 
-	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW>(gradx_2, gradx2g, _block_width, XF_BORDER_CONSTANT,img_height, img_width);
-	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW>(grady_2, grady2g,  _block_width, XF_BORDER_CONSTANT,img_height, img_width);
-	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW>(gradxy,  gradxyg,  _block_width, XF_BORDER_CONSTANT,img_height, img_width);
+	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW,USE_URAM>(gradx_2, gradx2g, _block_width, XF_BORDER_CONSTANT,img_height, img_width);
+	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW,USE_URAM>(grady_2, grady2g,  _block_width, XF_BORDER_CONSTANT,img_height, img_width);
+	xFBoxFilterKernel<ROWS, COLS, XF_16SP, NPC, GRAD_WW, GRAD_WW,USE_URAM>(gradxy,  gradxyg,  _block_width, XF_BORDER_CONSTANT,img_height, img_width);
 
 	xFComputeScore<ROWS, COLS, XF_16SP, XF_32SP, NPC,
 	GRAD_WW, DET_WW, TC>(gradx2g, grady2g, gradxyg, score, img_height, img_width, k, _filter_width);
@@ -137,7 +137,7 @@ void xFCornerHarrisDetector(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 ///**********************************************************************
 // * xFCornerHarrisTop :  Calls the Main Function depends on requirements
 // **********************************************************************/
-template<int ROWS, int COLS, int CHANNELINFO,int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS>
+template<int ROWS, int COLS, int CHANNELINFO,int DEPTH, int NPC, int IN_WW, int OUT_WW, int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,bool USE_URAM>
 void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 		hls::stream < XF_SNAME(IN_WW) > & _dst_mat, uint16_t img_height, uint16_t img_width,
 		uint16_t _threshold, uint16_t val)
@@ -160,12 +160,12 @@ void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 	if(NPC == XF_NPPC8)
 	{
 		xFCornerHarrisDetector<ROWS, COLS,CHANNELINFO, DEPTH, NPC, IN_WW, OUT_WW,
-		(COLS>>XF_BITSHIFT(NPC)), XF_128UW, XF_256UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
+		(COLS>>XF_BITSHIFT(NPC)), XF_128UW, XF_256UW,USE_URAM>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 	else if(NPC == XF_NPPC1)
 	{
 		xFCornerHarrisDetector<ROWS, COLS, CHANNELINFO,DEPTH,NPC, IN_WW, OUT_WW,
-		(COLS>>XF_BITSHIFT(NPC)), XF_16UW, XF_32UW>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
+		(COLS>>XF_BITSHIFT(NPC)), XF_16UW, XF_32UW,USE_URAM>(_src_mat, _dst_mat, img_height, img_width, FILTERSIZE, BLOCKWIDTH, NMSRADIUS, _threshold, val);
 	}
 }
 // xFCornerHarrisTop
@@ -179,7 +179,7 @@ void xFCornerHarrisDetection(hls::stream < XF_SNAME(IN_WW) > & _src_mat,
 #pragma SDS data mem_attribute("src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
-template<int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int SRC_T,int ROWS, int COLS,int NPC=1>
+template<int FILTERSIZE,int BLOCKWIDTH, int NMSRADIUS,int SRC_T,int ROWS, int COLS,int NPC=1,bool USE_URAM=false>
 void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,xf::Mat<SRC_T, ROWS, COLS, NPC> & dst,uint16_t threshold, uint16_t k)
 {
 #pragma HLS inline off
@@ -203,8 +203,8 @@ void cornerHarris(xf::Mat<SRC_T, ROWS, COLS, NPC> & src,xf::Mat<SRC_T, ROWS, COL
 		}
 	}
 
-	//xFCornerHarrisDetection<ROWS, COLS, XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
-	xFCornerHarrisDetection<ROWS, COLS, XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS>(_src, _dst, src.rows, src.cols, threshold, k);
+	
+	xFCornerHarrisDetection<ROWS, COLS, XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_32UW, FILTERSIZE,BLOCKWIDTH,NMSRADIUS,USE_URAM>(_src, _dst, src.rows, src.cols, threshold, k);
 
 	for(int i=0; i<dst.rows;i++)
 	{

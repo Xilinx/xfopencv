@@ -9,3 +9,5 @@
 
 // Configure this based on the number of rows needed for Remap function
 #define XF_REMAP_BUFSIZE   128
+
+#define XF_USE_URAM false

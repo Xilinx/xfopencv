@@ -40,7 +40,19 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef unsigned int uint32_t;
 
+#define __SDSOC 0
+/* Optimization type */
 
+//#define RO 0 // Resource Optimized (8-pixel implementation)
+//#define NO 1 // Normal Operation (1-pixel implementation)
+
+/*  Set Filter size  */
+
+//#define FILTER_SIZE_3  0
+//#define FILTER_SIZE_5  0
+//#define FILTER_SIZE_7  1
+
+//////////////  To set the parameters in Top and Test bench //////////////////
 
 /* config width and height */
 #define WIDTH 	3840
@@ -58,23 +70,24 @@ typedef unsigned int uint32_t;
 
 #if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
 #if RO
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE     XF_8UC1
 #define NPC1 XF_NPPC8
 #endif
 #if NO
-
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE	XF_8UC1
 #define NPC1 XF_NPPC1
 #endif
 #endif
 
 #if (FILTER_WIDTH == 7)
 #if NO
+#define IN_TYPE      XF_8UC1
+#define OUT_TYPE     XF_8UC1
 #define NPC1 XF_NPPC1
 #endif
 #endif
-
-
-#define IN_TYPE      XF_8UC1
-#define OUT_TYPE     XF_8UC1
 
 void sobel_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
 

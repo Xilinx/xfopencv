@@ -6,3 +6,5 @@
 
 #define L1NORM 1
 #define L2NORM 0
+
+#define XF_USE_URAM false

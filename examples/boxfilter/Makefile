@@ -1,15 +1,22 @@
 APPSOURCES =  xf_box_filter_accel.cpp  xf_box_filter_tb.cpp 
 EXECUTABLE = boxfilter.elf
 VERBOSE = #-verbose
-PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM}  ${VERBOSE} \
--sds-hw "xf::boxFilter<0, 3,2,2160, 3840,1>"  xf_box_filter_accel.cpp -files ../../include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
+PLATFORM ?= <Path-to-reVISION-Platform>
 
-IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
-LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
+URAM_ENA := 0
+
+ifeq ($(URAM_ENA), 1)
+   URAM_ENA_FLAG := -DXF_USE_URAM=true
+else
+   URAM_ENA_FLAG := -DXF_USE_URAM=false
+endif
+
+SDSCC_FLAGS = -sds-pf ${PLATFORM} ${URAM_ENA_FLAG} -sds-hw "xf::boxFilter<0, 3,2,2160, 3840,1,${URAM_ENA}>"  xf_box_filter_accel.cpp -files ../../include/imgproc/xf_box_filter.hpp -clkid 2 -sds-end -dmclkid 2
 
 CC = sds++ ${SDSCC_FLAGS}
 
+IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include
+LDIRS = --sysroot=${SYSROOT} -L=/lib -L=/usr/lib -Wl,-rpath-link=${SYSROOT}/lib,-rpath-link=${SYSROOT}/usr/lib
 LLIBS = -lopencv_imgcodecs -lopencv_core -llzma -ltiff -lpng16 -lz -ljpeg -lopencv_imgproc -ldl -lrt -lwebp -lopencv_features2d -lopencv_flann 
 #LLIBS = -lopencv_core -lopencv_imgproc -lopencv_imgcodecs 
 #OLEVEL = -ggdb

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -31,6 +31,23 @@
 #define _XF_SW_UTILS_H_
 
 #include "xf_common.h"
+#include <iostream>
+
+#if __SDSCC__
+#include "sds_lib.h"
+
+
+class perf_counter
+{
+public:
+     uint64_t tot, cnt, calls;
+     perf_counter() : tot(0), cnt(0), calls(0) {};
+     inline void reset() { tot = cnt = calls = 0; }
+     inline void start() { cnt = sds_clock_counter(); calls++; };
+     inline void stop() { tot += (sds_clock_counter() - cnt); };
+     inline uint64_t avg_cpu_cycles() { std::cout << "elapsed time "<< ((tot+(calls>>1)) / calls) << std::endl; return ((tot+(calls>>1)) / calls); };
+};
+#endif
 
 namespace xf{
 
@@ -85,7 +102,7 @@ namespace xf{
 						shift=0;
 					}
 					int cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
-					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
+					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = std::abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
 					shift = shift+STEP;
 				}
 
@@ -96,7 +113,7 @@ namespace xf{
 						shift=0;
 					}
 					ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
-					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
+					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = std::abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
 					shift = shift+STEP;
 				}
 
@@ -118,7 +135,8 @@ namespace xf{
 										nbytes = 4;
 									}
 									else{
-										assert("OpenCV image's depth not supported");
+										printf("OpenCV image's depth not supported");
+										return;
 									}
 
 									for(int k=0; k< XF_CHANNELS(_PTYPE, _NPC)*mul_val; ++byteindex1,k+=8){

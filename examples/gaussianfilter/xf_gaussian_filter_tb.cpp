@@ -30,7 +30,7 @@
 
 #include "xf_headers.h"
 #include "xf_gaussian_filter_config.h"
-
+#include <iostream>
 
 using namespace std;
 
@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
 
 	// 	Find minimum and maximum differences.
 
+	std::cout<< CV_VERSION<<std::endl; 
 	double minval = 256, maxval = 0;
 	int cnt = 0;
 	for (int i = 0; i < in_img.rows; i++) {

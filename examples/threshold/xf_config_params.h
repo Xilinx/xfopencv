@@ -5,7 +5,9 @@
 #define NO  1  // Normal Operation
 #define RO  0 // Resource Optimized
 
+
 /*  set the type of thresholding*/
 
-#define BINARY  1
-#define RANGE   0
+
+
+#define THRESH_TYPE XF_THRESHOLD_TYPE_BINARY

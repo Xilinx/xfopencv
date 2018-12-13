@@ -32,9 +32,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void houghlines_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> &_src,float *arrayy,float *arrayx,short threshold,short maxlines)
 {
-#pragma HLS interface m_axi  port=arrayy  depth=512
-#pragma HLS interface m_axi  port=arrayx  depth=512
-#pragma HLS INTERFACE s_axilite port=return bundle=lite
+//#pragma HLS interface m_axi  port=arrayy  depth=512
+//#pragma HLS interface m_axi  port=arrayx  depth=512
+//#pragma HLS INTERFACE s_axilite port=return bundle=lite
 
 	xf::HoughLines<RHOSTEP,THETASTEP,LINESMAX,DIAGVAL,MINTHETA,MAXTHETA,XF_8UC1,HEIGHT, WIDTH,NPC1>(_src,arrayy,arrayx,threshold,maxlines);
 

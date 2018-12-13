@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2016, Xilinx, Inc.
+ Copyright (c) 2018, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -38,6 +38,7 @@
 #include "xf_pyr_dense_optical_flow_median_blur.hpp"
 #include "xf_pyr_dense_optical_flow_find_gradients.hpp"
 #include "xf_pyr_dense_optical_flow_oflow_process.hpp"
+#include "math.h"
 template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int FLOW_WIDTH, int FLOW_INT>
 void stitch_stream_fixed_int (hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &in_stream1, hls::stream< ap_fixed<FLOW_WIDTH,FLOW_INT> > &in_stream2, unsigned int *sitched_stream, unsigned int rows, unsigned int cols, unsigned int level) {
 #pragma HLS inline off
@@ -157,19 +158,14 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 #pragma HLS pipeline ii=1
 #pragma HLS LOOP_FLATTEN OFF
 			ap_fixed<FLOW_WIDTH,FLOW_INT> flowU, flowV;
-			//read the components needed to compute the hessian matrix
-			// Sigma Ix^2 Sigma Iy^2 Sigma Ix*Iy Sigma Ix*It Sigma Iy*It
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIx2 = strmSigmaIx2.read();
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIy2 = strmSigmaIy2.read();
 			ap_fixed<SIXIY_WIDTH,SIXIY_INT> sigmaIxIy = strmSigmaIxIy.read();
 			ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> sigmaItIx = strmSigmaItIx.read();
 			ap_fixed<SIXYIT_WIDTH,SIXYIT_INT> sigmaItIy = strmSigmaItIy.read();
 			
-			//Compute determinant IxIx * IyIy - IxIy*IxIy
 			ap_fixed< ((SIXIY_WIDTH+1)<<1) + 3 , ((SIXIY_INT+1)<<1) +3 > S12sq = sigmaIxIy*sigmaIxIy;
 			ap_fixed<DET_WIDTH,DET_INT> det = (sigmaIx2*sigmaIy2 - S12sq);
-
-			//For eigen value computation
 			ap_fixed<SIXIY_WIDTH+1,SIXIY_INT+1> S1122 = (sigmaIx2 + sigmaIy2);
 			ap_fixed< (SIXIY_WIDTH+1)<<1 , (SIXIY_INT+1)<<1 > S1122sq = S1122*S1122;
 			S12sq = (S12sq << 2) + S1122sq; //multiply by 4
@@ -180,11 +176,9 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 			// float  eig_comp =  (((A11 + A22) - sqrt( ((A11 + A22)*(A11 + A22)) + 4.0*A12*A12))/(2.0*WINSIZE*WINSIZE));
 			eig_comp = eig_comp * div_by_eig;
 			eig_comp = (eig_comp < 0)? -eig_comp : eig_comp;
-			//end eigen value computation
 			
 			bool tflagu;
 			bool tflagv;
-			//if determinant is 0, make the flow vectors 0
 			if ((det == 0) || (eig_comp < 0.025)) {
 				flowU = (ap_fixed<FLCMP_WIDTH,FLCMP_INT>)0;
 				flowV = (ap_fixed<FLCMP_WIDTH,FLCMP_INT>)0;
@@ -193,13 +187,10 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 				tflagv = 0;
 			}
 			else {	
-
 				ap_fixed<DIVBY_WIDTH,DIVBY_INT> divideBy;
 				ap_fixed<FLCMP_WIDTH,FLCMP_INT> tempU;
 				ap_fixed<FLCMP_WIDTH,FLCMP_INT> tempV; 
-				//compute the inverse of the determinant
 				divideBy = (ap_fixed<DIVBY_WIDTH,DIVBY_INT>)(1.0)/((ap_fixed<DET_WIDTH,DET_INT>)det);
-				//current flow vector output = inverse([IxIx IxIy; IxIy IyIy])*[-IxIt; -IyIt]
 				tempU =  ((ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIy2*sigmaItIx - (ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIxIy*sigmaItIy)*(divideBy);
 				tempV =  ((ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIx2*sigmaItIy - (ap_fixed<SIXYIT_WIDTH+SIXYIT_WIDTH,SIXYIT_INT+SIXYIT_INT>)sigmaIxIy*sigmaItIx)*(divideBy);
 				flowU = ap_fixed<FLOW_WIDTH,FLOW_INT>(tempU);
@@ -207,8 +198,6 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 				tflagu = 1;
 				tflagv = 1;
 			}
-			//if the init flag is set to 0, for the 1st iteration in the least image size, do not accumulate the flow vectors
-			//if the init flag is 1, accumulate the previously computed flow vectors
 			if(init_flag == (ap_uint<1>)0)
 			{
 				flowU += ap_fixed<FLOW_WIDTH,FLOW_INT>(streamflowU_in.read());
@@ -226,7 +215,6 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 	  fprintf(fpglxup,"%12.8f ",float(flowU));
 	  fprintf(fpglyup,"%12.8f ",float(flowV));
 #endif
-			//output the flow vectors
 			strmFlowU.write((ap_fixed<FLOW_WIDTH,FLOW_INT>)flowU);
 			strmFlowV.write((ap_fixed<FLOW_WIDTH,FLOW_INT>)flowV);
 		}
@@ -245,7 +233,7 @@ void find_flow(hls::stream< ap_fixed<SIXIY_WIDTH,SIXIY_INT> > &strmSigmaIx2, hls
 } // end find_flow()
 
 
-template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT>
+template<unsigned short MAXHEIGHT, unsigned short MAXWIDTH, int NUM_PYR_LEVELS, int NUM_LINES, int WINSIZE, int FLOW_WIDTH, int FLOW_INT, bool USE_URAM>
 void xFLKOpticalFlowDenseKernel(unsigned char *currImg, unsigned char *nextImg, unsigned int *strmFlowin, unsigned int *strmFlow, const unsigned int rows, const unsigned int cols, const unsigned int prev_rows, const unsigned int prev_cols, const int level, const bool scale_up_flag, float scale_in, ap_uint<1> init_flag) {
 
 const int WINDOW_SIZE  = WINDOW_SIZE_FL;
@@ -303,22 +291,20 @@ const int ITCMP_INT    = FLOW_INT+12;
 	split_stream_int_fixed<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT>(strmFlowin, strmFlowU_split, strmFlowV_split, prev_rows, prev_cols, level);
 	
 	//scaling up U and V streams whenever scaleup is enabled
-	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT>( strmFlowU_split, strmFlowU_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
-	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT>( strmFlowV_split, strmFlowV_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
+	scale_up<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT, SCCMP_WIDTH, SCCMP_INT, RMAPPX_WIDTH, RMAPPX_INT, SCALE_WIDTH, SCALE_INT, USE_URAM>( strmFlowU_split, strmFlowU_scaled, strmFlowV_split, strmFlowV_scaled, prev_rows, prev_cols, rows, cols, 2, scale_up_flag, scale_in);
 	
 	//Finding the Temporal and space gradients for the input set of images
-	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
+	findGradients<MAXHEIGHT, MAXWIDTH, NUM_PYR_LEVELS, NUM_LINES, WINSIZE, IT_WIDTH, IT_INT, ITCMP_WIDTH, ITCMP_INT, FLOW_WIDTH, FLOW_INT, RMAPPX_WIDTH, RMAPPX_INT, USE_URAM>(currImg, nextImg, strmIt_float, strmIx, strmIy, rows, cols, strmFlowU_scaled, strmFlowV_scaled, strmFlowU_in1, strmFlowV_in1, level);
 
 	//finding the hessian matrix
-	find_G_and_b_matrix<MAXHEIGHT, MAXWIDTH, WINSIZE, IT_WIDTH, IT_INT, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT>(strmIx, strmIy, strmIt_float,  sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, rows, cols, level);
+	find_G_and_b_matrix<MAXHEIGHT, MAXWIDTH, WINSIZE, IT_WIDTH, IT_INT, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT, USE_URAM>(strmIx, strmIy, strmIt_float,  sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, rows, cols, level);
 	
 	//computing the the optical flow
 	
 	find_flow<MAXHEIGHT, MAXWIDTH, SIXIY_WIDTH, SIXIY_INT, SIXYIT_WIDTH, SIXYIT_INT, FLOW_WIDTH, FLOW_INT, DET_WIDTH, DET_INT, DIVBY_WIDTH, DIVBY_INT, FLCMP_WIDTH, FLCMP_INT, WINSIZE>(sigmaIx2, sigmaIy2, sigmaIxIy, sigmaIxIt, sigmaIyIt, strmFlowU_in1, strmFlowV_in1, strmFlowU_fil, strmFlowV_fil, flagU, flagV, rows, cols,level,scale_up_flag,init_flag);
 	
 	//filtering the flow vectors using median blur
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT> (strmFlowU_fil, strmFlowU_fil_out, flagU, WINDOW_SIZE,1,rows,cols);
-	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT> (strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
+	auMedianBlur<MAXHEIGHT, MAXWIDTH, 0, 0, 0, 0, WINDOW_SIZE, WINDOW_SIZE*WINDOW_SIZE, FLOW_WIDTH, FLOW_INT, USE_URAM> (strmFlowU_fil, strmFlowU_fil_out, flagU, strmFlowV_fil, strmFlowV_fil_out, flagV, WINDOW_SIZE,1,rows,cols);
 	
 	//stitching the U and V flow streams to a single flow stream
 	stitch_stream_fixed_int<MAXHEIGHT, MAXWIDTH, FLOW_WIDTH, FLOW_INT>(strmFlowU_fil_out, strmFlowV_fil_out, strmFlow, rows, cols, level);

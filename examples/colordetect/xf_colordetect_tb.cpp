@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -64,24 +64,15 @@ void colordetect(cv::Mat &_src,
 	// Bitwise OR the masks together (adding them) to the range
 	_imgrange = mask1 | mask2 | mask3;
 
-	// First erode
-//	cv::erode(_imgrange, _dst, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
-//	// First dilate
-//	cv::dilate(_dst, _dst, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
-//	// Second dilate
-//	cv::dilate(_dst, _dst, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
-//	// Second erode
-//	cv::erode(_dst, _dst, cv::getStructuringElement(cv::MORPH_ELLIPSE, cv::Size(3, 3)));
 
-	cv::Mat element = cv::getStructuringElement( 0,cv::Size(3, 3), cv::Point(-1, -1));
+	cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
+	cv::erode(_imgrange, _dst, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 
-	cv::erode(_imgrange, _dst, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
+	cv::dilate(_dst, _dst, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 
-	cv::dilate(_dst, _dst, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
+	cv::dilate(_dst, _dst, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 
-	cv::dilate(_dst, _dst, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
-
-	cv::erode(_dst, _dst, element, cv::Point(-1, -1), 1, cv::BORDER_CONSTANT);
+	cv::erode(_dst, _dst, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 }
 
 int main(int argc, char **argv)
@@ -103,14 +94,26 @@ int main(int argc, char **argv)
 	out_img1.create(height,width,CV_8U);
 
 	cv::cvtColor(in_img, img_rgba, CV_BGR2RGBA);
+	
+	cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
 
 #if __SDSCC__
 	unsigned char * high_thresh = (unsigned char *)sds_alloc_non_cacheable(9* sizeof(unsigned char));
 	unsigned char * low_thresh = (unsigned char *)sds_alloc_non_cacheable(9* sizeof(unsigned char));
+	unsigned char *structure_element=(unsigned char *)sds_alloc_non_cacheable(sizeof(unsigned char)*FILTER_SIZE*FILTER_SIZE);
 #else
 	unsigned char * high_thresh = (unsigned char *)malloc(9* sizeof(unsigned char));
 	unsigned char * low_thresh = (unsigned char *)malloc(9* sizeof(unsigned char));
+	unsigned char structure_element[FILTER_SIZE*FILTER_SIZE];
 #endif
+
+	for(int i=0;i<(FILTER_SIZE*FILTER_SIZE);i++)
+	{
+		structure_element[i]=element.data[i];
+	}
+
+
+
 	low_thresh[0] = 22;
 	low_thresh[1] = 150;
 	low_thresh[2] = 60;
@@ -157,9 +160,7 @@ int main(int argc, char **argv)
 	hw_ctr.start();
 #endif
 
-	colordetect_accel(imgInput,hsvimage,imgrange,imgerode1,imgdilate1,imgdilate2,imgOutput, low_thresh, high_thresh);
-
-//	colordetect_accel(imgInput,hsvimage,imgOutput, low_thresh, high_thresh);
+	colordetect_accel(imgInput,hsvimage,imgrange,imgerode1,imgdilate1,imgdilate2,imgOutput, low_thresh, high_thresh,structure_element);
 
 #if __SDSCC__
 

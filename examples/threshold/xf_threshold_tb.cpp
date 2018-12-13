@@ -65,21 +65,19 @@ int main(int argc, char** argv)
 
 
 	////////////////  reference code  ////////////////
-	int thresh_value, thresh_upper, thresh_lower;
 
-	// threshold value for type BINARY
-	thresh_value = 50;
-
-	// threshold range for type RANGE
-	thresh_upper = 150;
-	thresh_lower = 50;
+	 short int maxval=50;
+	 short int thresh=100;
 
 
 
+	cv::threshold(in_img,ocv_ref,thresh,maxval,THRESH_TYPE);
+   //////////////////  end opencv reference code//////////
+
+	////////////////////// HLS TOP function call ////////////////////////////
 
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
-
 	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
@@ -87,59 +85,25 @@ int main(int argc, char** argv)
 	hw_ctr.start();
 	#endif
 
-	threshold_accel(imgInput, imgOutput,thresh_value,thresh_upper,thresh_lower);
-
+	threshold_accel(imgInput, imgOutput, thresh, maxval);
 
 	#if __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
-	
+
+
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
+	cv::imwrite("ref_img.jpg", ocv_ref);  // reference image
 
-
-	for(int i = 0; i < in_img.rows; i++)
-	{
-		for(int j = 0; j < in_img.cols; j++)
-		{
-#if BINARY
-			if((in_img.at<uchar_t>(i,j)) > thresh_value)
-			{
-				(ocv_ref.at<uchar_t>(i,j)) = 255;
-			}
-			else
-			{
-				(ocv_ref.at<uchar_t>(i,j)) = 0;
-			}
-
-#elif RANGE
-			if((in_img.at<uchar_t>(i,j)) > thresh_upper)
-			{
-				(ocv_ref.at<uchar_t>(i,j)) = 0;
-			}
-			else if((in_img.at<uchar_t>(i,j)) < thresh_lower)
-			{
-				(ocv_ref.at<uchar_t>(i,j)) = 0;
-			}
-			else
-			{
-				(ocv_ref.at<uchar_t>(i,j)) = 255;
-			}
-#endif
-		}
-	}
-	//////   end of reference    /////
-
-
-	imwrite("ref_img.jpg", ocv_ref);  // reference image
 
 	xf::absDiff(ocv_ref, imgOutput, diff);
 	imwrite("diff_img.jpg",diff); // Save the difference image for debugging purpose
 
 	// Find minimum and maximum differences.
-	double minval = 256, maxval = 0;
+	double minval = 256, maxval1 = 0;
 	int cnt = 0;
 	for (int i = 0; i < in_img.rows; i++)
 	{
@@ -150,12 +114,12 @@ int main(int argc, char** argv)
 				cnt++;
 			if (minval > v )
 				minval = v;
-			if (maxval < v)
-				maxval = v;
+			if (maxval1 < v)
+				maxval1 = v;
 		}
 	}
 	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval1,err_per);
 
 
 	if(err_per > 0.0f)

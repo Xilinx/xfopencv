@@ -37,7 +37,7 @@ float* xmean(cv::Mat& img)
 {
 	unsigned long Sum = 0,b_sum=0,g_sum=0,r_sum=0;
 	int i, j,c;
-	float *val=(float*)malloc(3*sizeof(float));
+	float* val=(float*)malloc(1*sizeof(float));
 
 	/* Sum of All Pixels */
 	for(i = 0; i < img.rows; ++i)
@@ -45,16 +45,9 @@ float* xmean(cv::Mat& img)
 		for(j = 0; j < img.cols; ++j)
 		{
 
-			if(GRAY)
-			{
+
 			Sum += img.at<uchar>(i,j); //imag.data[i]}
-			}
-			else
-			{
-				b_sum+=img.data[3*(img.cols*i + j) + 0];
-				g_sum+=img.data[3*(img.cols*i + j) + 1];
-				r_sum+=img.data[3*(img.cols*i + j) + 2];
-			}
+
 		}
 	}
 	val[0]=(float)Sum /(float)(img.rows * img.cols);
@@ -70,21 +63,10 @@ void variance(cv::Mat& Img, float* mean, double *var)
 	{
 		for(int j = 0; j < Img.cols; j++)
 		{
-			if(GRAY)
-			{
+
 				double x = (double)mean[0] - ((double)Img.at<uint8_t>(i,j)) ;
 				sum = sum + pow(x, (double)2.0);
-			}
-			else
-			{
-				double b = (double)mean[0] - ((double)Img.data[3*(Img.cols*i + j) + 0]) ;
-				b_sum = b_sum + pow(b, (double)2.0);
-				double g = (double)mean[1] - ((double)Img.data[3*(Img.cols*i + j) + 1]) ;
-				g_sum = g_sum + pow(g, (double)2.0);
-				double r = (double)mean[2] - ((double)Img.data[3*(Img.cols*i + j) + 2]) ;
-				r_sum = r_sum + pow(r, (double)2.0);
 
-			}
 		}
 	}
 

@@ -1,0 +1,22 @@
+{
+    "example" : "Demosaicing - File I/O",
+    "overview" : "Demosaicing",
+    "board" : [
+        "zcu102_es2_rv_ss",
+        "zcu102_rv_ss",
+        "zcu104_rv_ss"
+    ],
+    "os" : [
+        "Linux"
+    ],
+    "system" : {
+        "dmclkid" : "2"
+    },
+    "accelerators" : [
+        {
+            "name" : "demosaicing",
+            "location" : "<LIBRARY>/include/imgproc/xf_demosaicing.hpp",
+            "clkid" : "2"
+        }
+    ]
+}

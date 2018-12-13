@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img1, in_img2, in_gray1, in_gray2, in_gray1_16, in_gray2_16,out_img, ocv_ref, diff;
+	cv::Mat in_img1, in_img2, in_gray1, in_gray2, out_img, ocv_ref, diff;
 	/*  reading in the color image  */
 	in_gray1 = cv::imread(argv[1],0);
 	in_gray2 = cv::imread(argv[2],0);
@@ -56,80 +56,104 @@ int main(int argc, char** argv)
 		fprintf(stderr,"Cannot open image at %s\n",argv[2]);
 		return 0;
 	}
-
+#if T_16S
 	/*  convert to 16S type  */
-	in_gray1.convertTo(in_gray1_16,CV_16SC1);
-	in_gray2.convertTo(in_gray2_16,CV_16SC1);
-
-#if T_8U
-	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput2(in_gray1.rows,in_gray1.cols);
+	in_gray1.convertTo(in_gray1,CV_16SC1);
+	in_gray2.convertTo(in_gray2,CV_16SC1);
+#endif
 
 	out_img.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 
+#if ARRAY
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput2(in_gray2.rows,in_gray2.cols);
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
 
 
-	#if __SDSCC__
+#if __SDSCC__
 	perf_counter hw_ctr;
-	 hw_ctr.start();
-	#endif
-	
-	arithm_accel(imgInput1,imgInput2,imgOutput);
-
-	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-
-
-
-	///////////// OpenCV reference  /////////////
-    //cv::absdiff(in_gray1,in_gray2,ocv_ref);
-	//cv::add(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
-	//cv::subtract(in_gray1,in_gray2,ocv_ref,cv::noArray(),-1);
-//	cv::bitwise_and(in_gray1,in_gray2,ocv_ref);
-	//bitwise_or(in_gray1,in_gray2,ocv_ref);
-	//cv::bitwise_not(in_gray1,ocv_ref);
-	//cv::bitwise_xor(in_gray1,in_gray2,ocv_ref);
-	cv::multiply(in_gray1,in_gray2,ocv_ref,0.05,-1);
-
+	hw_ctr.start();
 #endif
 
-#if T_16S
-	out_img.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
-	ocv_ref.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
-	diff.create(in_gray1_16.rows,in_gray1_16.cols,in_gray1_16.depth());
+	arithm_accel(imgInput1,imgInput2,imgOutput);
 
-	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput1_16(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgInput2_16(in_gray1.rows,in_gray1.cols);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 
-	static xf::Mat<XF_16SC1, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
-	imgInput1_16.copyTo(in_gray1_16.data);
-	imgInput2_16.copyTo(in_gray2_16.data);
+	///////////// OpenCV reference  /////////////
+	cv::CV_FUNCT_NAME(in_gray1,in_gray2,ocv_ref
+#ifdef CV_EXTRA_ARG
+	, CV_EXTRA_ARG
+#endif
+);
+	//	cv::absdiff		(in_gray1,in_gray2,ocv_ref);
+	//	cv::add			(in_gray1,in_gray2,ocv_ref);
+	//	cv::subtract	(in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_and (in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_or  (in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_xor (in_gray1,in_gray2,ocv_ref);
+	//	cv::multiply	(in_gray1,in_gray2,ocv_ref,0.05);
+//		cv::compare (in_gray1,in_gray2,ocv_ref,CV_CMP_NE);
+	//	cv::bitwise_not (in_gray1,ocv_ref);
+	//	ocv_ref=cv::Mat::zeros(in_gray1.rows,in_gray1.cols,in_gray1.type());
+
+
+#endif
+#if SCALAR
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+#ifdef __SDSCC__
+	unsigned char *val=(unsigned char *)sds_alloc_non_cacheable(XF_CHANNELS(TYPE,NPC1)*sizeof(unsigned char));
+#else
+	unsigned char *val=(unsigned char *)malloc(XF_CHANNELS(TYPE,NPC1)*sizeof(unsigned char));	
+#endif
+	for(int i=0; i< XF_CHANNELS(TYPE,NPC1); i++)
+	{
+		val[i]=150;
+	}
+	
+	imgInput1.copyTo(in_gray1.data);
+	
 
 	#if __SDSCC__
 	perf_counter hw_ctr;
 	 hw_ctr.start();
 	#endif
 
-	arithm_accel(imgInput1_16,imgInput2_16,imgOutput);
+ 	arithm_accel(imgInput1,val,imgOutput);
 
 	#if __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	
+
+
+
 	///////////// OpenCV reference  /////////////
-	//cv::add(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
-//	cv::subtract(in_gray1_16,in_gray2_16,ocv_ref,cv::noArray(),-1);
-	cv::multiply(in_gray1_16,in_gray2_16,ocv_ref,0.05,-1);
+
+
+	cv::CV_FUNCT_NAME(in_gray1,val[0],ocv_ref
+#ifdef CV_EXTRA_ARG
+	, CV_EXTRA_ARG
+#endif
+);
+
+//	cv::add		(in_gray1,val,ocv_ref);
+//	cv::subtract(in_gray1,val,ocv_ref);	//subs
+//	cv::max		(in_gray1,val,ocv_ref);
+//	cv::min		(in_gray1,val,ocv_ref);
+//	cv::compare(in_gray1,val,ocv_ref,CV_CMP_LE);
+
+//	cv::subtract(val,in_gray1,ocv_ref);	//subRS
+//	ocv_ref.setTo(val);
 #endif
 
 
@@ -166,8 +190,6 @@ int main(int argc, char** argv)
 	in_img2.~Mat();
 	in_gray1.~Mat();
 	in_gray2.~Mat();
-	in_gray1_16.~Mat();
-	in_gray2_16.~Mat();
 	out_img.~Mat();
 	ocv_ref.~Mat();
 	diff.~Mat();

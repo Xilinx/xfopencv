@@ -31,7 +31,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _XF_EROSION_CONFIG_H_
 #define _XF_EROSION_CONFIG_H_
 
-
 #include "hls_stream.h"
 #include "ap_int.h"
 #include "common/xf_common.h"
@@ -40,12 +39,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_config_params.h"
 
 
-//////////////  To set the parameters in Top and Test bench //////////////////
-
 /* config width and height */
 #define WIDTH 	3840
 #define HEIGHT	2160
-
 
 
 /*  define the input and output types  */
@@ -57,9 +53,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPC1 XF_NPPC8
 #endif
 
-
 #define TYPE XF_8UC1
 
-void erosion_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst);
+void erosion_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst, unsigned char kernel[FILTER_SIZE*FILTER_SIZE]);
+#endif // _XF_DILATION_CONFIG_H_
 
-#endif // _XF_EROSION_CONFIG_H_
+

@@ -2,7 +2,7 @@ APPSOURCES = xf_median_blur_accel.cpp  xf_median_blur_tb.cpp
 EXECUTABLE = medianblur.elf
 VERBOSE = #-verbose
 PLATFORM = <path-to-reVISION-platform>
-SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xf::medianBlur<3,  1, 0, 2160, 3840, 1>"  xf_median_blur_accel.cpp -files ../../include/imgproc/xf_median_blur.hpp -clkid 2 -sds-end -dmclkid 2
+SDSCC_FLAGS = -sds-pf ${PLATFORM} -sds-hw "xf::medianBlur<5,  1, 0, 2160, 3840, 1>"  xf_median_blur_accel.cpp -files ../../include/imgproc/xf_median_blur.hpp -clkid 2 -sds-end -dmclkid 2
 ${VERBOSE}
 CC = sds++ ${SDSCC_FLAGS}
 IDIRS = -I. -I${SYSROOT}/usr/include -I ../../include

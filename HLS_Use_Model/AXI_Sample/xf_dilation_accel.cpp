@@ -30,8 +30,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_dilation_config.h"
 
-void dilation_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst)
+void dilation_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> &_dst, unsigned char kernel[FILTER_SIZE*FILTER_SIZE])
 {
 
-	xf::dilate<XF_BORDER_CONSTANT,TYPE ,HEIGHT, WIDTH,NPC1>(_src, _dst);
+
+	xf::dilate<XF_BORDER_REPLICATE, TYPE ,HEIGHT, WIDTH, KERNEL_SHAPE, FILTER_SIZE, FILTER_SIZE, ITERATIONS, NPC1>(_src, _dst, kernel);
+
 }

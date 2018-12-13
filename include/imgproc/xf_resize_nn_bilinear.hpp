@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2018, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -35,6 +35,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ap_int.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
+#include <iostream>
 
 	template<int DEPTH, int INTERPOLATION_TYPE, int NPPC>
 	void interpolatePixel(XF_CTUNAME(DEPTH,NPPC) A0, XF_CTUNAME(DEPTH,NPPC) B0, XF_CTUNAME(DEPTH,NPPC) A1, XF_CTUNAME(DEPTH,NPPC) B1, ap_ufixed<12,2> Wx, ap_ufixed<12,2> Wy, XF_CTUNAME(DEPTH,NPPC) &pixel)
@@ -70,11 +71,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 	{
 	#pragma HLS inline
 		const int PIXELDEPTH = XF_DTPIXELDEPTH(DEPTH,NPPC)/XF_CHANNELS(DEPTH,NPPC);
-		if(indexx[XF_NPIXPERCYCLE(NPPC)-1] > (initIndex+NUMBEROFINPUTWORDS*XF_NPIXPERCYCLE(NPPC)-1))
+		/*if(indexx[XF_NPIXPERCYCLE(NPPC)-1] > (initIndex+NUMBEROFINPUTWORDS*XF_NPIXPERCYCLE(NPPC)-1))
 		{
 			std::cout << "Insufficient number of words to resize in X" << std::endl;
 			return;
-		}
+		}*/
+		assert((indexx[XF_NPIXPERCYCLE(NPPC)-1] < (initIndex+NUMBEROFINPUTWORDS*XF_NPIXPERCYCLE(NPPC)-1)) && "Insufficient number of words to resize in X");
+
 		XF_PTUNAME(DEPTH) unpackX1[XF_NPIXPERCYCLE(NPPC)*NUMBEROFINPUTWORDS];
 			#pragma HLS ARRAY_PARTITION variable=unpackX1 complete dim=1
 		XF_PTUNAME(DEPTH) unpackX2[XF_NPIXPERCYCLE(NPPC)*NUMBEROFINPUTWORDS];
