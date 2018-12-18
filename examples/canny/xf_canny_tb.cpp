@@ -204,7 +204,7 @@ int main(int argc, char **argv)
 
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> imgInput(img_gray.rows,img_gray.cols); //XF_NPPC1,XF_NPPC4
 	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> nms_output(img_gray.rows,img_gray.cols);
-//	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols/32);
+	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
 
 
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 	hw_ctr.start();
 	#endif
 
-	canny_accel(imgInput,nms_output,edge_output,low_threshold,high_threshold);
+	canny_accel(imgInput,nms_output,nms_output1,edge_output,low_threshold,high_threshold);
 
 
 	#if __SDSCC__
@@ -223,8 +223,6 @@ int main(int argc, char **argv)
 	#endif
 
 	out_img.data = edge_output.copyFrom();
-
-
 
 
 	/*				Apply Gaussian mask and call opencv canny function					*/
