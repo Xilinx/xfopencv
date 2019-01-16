@@ -60,6 +60,6 @@
 #endif
 
 #include "common/xf_sw_utils.h"
-
+#include "common/xf_axi.h"
 
 #endif//_XF_HEADERS_H_
