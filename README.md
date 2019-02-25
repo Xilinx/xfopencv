@@ -121,6 +121,6 @@ https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841665/HLS+Video+Library
 [Repository Contribution README]: CONTRIBUTING.md
 [Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals_j/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [UG1233]:
-https://www.xilinx.com/support/documentation/sw_manuals_j/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
+https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [SDAccel User Guide]:
 https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1023-sdaccel-user-guide.pdf
