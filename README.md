@@ -108,7 +108,7 @@ December2018  | 5.0            | 2018.3 Xilinx release <br>
 
 #### Known Issues:
 1. Windows OS has path length limitations, kernel names must be smaller than 25 characters.
-2. Missing one command from the list of commands in Chapter 3 "Evaluating the Functionality" section of UG1233. Details [here](https://github.com/Xilinx/xfopencv/examples_sdaccel/UG1233_errata.md).
+2. Missing one command from the list of commands in Chapter 3 "Evaluating the Functionality" section of UG1233. Details [here](https://github.com/Xilinx/xfopencv/blob/master/examples_sdaccel/UG1233_errata.md).
 
 
 [reVISION Getting Started Guide]: https://github.com/Xilinx/Revision-Getting-Started-Guide
@@ -121,6 +121,6 @@ https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841665/HLS+Video+Library
 [Repository Contribution README]: CONTRIBUTING.md
 [Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [UG1233]:
-https://www.xilinx.com/support/documentation/sw_manuals_j/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
+https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [SDAccel User Guide]:
 https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1023-sdaccel-user-guide.pdf
