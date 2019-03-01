@@ -12,7 +12,7 @@ The library is organized into the following folders -
 | include | The relevant headers necessary to use the xfOpenCV kernels |
 
 The organization of contents in each folder is described in the readmes of the respective folders.
-For more information on the xfOpenCV libraries and their use models, please refer to the [Xilinx OpenCV User Guide][https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf].
+For more information on the xfOpenCV libraries and their use models, please refer to the [Xilinx OpenCV User Guide][].
 
 ## HOW TO DOWNLOAD THE REPOSITORY
 To get a local copy of the repository, clone this repository to the local system with the following command:
@@ -119,7 +119,7 @@ https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841665/HLS+Video+Library
 [SDSoC User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1027-sdsoc-user-guide.pdf
 [3-Clause BSD License]: LICENSE.txt
 [Repository Contribution README]: CONTRIBUTING.md
-[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals_j/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
+[Xilinx OpenCV User Guide]: https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [UG1233]:
 https://www.xilinx.com/support/documentation/sw_manuals_j/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf
 [SDAccel User Guide]:
