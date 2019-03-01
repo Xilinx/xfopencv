@@ -12,7 +12,7 @@ The library is organized into the following folders -
 | include | The relevant headers necessary to use the xfOpenCV kernels |
 
 The organization of contents in each folder is described in the readmes of the respective folders.
-For more information on the xfOpenCV libraries and their use models, please refer to the [Xilinx OpenCV User Guide][].
+For more information on the xfOpenCV libraries and their use models, please refer to the [Xilinx OpenCV User Guide][https://www.xilinx.com/support/documentation/sw_manuals/xilinx2018_3/ug1233-xilinx-opencv-user-guide.pdf].
 
 ## HOW TO DOWNLOAD THE REPOSITORY
 To get a local copy of the repository, clone this repository to the local system with the following command:
