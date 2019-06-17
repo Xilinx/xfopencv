@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -254,7 +254,7 @@ void ProcessScharr3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, 
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.data[read_index++]; // Read data
+			buf[row_ind][col] = _src_mat.read(read_index++); // Read data
 		else
 			buf[bottom][col] = 0;
 		buf0 = buf[tp][col];
@@ -296,8 +296,8 @@ void ProcessScharr3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, 
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], P1, 0, 1, shift_y);
 
 
-			_gradx_mat.data[write_index] = P0;
-			_grady_mat.data[write_index++] = P1;
+			_gradx_mat.write(write_index,P0);
+			_grady_mat.write(write_index++,P1);
 
 			shift_x = 0; shift_y = 0;
 			P0 = 0; P1 = 0;
@@ -352,7 +352,8 @@ void xFScharrFilterKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.data[read_index++]; 														// Read data
+		//buf[row_ind][col] = _src_mat.data[read_index++]; 														// Read data
+		buf[row_ind][col] = _src_mat.read(read_index++); 														// Read data
 	}
 	row_ind++;
 
@@ -427,9 +428,11 @@ void xFScharrFilterKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], P0, 0, 1, shift_x);
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], P1, 0, 1, shift_y);
 
-		_gradx_mat.data[write_index] = P0;
-		_grady_mat.data[write_index++] = P1;
+		//_gradx_mat.data[write_index] = P0;
+		//_grady_mat.data[write_index++] = P1;
 
+		_gradx_mat.write(write_index,P0);
+		_grady_mat.write(write_index++,P1);
 		shift_x = 0; shift_y = 0;
 		P0 = 0; P1 = 0;
 

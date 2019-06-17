@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -47,8 +47,9 @@ int main(int argc, char** argv)
 
 	cv::Mat in_img,out_img,ocv_ref;
 	cv::Mat diff;
+
+	// reading in the image
 #if GRAY
-	// reading in the color image
 	in_img = cv::imread(argv[1], 0);
 #else
 	in_img = cv::imread(argv[1], 1);
@@ -73,11 +74,11 @@ int main(int argc, char** argv)
 	diff.create(in_img.rows,in_img.cols,CV_8UC3);
 #endif
 
+#if 1
 		cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
 		cv::dilate(in_img, ocv_ref, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
 		cv::imwrite("out_ocv.jpg", ocv_ref);
 	/////////////////////	End of OpenCV reference	 ////////////////
-
 	////////////////////	HLS TOP function call	/////////////////
 
 	unsigned char structure_element[FILTER_SIZE*FILTER_SIZE];
@@ -95,28 +96,25 @@ int main(int argc, char** argv)
 	std::vector<cl::Device> devices = xcl::get_xil_devices();
 	cl::Device device = devices[0];
 	cl::Context context(device);
-  
+
 	cl::CommandQueue q(context, device,CL_QUEUE_PROFILING_ENABLE);
 
-	std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
+	//Create Program and Kernel
+	std::string device_name = device.getInfo<CL_DEVICE_NAME>();
 	std::string binaryFile = xcl::find_binary_file(device_name,"krnl_dilation");
 	cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
 	devices.resize(1);
 	cl::Program program(context, devices, bins);
 	cl::Kernel krnl(program,"dilation_accel");
 
-	std::vector<cl::Memory> inBufVec, outBufVec, kernelFilterVec;
-	cl::Buffer imageToDevice(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,(height*width*CH_TYPE),(ap_uint<INPUT_PTR_WIDTH>*)in_img.data);
-	cl::Buffer imageFromDevice(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,(height*width*CH_TYPE),(ap_uint<OUTPUT_PTR_WIDTH>*)out_img.data);
-	cl::Buffer kernelFilterToDevice(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY,(FILTER_SIZE*FILTER_SIZE),(unsigned char*)structure_element);
+	//Allocate Buffer in Global Memory
+	cl::Buffer imageToDevice(context, CL_MEM_READ_ONLY,(height*width*CH_TYPE));
+	cl::Buffer imageFromDevice(context, CL_MEM_WRITE_ONLY,(height*width*CH_TYPE));
+	cl::Buffer kernelFilterToDevice(context, CL_MEM_READ_ONLY,(FILTER_SIZE*FILTER_SIZE));
 
-	inBufVec.push_back(imageToDevice);
-	outBufVec.push_back(imageFromDevice);
-	kernelFilterVec.push_back(kernelFilterToDevice);
-
-	/* Copy input vectors to memory */
-	q.enqueueMigrateMemObjects(inBufVec,0/* 0 means from host*/);
-	q.enqueueMigrateMemObjects(kernelFilterVec,0/* 0 means from host*/);
+	//Copying input data to Device buffer from host memory
+	q.enqueueWriteBuffer(imageToDevice, CL_TRUE, 0, (height*width*CH_TYPE), (ap_uint<INPUT_PTR_WIDTH>*)in_img.data);
+	q.enqueueWriteBuffer(kernelFilterToDevice, CL_TRUE, 0, (FILTER_SIZE*FILTER_SIZE), (unsigned char*)structure_element);
 
 	// Set the kernel arguments
 	krnl.setArg(0, imageToDevice);
@@ -124,23 +122,26 @@ int main(int argc, char** argv)
 	krnl.setArg(2, kernelFilterToDevice);
 	krnl.setArg(3, height);
 	krnl.setArg(4, width);
-	
+
 	// Profiling Objects
 	cl_ulong start= 0;
 	cl_ulong end = 0;
 	double diff_prof = 0.0f;
 	cl::Event event_sp;
 
-	// Launch the kernel 
+	// Launch the kernel
 	q.enqueueTask(krnl,NULL,&event_sp);
 	clWaitForEvents(1, (const cl_event*) &event_sp);
 
+	// Profiling
 	event_sp.getProfilingInfo(CL_PROFILING_COMMAND_START,&start);
 	event_sp.getProfilingInfo(CL_PROFILING_COMMAND_END,&end);
 	diff_prof = end-start;
 	std::cout<<(diff_prof/1000000)<<"ms"<<std::endl;
 
-	q.enqueueMigrateMemObjects(outBufVec,CL_MIGRATE_MEM_OBJECT_HOST);
+	//Copying Device result data to Host memory
+	q.enqueueReadBuffer(imageFromDevice, CL_TRUE, 0, (height*width*CH_TYPE), (ap_uint<INPUT_PTR_WIDTH>*)out_img.data);
+
 	q.finish();
 /////////////////////////////////////// end of CL ////////////////////////
 
@@ -172,7 +173,7 @@ int main(int argc, char** argv)
 
 	if(err_per > 0.0f)
 		return 1;
-
+#endif
 
 	return 0;
 }

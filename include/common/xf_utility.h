@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -577,6 +577,8 @@ void xFDuplicateStream(hls::stream< XF_SNAME(WORDWIDTH) > &in_strm,
 }
 
 namespace xf {
+	class accel_utils {
+public:
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ***********************    READ MODULE     ****************************************
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
@@ -584,7 +586,7 @@ template <int ptr_width, int ROWS, int COLS, int NPC, int COLOR_T, int CH_WIDTH,
 void Array2hlsStrm(ap_uint<ptr_width> *srcPtr, hls::stream<ap_uint<ptr_width> > &dstStrm, int rows, int cols)
 {
 	int pixel_width = COLOR_T*CH_WIDTH;
-	int loop_count = ((rows*cols*pixel_width)/ptr_width);
+	int loop_count = (((rows*cols*pixel_width)+ptr_width-1)/ptr_width);
 
 	for (int i=0; i<loop_count; i++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TRIPCOUNT
@@ -593,42 +595,38 @@ void Array2hlsStrm(ap_uint<ptr_width> *srcPtr, hls::stream<ap_uint<ptr_width> > 
 	}
 }
 
-template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC, int COLOR_T, int CH_WIDTH, int pixel_width, int arr_depth, int TRIPCOUNT>
+template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC, int TRIPCOUNT>
 void hlsStrm2xfMat(hls::stream<ap_uint<ptr_width> > &srcStrm, xf::Mat<MAT_T,ROWS,COLS,NPC>& dstMat)
 {
 	int rows = dstMat.rows;
 	int cols = dstMat.cols;
-	int loop_count = ((rows*cols*pixel_width)/ptr_width)/COLOR_T;
-	int strm_loop_cnt = ((ptr_width*COLOR_T)/pixel_width)/NPC;
-	int idx_out = 0;
+	int loop_count = (rows*cols)/XF_NPIXPERCYCLE(NPC);
+
+	int valid_bits = 0;
+	const int N_size = XF_PIXELWIDTH(MAT_T,NPC) * XF_NPIXPERCYCLE(NPC);
+	ap_uint<ptr_width> r;
+	XF_TNAME(MAT_T,NPC) out;
 
 	L1:for (int i=0; i<loop_count; i++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TRIPCOUNT
 #pragma HLS PIPELINE
 
-		ap_uint<CH_WIDTH> stmp[arr_depth];
-#pragma HLS ARRAY_PARTITION variable=stmp complete dim=1
-
-		L2:for (int j=0; j<COLOR_T; j++) {
-			int low = 0, high = CH_WIDTH-1, step = CH_WIDTH;
-			ap_uint<ptr_width> r = srcStrm.read();
-			L3:for (int t=0; t<ptr_width/CH_WIDTH; t++) {
-				stmp[j*ptr_width/CH_WIDTH + t] = (ap_uint<CH_WIDTH>)r.range(high,low);
-				low += step;
-				high += step;
+		if (valid_bits < N_size)
+		{
+			if (valid_bits !=0)
+			{
+				out.range(valid_bits-1, 0) = r.range(ptr_width-1, ptr_width-valid_bits);
 			}
+			r = srcStrm.read();
+			out.range(N_size-1, valid_bits) = r.range(N_size-valid_bits-1,0);
+			valid_bits = ptr_width - (N_size - valid_bits);
 		}
-		L4:for (int k=0; k<strm_loop_cnt; k++) {
-			int low = 0, high = CH_WIDTH-1, step = CH_WIDTH;
-			ap_uint<COLOR_T*NPC*CH_WIDTH> tmp;
-			L5:for (int t=0; t<(COLOR_T*NPC); t++) {
-#pragma HLS UNROLL
-				tmp.range(high,low) = stmp[k*COLOR_T*NPC+t];
-				low += step;
-				high += step;
-			}
-			dstMat.data[i*strm_loop_cnt+k] = tmp;
+		else
+		{
+			out = r.range(ptr_width - valid_bits + N_size -1, ptr_width-valid_bits);
+			valid_bits -= N_size;
 		}
+		dstMat.write(i,out);
 	}
 }
 
@@ -637,60 +635,57 @@ void Array2xfMat(ap_uint<ptr_width> *srcPtr, xf::Mat<MAT_T,ROWS,COLS,NPC>& dstMa
 {
 #pragma HLS DATAFLOW
 	assert((ptr_width >= XF_WORDDEPTH(XF_WORDWIDTH(MAT_T,NPC))) && "The ptr_width must be always greater than or equal to the minimum width for the corresponding configuration");
-	assert(((XF_CHANNELS(MAT_T,NPC)==1)||(XF_CHANNELS(MAT_T,NPC)==3)) && "Number of Channels must be either 1 or 3");
-	const int ch_width = XF_PIXELDEPTH(XF_DEPTH(MAT_T,NPC))/XF_CHANNELS(MAT_T,NPC);
-	assert(((ch_width==8)||(ch_width==16)) && "Only the channel depths of 8 and 16 are supported");
+	const int ch_width = XF_DTPIXELDEPTH(MAT_T,NPC);
 
 	hls::stream<ap_uint<ptr_width> > strm;
 	int rows = dstMat.rows;
 	int cols = dstMat.cols;
-
 	Array2hlsStrm<ptr_width,ROWS,COLS,NPC,XF_CHANNELS(MAT_T,NPC),ch_width,((ROWS*COLS*XF_CHANNELS(MAT_T,NPC)*ch_width)/ptr_width)>(srcPtr,strm,rows,cols);
-	hlsStrm2xfMat<ptr_width,MAT_T,ROWS,COLS,NPC,XF_CHANNELS(MAT_T,NPC),ch_width,(XF_CHANNELS(MAT_T,NPC)*ch_width),(ptr_width*XF_CHANNELS(MAT_T,NPC))/ch_width,(((ROWS*COLS*XF_CHANNELS(MAT_T,NPC)*ch_width)/ptr_width)/XF_CHANNELS(MAT_T,NPC))>(strm,dstMat);
+	hlsStrm2xfMat<ptr_width,MAT_T,ROWS,COLS,NPC,(ROWS*COLS)/NPC>(strm,dstMat);
 }
 
 /*++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  ***********************    WRITE MODULE     ****************************************
  +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
-template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC, int COLOR_T, int CH_WIDTH, int pixel_width, int arr_depth, int TRIPCOUNT>
+template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC, int TRIPCOUNT>
 void xfMat2hlsStrm(xf::Mat<MAT_T,ROWS,COLS,NPC>& srcMat, hls::stream<ap_uint<ptr_width> > &dstStrm)
 {
 	int rows = srcMat.rows;
 	int cols = srcMat.cols;
-	int loop_count = ((rows*cols*pixel_width)/ptr_width)/COLOR_T;
-	int strm_loop_cnt = ((ptr_width*COLOR_T)/pixel_width)/NPC;
-	int idx_out = 0;
+	int loop_count = (rows*cols)/XF_NPIXPERCYCLE(NPC);
 
+	int bits_to_add = ptr_width;
+	const int N_size = XF_PIXELWIDTH(MAT_T,NPC) * XF_NPIXPERCYCLE(NPC);
+	ap_uint<ptr_width> r;
+	XF_TNAME(MAT_T,NPC) in;
 
 	L1:for (int i=0; i<loop_count; i++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TRIPCOUNT
 #pragma HLS PIPELINE
 
-		ap_uint<CH_WIDTH> stmp[arr_depth];
-#pragma HLS ARRAY_PARTITION variable=stmp complete dim=1
+		in = srcMat.read(i);
 
-		L2:for (int k=0; k<strm_loop_cnt; k++) {
-			int low = 0, high = CH_WIDTH-1, step = CH_WIDTH;
-			ap_uint<COLOR_T*NPC*CH_WIDTH> tmp;
-			tmp = srcMat.data[idx_out++];
-			L3:for (int t=0; t<(COLOR_T*NPC); t++) {
-#pragma HLS UNROLL
-				stmp[k*COLOR_T*NPC+t] = tmp.range(high,low);
-				low += step;
-				high += step;
-			}
-		}
-
-		L4:for (int j=0; j<COLOR_T; j++) {
-			int low = 0, high = CH_WIDTH-1, step = CH_WIDTH;
-			ap_uint<ptr_width> r;
-			L5:for (int t=0; t<ptr_width/CH_WIDTH; t++) {
-				r.range(high,low) = stmp[j*ptr_width/CH_WIDTH + t];
-				low += step;
-				high += step;
-			}
+		if (bits_to_add <= N_size)
+		{
+			r.range(ptr_width-1,ptr_width-bits_to_add) = in.range(bits_to_add-1, 0);
 			dstStrm.write(r);
+			
+			if (bits_to_add != N_size)
+			{
+				r.range(N_size-bits_to_add-1, 0) = in.range(N_size-1,bits_to_add);
+			}			
+			bits_to_add = ptr_width - (N_size - bits_to_add);
 		}
+		else
+		{
+			r.range(ptr_width - bits_to_add + N_size -1, ptr_width-bits_to_add) = in;
+			bits_to_add -= N_size;
+		}
+	}
+
+	if (bits_to_add != ptr_width)
+	{
+		dstStrm.write(r);
 	}
 }
 
@@ -698,7 +693,7 @@ template <int ptr_width, int ROWS, int COLS, int NPC, int COLOR_T, int CH_WIDTH,
 void hlsStrm2Array(hls::stream<ap_uint<ptr_width> > &srcStrm, ap_uint<ptr_width> *dstPtr, int rows, int cols)
 {
 	int pixel_width = COLOR_T*CH_WIDTH;
-	int loop_count = ((rows*cols*pixel_width)/ptr_width);
+	int loop_count = (((rows*cols*pixel_width)+ptr_width-1)/ptr_width);
 
 	for (int i=0; i<loop_count; i++) {
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TRIPCOUNT
@@ -712,19 +707,30 @@ void xfMat2Array(xf::Mat<MAT_T,ROWS,COLS,NPC>& srcMat, ap_uint<ptr_width> *dstPt
 {
 #pragma HLS DATAFLOW
 	assert((ptr_width >= XF_WORDDEPTH(XF_WORDWIDTH(MAT_T,NPC))) && "The ptr_width must be always greater than or equal to the minimum width for the corresponding configuration");
-	assert(((XF_CHANNELS(MAT_T,NPC)==1)||(XF_CHANNELS(MAT_T,NPC)==3)) && "Number of Channels must be either 1 or 3");
-	const int ch_width = XF_PIXELDEPTH(XF_DEPTH(MAT_T,NPC))/XF_CHANNELS(MAT_T,NPC);
-	assert(((ch_width==8)||(ch_width==16)) && "Only the channel depths of 8 and 16 are supported");
+	const int ch_width = XF_DTPIXELDEPTH(MAT_T,NPC);
 
 	hls::stream<ap_uint<ptr_width> > strm;
 	int rows = srcMat.rows;
 	int cols = srcMat.cols;
 
-	xfMat2hlsStrm<ptr_width,MAT_T,ROWS,COLS,NPC,XF_CHANNELS(MAT_T,NPC),ch_width,(XF_CHANNELS(MAT_T,NPC)*ch_width),(ptr_width*XF_CHANNELS(MAT_T,NPC))/ch_width,(((ROWS*COLS*XF_CHANNELS(MAT_T,NPC)*ch_width)/ptr_width)/XF_CHANNELS(MAT_T,NPC))>(srcMat,strm);
+	xfMat2hlsStrm<ptr_width,MAT_T,ROWS,COLS,NPC,(ROWS*COLS)/NPC>(srcMat,strm);
 	hlsStrm2Array<ptr_width,ROWS,COLS,NPC,XF_CHANNELS(MAT_T,NPC),ch_width,((ROWS*COLS*XF_CHANNELS(MAT_T,NPC)*ch_width)/ptr_width)>(strm,dstPtr,rows,cols);
 }
+};
+template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC>
+void xfMat2Array(xf::Mat<MAT_T,ROWS,COLS,NPC>& srcMat, ap_uint<ptr_width> *dstPtr)
+{
+   accel_utils au;
+   au.xfMat2Array<ptr_width, MAT_T, ROWS, COLS, NPC>(srcMat, dstPtr);
 }
 
+template <int ptr_width, int MAT_T, int ROWS, int COLS, int NPC>
+void Array2xfMat(ap_uint<ptr_width> *srcPtr, xf::Mat<MAT_T,ROWS,COLS,NPC>& dstMat)
+{
+   accel_utils au;
+   au.Array2xfMat<ptr_width, MAT_T, ROWS, COLS, NPC>(srcPtr, dstMat);
+}
+}
 //
 //template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
 //void auCopyMat(hls::stream< AU_TNAME(WORDWIDTH) >& _dst,

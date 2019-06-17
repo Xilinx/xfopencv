@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -42,7 +42,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define VIDEO_INPUT 0
 
 // total number of frames to be tracked
-#define TOTAL_FRAMES 80
+#define TOTAL_FRAMES 100
 
 #define XF_HEIGHT 1080
 #define XF_WIDTH  1920

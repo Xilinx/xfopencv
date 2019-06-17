@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -155,12 +155,13 @@ void xFSobelProcy(
 	return;
 }
 
-template<int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST, int TC, int WIN_SZ, int WIN_SZ_SQ>
-void ProcessSobelfunc(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _out_mat,hls::stream< XF_SNAME(WORDWIDTH_DST) > & _out_mat1,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST, int TC, int WIN_SZ, int WIN_SZ_SQ>
+void ProcessSobelfunc(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,//hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat1,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst1,
 		XF_SNAME(WORDWIDTH_SRC) buf[WIN_SZ][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf[WIN_SZ][XF_NPIXPERCYCLE(NPC)+(WIN_SZ-1)],
 		XF_PTNAME(DEPTH_DST) OutputValues[XF_NPIXPERCYCLE(NPC)],XF_PTNAME(DEPTH_DST) OutputValues1[XF_NPIXPERCYCLE(NPC)],
-		XF_SNAME(WORDWIDTH_DST) &P0,XF_SNAME(WORDWIDTH_DST) &P1, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[WIN_SZ], ap_uint<13> row, ap_uint<8> win_size)
+		XF_SNAME(WORDWIDTH_DST) &P0,XF_SNAME(WORDWIDTH_DST) &P1, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<13> row_ind[WIN_SZ], ap_uint<13> row, ap_uint<8> win_size,int &readind,int &writeind,int &writeind1)
 {
 #pragma HLS INLINE
 
@@ -195,7 +196,7 @@ void ProcessSobelfunc(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
 		if(row < img_height && col < (img_width>>XF_BITSHIFT(NPC)))
-			buf[row_ind[win_size-1]][col] = _src_mat.read(); // Read data
+			buf[row_ind[win_size-1]][col] = _src_mat.read(readind++); // Read data
 
 
 		if(NPC == XF_NPPC8)
@@ -292,8 +293,8 @@ void ProcessSobelfunc(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(OutputValues, P0, 0, npc, shift_x);
 				shift_x = 0;P1=0;
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(OutputValues1, P1, 0, npc, shift_x);
-				_out_mat.write(P0);
-				_out_mat1.write(P1);
+				_out_mat.write(writeind++,P0);
+				_out_mat1.write(writeind1++,P1);
 			}
 
 
@@ -360,8 +361,8 @@ void ProcessSobelfunc(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			}
 			if(col >= (WIN_SZ>>1))
 			{
-				_out_mat.write(OutputValues[0]);
-				_out_mat1.write(OutputValues1[0]);
+				_out_mat.write(writeind++,OutputValues[0]);
+				_out_mat1.write(writeind1++,OutputValues1[0]);
 			}
 			for(int wrap_buf=0;wrap_buf<WIN_SZ;wrap_buf++)
 			{
@@ -387,13 +388,17 @@ void ProcessSobelfunc(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 
 
 
-template<int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST, int TC,int WIN_SZ, int WIN_SZ_SQ,bool USE_URAM>
-void xFSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_out_mat,hls::stream< XF_SNAME(WORDWIDTH_DST) > &_out_mat1, ap_uint<8> win_size,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC, int WORDWIDTH_SRC,int WORDWIDTH_DST, int TC,int WIN_SZ, int WIN_SZ_SQ,bool USE_URAM>
+void xFSobel3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,//hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat1,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst1,
+		ap_uint<8> win_size,
 		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind[WIN_SZ];
 #pragma HLS ARRAY_PARTITION variable=row_ind complete dim=1
+
+	int readind=0,writeind=0,writeind1=0;
 
 	uint16_t shift_x = 0;
 	ap_uint<13> row, col;
@@ -436,7 +441,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
-			buf[init_buf][col] = _src_mat.read();
+			buf[init_buf][col] = _src_mat.read(readind++);
 		}
 	}
 
@@ -458,7 +463,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
 
 		P0 = 0;P1=0;
-		ProcessSobelfunc<ROWS, COLS, DEPTH_SRC,DEPTH_DST, NPC, WORDWIDTH_SRC,WORDWIDTH_DST, TC, WIN_SZ, WIN_SZ_SQ>(_src_mat, _out_mat,_out_mat1, buf, src_buf,OutputValues,OutputValues1, P0,P1, img_width, img_height, shift_x, row_ind, row,win_size);
+		ProcessSobelfunc<SRC_T,DST_T,ROWS, COLS, DEPTH_SRC,DEPTH_DST, NPC, WORDWIDTH_SRC,WORDWIDTH_DST, TC, WIN_SZ, WIN_SZ_SQ>(_src_mat, _out_mat,_out_mat1, buf, src_buf,OutputValues,OutputValues1, P0,P1, img_width, img_height, shift_x, row_ind, row,win_size,readind,writeind,writeind1);
 
 		//update indices
 		ap_uint<13> zero_ind = row_ind[0];
@@ -472,18 +477,17 @@ else{
 	} // Row_Loop
 }
 
-template<int ROWS,int COLS,int DEPTH_SRC,int DEPTH_DST,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST, int WIN_SZ,bool USE_URAM=false>
+template<int SRC_T,int DST_T,int ROWS,int COLS,int DEPTH_SRC,int DEPTH_DST,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_DST, int WIN_SZ,bool USE_URAM=false>
 void xFSobel(
-		hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst1,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,//hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _dst,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _dst1,//hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst1,
 		int _border_type,uint16_t imgheight,uint16_t imgwidth)
 {
 
 	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
 
-
-	xFSobel3x3<ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>> XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ*WIN_SZ,USE_URAM>(_src, _dst,_dst1,WIN_SZ,imgheight,imgwidth);
+	xFSobel3x3<SRC_T,DST_T,ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC,WORDWIDTH_SRC,WORDWIDTH_DST,(COLS>> XF_BITSHIFT(NPC))+(WIN_SZ>>1),WIN_SZ, WIN_SZ*WIN_SZ,USE_URAM>(_src, _dst,_dst1,WIN_SZ,imgheight,imgwidth);
 
 
 }

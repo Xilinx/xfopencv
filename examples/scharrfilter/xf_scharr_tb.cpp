@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,8 +48,18 @@ int main(int argc, char** argv)
 	cv::Mat diff_grad_x, diff_grad_y;
 
 	// reading in the gray image
+#if GRAY
 	in_img = cv::imread(argv[1],0);
-	#define PTYPE CV_8UC1//CV_16SC1 //CV_8U// CV_16S //
+#else
+	in_img = cv::imread(argv[1],1);
+#endif
+
+#if GRAY
+	#define PTYPE CV_8UC1			// Should be CV_16S when ddepth is CV_16S
+#else
+	#define PTYPE CV_8UC3		// Should be CV_16S when ddepth is CV_16S
+#endif
+
 
 	if (in_img.data == NULL)
 	{
@@ -74,8 +84,19 @@ int main(int argc, char** argv)
 	int delta = 0;
 	int ddepth =-1;//CV_16S;//
 
-	Scharr(in_img, c_grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_CONSTANT );
-	Scharr(in_img, c_grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_CONSTANT );
+	
+
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
+		Scharr(in_img, c_grad_x, ddepth, 1, 0, scale, delta, cv::BORDER_CONSTANT );
+		Scharr(in_img, c_grad_y, ddepth, 0, 1, scale, delta, cv::BORDER_CONSTANT );
+
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	imwrite("out_ocvx.jpg", c_grad_x);
 	imwrite("out_ocvy.jpg", c_grad_y);
@@ -92,20 +113,19 @@ int main(int argc, char** argv)
 	static xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
 	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
 	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
-
-
+	
 	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+		perf_counter hw_ctr1;
+hw_ctr1.start();
 	#endif
 
 	scharr_accel(imgInput, imgOutputx,imgOutputy);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+		hw_ctr1.stop();
+uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 
@@ -130,8 +150,11 @@ int main(int argc, char** argv)
 	double minval=256,maxval=0;
 	double minval1=256,maxval1=0;
 	int cnt = 0, cnt1 =0;
+	float err_per,err_per1;
+	xf::analyzeDiff(diff_grad_x, 0, err_per);
+	xf::analyzeDiff(diff_grad_y, 0, err_per1);
 
-	for(int i=0;i<in_img.rows;i++)
+/*	for(int i=0;i<in_img.rows;i++)
 	{
 		for(int j=0;j<in_img.cols;j++)
 		{
@@ -156,7 +179,7 @@ int main(int argc, char** argv)
 
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval1,maxval1,err_per1);
-
+*/
 	int ret  = 0;
 	if(err_per > 0.0f)
 	{

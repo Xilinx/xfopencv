@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,6 +48,9 @@ int main(int argc, char** argv)
 #if GRAY
 	// reading in the color image
 	in_gray = cv::imread(argv[1], 0);
+#else
+	// reading in the color image
+	in_gray = cv::imread(argv[1], 1);
 #endif
 
 
@@ -63,6 +66,11 @@ int main(int argc, char** argv)
 		ocv_ref.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		out_img.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		diff.create(in_gray.rows,in_gray.cols,CV_8UC1);
+#else
+		// create memory for output images
+		ocv_ref.create(in_gray.rows,in_gray.cols,CV_8UC3);
+		out_img.create(in_gray.rows,in_gray.cols,CV_8UC3);
+		diff.create(in_gray.rows,in_gray.cols,CV_8UC3);
 #endif
 
 
@@ -70,7 +78,16 @@ int main(int argc, char** argv)
 
 	/////////////////////	End of OpenCV reference	 ////////////////
 				cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 				cv::erode(in_gray, ocv_ref, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 				cv::imwrite("out_ocv.jpg", ocv_ref);
 	////////////////////	HLS TOP function call	/////////////////
 
@@ -93,21 +110,24 @@ int main(int argc, char** argv)
 
 	imgInput.copyTo(in_gray.data);
 
-	#if __SDSCC__
-	perf_counter hw_ctr;
 
 
-	hw_ctr.start();
-	#endif
+	
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	erosion_accel(imgInput, imgOutput, structure_element);
 
-	#if __SDSCC__
-	hw_ctr.stop();
 
 
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+
+
 
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
@@ -118,54 +138,11 @@ int main(int argc, char** argv)
 	xf::absDiff(ocv_ref, imgOutput, diff);
 	//absdiff(ocv_ref, out_img, diff);
 	cv::imwrite("out_error.jpg", diff);
-//	FILE *fpp=fopen("cv_out.txt","w");
-//	FILE *fpq=fopen("hls_out.txt","w");
-//	FILE *fp2=fopen("fix_error.txt","w");
-//		unsigned long int p=0,q=0;
-//			for(int c=0;c<(2073600);c++)
-//			{
-//					fprintf(fpq,"%d\n",(unsigned char)imgOutput.data[p]);
-//					p+=1;
-//			}
-//			FILE *f1=fopen("diff.txt","w");
-//			for(int c=0;c<(2073600);c++)
-//			{
-//					short int diffpix=(unsigned char)imgOutput.data[q]-(unsigned char)ocv_ref.data[q];
-//					fprintf(fpp,"%d\n",(unsigned char)ocv_ref.data[q]);
-//					fprintf(f1,"%d\n",diffpix);
-//
-////					if((diffpix < -1)||(diffpix > 1))
-////					{
-////						fprintf(fp2,"%d (dut:%d, cv:%d),%d,(r-%d g-%d b-%d)\n",(short int)diffpix,(unsigned char)outputimg.data[q],(unsigned char)ocv_outputimg.data[q],c,(unsigned char)imgInput.data[c].range(7,0),(unsigned char)imgInput.data[c].range(15,8),(unsigned char)imgInput.data[c].range(23,16));
-////					}
-//					q+=1;
-//
-//			}
-//
-//	fclose(f1);
-//
-//	fclose(fpp);
-//	fclose(fpq);
-//	fclose(fp2);
 
 	// Find minimum and maximum differences.
-	double minval=256,maxval=0;
-	int cnt = 0;
-	for (int i=0; i<in_gray.rows; i++)
-	{
-		for(int j=0; j<in_gray.cols; j++)
-		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v>0)
-				cnt++;
-			if (minval > v)
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_gray.rows*in_gray.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+
+	float err_per;
+	xf::analyzeDiff(diff, 0, err_per);
 
 	if(err_per > 0.0f)
 		return 1;

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -55,7 +55,16 @@ int main(int argc, char** argv)
 	stereobm-> setPreFilterCap(31);
 	stereobm-> setUniquenessRatio(15);
 	stereobm-> setTextureThreshold(20);
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 	stereobm-> compute(left_img,right_img,disp);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 #else
 	cv::StereoBM bm;
 	bm.state->preFilterCap = 31;
@@ -88,18 +97,18 @@ int main(int argc, char** argv)
 	bm_state.textureThreshold = 20;
 	bm_state.minDisparity = 0;
 
-#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
-#endif
+	#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+	#endif
 	stereolbm_accel(leftMat, rightMat, dispMat, bm_state);
-#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-#endif
-
+	#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+	#endif
+	
+	
 	dispMat.convertTo(dispMat_out, XF_CONVERT_16U_TO_8U, (256.0/NO_OF_DISPARITIES)/(16.));
-
 	xf::imwrite("hls_out.jpg", dispMat_out);
 
 	int cnt=0, total = 0;
@@ -113,25 +122,25 @@ int main(int argc, char** argv)
 		}
 	}
 
-	// error computation, removing off the border, different kind of border computations
-	for(int i=SAD_WINDOW_SIZE; i<dispMat_out.rows-SAD_WINDOW_SIZE; i++) {
-		for(int j=SAD_WINDOW_SIZE; j<dispMat_out.cols-SAD_WINDOW_SIZE; j++) {
-			total ++;
-			int diff = (disp.at<unsigned short> (i,j))-(dispMat.data[i*dispMat.cols +j]);
-			if (diff < 0) diff = -diff;
-			if(diff > 1) {
-				cnt++;
-			}
-		}
-	}
+	
+	cv::Mat diff;
+	diff.create(left_img.rows,left_img.cols,CV_16UC1);
+	xf::absDiff(disp, dispMat, diff);
+	cv::imwrite("diff_img.jpg",diff);
 
-	float percentage = ((float)cnt / (float)total) * 100.0;
-	printf("Error Percentage = %f% \n", percentage);
+	// removing border before diff analysis
+	cv::Mat diff_c;
+	diff_c.create((diff.rows-SAD_WINDOW_SIZE<<1),diff.cols-(SAD_WINDOW_SIZE<<1),CV_16UC1);
+	cv::Rect roi;
+	roi.x = SAD_WINDOW_SIZE;
+	roi.y = SAD_WINDOW_SIZE;
+	roi.width = diff.cols-(SAD_WINDOW_SIZE<<1);
+	roi.height = diff.rows-(SAD_WINDOW_SIZE<<1);
+	diff_c = diff(roi);
 
-	if (percentage > 0.0f)
-		return -1;
+	float err_per;
+	xf::analyzeDiff(diff_c,0,err_per);
 
-	printf ("run complete !\n");
 	return 0;
 }
 

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -63,7 +63,7 @@ void xFDHOGDescriptorKernel (
 		uint16_t _height,uint16_t _width,uint16_t novw, uint16_t nohw, uint16_t novc, uint16_t nohc, uint16_t novb, uint16_t nohb)
 {
 	// array to store the histogram computed data
-	ap_uint<23> HA_1[NOHC][NOB], HA_2[NOHC][NOB], HA_3[NOHC][NOB];
+	ap_uint<25> HA_1[NOHC][NOB], HA_2[NOHC][NOB], HA_3[NOHC][NOB];
 
 	// partitioning across the dim-2 to restrict the BRAM utilization
 	if(USE_URAM){
@@ -85,7 +85,7 @@ void xFDHOGDescriptorKernel (
 	}
 
 	// array to hold the sum of squared values of each cell
-	ap_uint<45> ssv_1[NOHC], ssv_2[NOHC], ssv_3[NOHC];
+	ap_uint<48> ssv_1[NOHC], ssv_2[NOHC], ssv_3[NOHC];
 #pragma HLS RESOURCE variable=ssv_1 core=RAM_S2P_BRAM
 #pragma HLS RESOURCE variable=ssv_2 core=RAM_S2P_BRAM
 #pragma HLS RESOURCE variable=ssv_3 core=RAM_S2P_BRAM
@@ -108,7 +108,6 @@ void xFDHOGDescriptorKernel (
 	// computing two horizontal cell rows
 	xFDHOGcomputeHist<ROWS,COLS,DEPTH_SRC,NPC,WORD_WIDTH_SRC,CELL_HEIGHT,CELL_WIDTH,NOHC,
 	(COLS>>XF_BITSHIFT(NPC)),WIN_STRIDE,BIN_STRIDE,NOB>(_phase_strm,_mag_strm,HA_1,ssv_1,bin_center,nohc);
-
 	xFDHOGcomputeHist<ROWS,COLS,DEPTH_SRC,NPC,WORD_WIDTH_SRC,CELL_HEIGHT,CELL_WIDTH,NOHC,
 	(COLS>>XF_BITSHIFT(NPC)),WIN_STRIDE,BIN_STRIDE,NOB>(_phase_strm,_mag_strm,HA_2,ssv_2,bin_center,nohc);
 	idx = 2;
@@ -201,14 +200,18 @@ void xFDHOGDescriptor(
 			"WIN_HEIGHT must be a multiple of CELL_HEIGHT");
 	assert(((WIN_WIDTH%CELL_WIDTH) == 0) &&
 			"WIN_WIDTH must be a multiple of CELL_WIDTH");
+	assert(((_height%CELL_HEIGHT) == 0) &&
+			"Image HEIGHT must be a multiple of CELL_HEIGHT");
+	assert(((_width%CELL_WIDTH) == 0) &&
+			"Image WIDTH must be a multiple of CELL_WIDTH");
 	assert(((WIN_HEIGHT <= ROWS) || (WIN_WIDTH <= COLS)) &&
 			"WIN_HEIGHT and WIN_WIDTH must be less than or equal to the image _height and image _width respectively");
 	assert((((ROWS-WIN_HEIGHT)%WIN_STRIDE == 0) || ((COLS-WIN_WIDTH)%WIN_STRIDE == 0)) &&
 			"The number of windows must not extend the image boundary limit");
-	assert(((CELL_HEIGHT == 8)) &&
-			"CELL_HEIGHT must be 8");
-	assert(((CELL_WIDTH == 8)) &&
-			"CELL_WIDTH must be 8");
+//	assert(((CELL_HEIGHT == 8)) &&
+//			"CELL_HEIGHT must be 8");
+//	assert(((CELL_WIDTH == 8)) &&
+//			"CELL_WIDTH must be 8");
 	assert((NOB == 9) && "NOB must be 9");
 	assert(((NOHCPB == 2) && (NOVCPB == 2)) &&
 			"number of horizontal and vertical cells per block must be 2");

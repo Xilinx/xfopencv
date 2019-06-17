@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -50,7 +50,7 @@ int AddWeightedKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, float alpha,  xf::
 	ap_uint<24> temp  = (alpha * (1<<23));
 	ap_uint<24> temp1 = (beta  * (1<<23));
 	ap_uint<24> temp2 = (gama  * (1<<23));
-	int STEP= XF_PIXELDEPTH(DEPTH_SRC)/PLANES;
+	int STEP= XF_PIXELWIDTH(SRC_T,NPC)/PLANES;
 
 	XF_SNAME(WORDWIDTH_DST) pxl_pack_out;
 	XF_SNAME(WORDWIDTH_SRC)  pxl_pack1, pxl_pack2;
@@ -65,8 +65,8 @@ int AddWeightedKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, float alpha,  xf::
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);	//reading from 1st input stream
-			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.data[i*width+j]);	//reading from 2nd input stream
+			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.read(i*width+j));	//reading from 1st input stream
+			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.read(i*width+j));	//reading from 2nd input stream
 			ProcLoop:
 			for( k = 0, l = 0; k < ((8<<XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP, l+=XF_OUT_STEP)
 			{
@@ -81,13 +81,14 @@ int AddWeightedKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, float alpha,  xf::
 				pxl_pack_out.range(l+XF_OUT_STEP-1, l) = t;
 			}
 
-			dst.data[i*width+j] = (XF_SNAME(WORDWIDTH_DST))pxl_pack_out;	//writing into ouput stream
+			dst.write(i*width+j , (XF_SNAME(WORDWIDTH_DST))pxl_pack_out);	//writing into ouput stream
 		}
 	}
 	return 0;
 }
 
 
+#pragma SDS data data_mover ("src1.data":FASTDMA,"src2.data":FASTDMA, "dst.data":FASTDMA)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])

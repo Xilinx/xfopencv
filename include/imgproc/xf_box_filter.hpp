@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -107,11 +107,11 @@ void xFComputeMaskValues3x3(XF_PTNAME(DEPTH)* _mask_value,
 	} // end of computeMaskValueLoop
 }
 
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int COLS_COUNT>
-void ProcessBox3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst, XF_SNAME(WORDWIDTH_SRC) buf[3][COLS>>XF_BITSHIFT(NPC)],
+template<int SRC_T, int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int COLS_COUNT>
+void ProcessBox3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat, XF_SNAME(WORDWIDTH_SRC) buf[3][COLS>>XF_BITSHIFT(NPC)],
 		XF_PTNAME(DEPTH) l00_buf[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) l10_buf[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) l20_buf[XF_NPIXPERCYCLE(NPC)+2],
-		XF_PTNAME(DEPTH) mask_value[XF_NPIXPERCYCLE(NPC)], XF_SNAME(WORDWIDTH_SRC) &P0, uint16_t img_width, uint16_t img_height, uint16_t &shift, ap_uint<13> row_ind, ap_uint<2> top, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row)
+		XF_PTNAME(DEPTH) mask_value[XF_NPIXPERCYCLE(NPC)], XF_SNAME(WORDWIDTH_SRC) &P0, uint16_t img_width, uint16_t img_height, uint16_t &shift, ap_uint<13> row_ind,
+		ap_uint<2> top, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row, int &rd_ind, int &wr_ind)
 
 {
 #pragma HLS INLINE
@@ -125,8 +125,10 @@ void ProcessBox3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_COUNT max=COLS_COUNT
 #pragma HLS pipeline
-		if(row < img_height)
-			buf[row_ind][col] = _src.read();
+		if(row < img_height){
+			buf[row_ind][col] = _src_mat.read(rd_ind);
+			rd_ind++;
+		}
 		else
 			buf[bottom][col] = 0;
 
@@ -161,7 +163,8 @@ void ProcessBox3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
 		else
 		{
 			xfPackPixels<NPC, WORDWIDTH_SRC, DEPTH>(&mask_value[0], P0, 0, 1, shift);
-			_dst.write(P0);
+			_dst_mat.write(wr_ind,P0);
+			wr_ind++;
 			shift = 0;
 			P0 = 0;
 			xfPackPixels<NPC, WORDWIDTH_SRC, DEPTH>(&mask_value[0], P0, 1, (npc-1), shift);
@@ -182,16 +185,16 @@ void ProcessBox3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
  * Inputs : _src_mat --> input image of type XF_8U, XF_16U or XF_16S
  * Output : _dst_mat --> output image of input type
  */
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
+template<int SRC_T, int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST, int COLS_COUNT,bool USE_URAM>
-void xFBoxFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst, uint16_t img_height, uint16_t img_width)
+void xFBoxFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat, uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind = 1;
 	ap_uint<13> row, col;
 	uint16_t shift = 0;
 	ap_uint<2> top, mid, bottom;
 	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
+	int rd_ind = 0, wr_ind = 0;
 
 	XF_PTNAME(DEPTH) mask_value[XF_NPIXPERCYCLE(NPC)];
 #pragma HLS ARRAY_PARTITION variable=mask_value complete dim=1
@@ -221,7 +224,8 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_COUNT max=COLS_COUNT
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind);
+		rd_ind++;
 	}
 	row_ind++;
 
@@ -253,8 +257,8 @@ else{
 		l20_buf[0] = l20_buf[1] = 0;
 		P0 = 0;
 
-		ProcessBox3x3<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, COLS_COUNT>
-		(_src, _dst, buf, l00_buf, l10_buf, l20_buf, mask_value, P0, img_width, img_height, shift, row_ind, top, mid, bottom, row);
+		ProcessBox3x3<SRC_T, ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, COLS_COUNT>
+		(_src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, mask_value, P0, img_width, img_height, shift, row_ind, top, mid, bottom, row, rd_ind, wr_ind);
 
 		if(NPC == XF_NPPC1)
 		{
@@ -275,7 +279,8 @@ else{
 					l20_buf[buf_size-1], 0);
 		}
 		xfPackPixels<NPC, WORDWIDTH_SRC, DEPTH>(&mask_value[0], P0, 0, 1, shift);
-		_dst.write(P0);
+		_dst_mat.write(wr_ind,P0);
+		wr_ind++;
 		shift = 0;
 		P0 = 0;
 		row_ind++;
@@ -357,13 +362,12 @@ void xFComputeMask5x5(
 }
 
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
-void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
+void ProcessBox5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf4[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH) src_buf5[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH) GradientValues[XF_NPIXPERCYCLE(NPC)], XF_SNAME(WORDWIDTH_DST) &inter_val, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shift,
-		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row)
+		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 4;
@@ -378,7 +382,7 @@ void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(rd_ind++);
 		else
 			buf[bottom2][col] = 0;
 
@@ -427,11 +431,11 @@ void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		}
 		else
 		{
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if((NPC == XF_NPPC8))
 			{
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH>(&GradientValues[0], inter_val, 0, 2, shift);
 
-				_dst_mat.write(inter_val);
+				_dst_mat.write(wr_ind++,inter_val);
 
 				shift= 0;
 				inter_val = 0;
@@ -442,7 +446,7 @@ void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				if(col >= 2)
 				{
 					inter_val((max_loop-1), (max_loop-step)) = GradientValues[0];
-					_dst_mat.write(inter_val);
+					_dst_mat.write(wr_ind++,inter_val);
 				}
 			}
 		}
@@ -455,9 +459,9 @@ void ProcessBox5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * Inputs : _src_mat --> input image of type XF_8U, XF_16U or XF_16S
  * Output : _dst_mat --> output image of input type
  */
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int WORDWIDTH_AP, int TC,bool USE_URAM>
-void xFBoxFilter5x5(hls::stream < XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) > &_dst_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int WORDWIDTH_AP, int TC,bool USE_URAM>
+void xFBoxFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
+		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind, row, col;
 	ap_uint<4> tp1,tp2, mid, bottom1,bottom2;
@@ -465,6 +469,7 @@ void xFBoxFilter5x5(hls::stream < XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 	ap_uint<8> step = XF_PIXELDEPTH(DEPTH);
 	ap_uint<10> max_loop = XF_WORDDEPTH(WORDWIDTH_DST);
 	uint16_t shift = 0;
+	int rd_ind = 0, wr_ind = 0;
 
 	ap_uint<8> i;
 	XF_PTNAME(DEPTH) GradientValues[XF_NPIXPERCYCLE(NPC)];
@@ -502,7 +507,7 @@ else{
 #pragma HLS pipeline
 		buf[0][col] = 0;
 		buf[1][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind++);
 	}
 	row_ind++;
 
@@ -511,7 +516,7 @@ else{
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind++);
 	}
 	row_ind++;
 
@@ -549,8 +554,8 @@ else{
 		src_buf5[0] = src_buf5[1] = src_buf5[2] = src_buf5[3] = 0;
 
 		inter_val = 0;
-		ProcessBox5x5<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>( _src_mat, _dst_mat, buf, src_buf1,src_buf2, src_buf3, src_buf4, src_buf5,GradientValues,
-				inter_val, img_width, img_height, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, row);
+		ProcessBox5x5<SRC_T, ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>( _src_mat, _dst_mat, buf, src_buf1,src_buf2, src_buf3, src_buf4, src_buf5,GradientValues,
+				inter_val, img_width, img_height, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, row, rd_ind, wr_ind);
 
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
@@ -581,7 +586,7 @@ else{
 					src_buf5[1], src_buf5[2], src_buf5[3], 0, 0);
 
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH>(&GradientValues[0], inter_val, 0, 2, shift);
-			_dst_mat.write(inter_val);
+			_dst_mat.write(wr_ind++,inter_val);
 		}
 		else
 		{
@@ -594,7 +599,7 @@ else{
 					src_buf5[buf_size-5], src_buf5[buf_size-4],	src_buf5[buf_size-3], src_buf5[buf_size-2], 0);
 
 			inter_val((max_loop-1), (max_loop-step)) = GradientValues[0];
-			_dst_mat.write(inter_val);
+			_dst_mat.write(wr_ind++,inter_val);
 
 			GradientValues[0] = xFGradient5x5<DEPTH, WORDWIDTH_AP>(
 					src_buf1[buf_size-4], src_buf1[buf_size-3], src_buf1[buf_size-2], 0, 0,
@@ -604,7 +609,7 @@ else{
 					src_buf5[buf_size-4], src_buf5[buf_size-3],	src_buf5[buf_size-2], 0, 0);
 
 			inter_val((max_loop-1), (max_loop-step)) = GradientValues[0];
-			_dst_mat.write(inter_val);
+			_dst_mat.write(wr_ind++,inter_val);
 
 		}
 
@@ -747,13 +752,12 @@ void xFExtractDataBox(XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6], XF_
 	xfExtractPixels<NPC, WORDWIDTH_SRC, DEPTH_SRC>(&src_buf7[6], buf6, 0);
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
-void ProcessBox7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
+void ProcessBox7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf4[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf5[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH) src_buf6[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf7[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) GradientValues[XF_NPIXPERCYCLE(NPC)], XF_SNAME(WORDWIDTH_DST) &inter_val, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shiftx,
-		ap_uint<5> tp1, ap_uint<5> tp2, ap_uint<5> tp3, ap_uint<5> mid, ap_uint<5> bottom1, ap_uint<5> bottom2, ap_uint<5> bottom3, ap_uint<13> row)
+		ap_uint<5> tp1, ap_uint<5> tp2, ap_uint<5> tp3, ap_uint<5> mid, ap_uint<5> bottom1, ap_uint<5> bottom2, ap_uint<5> bottom3, ap_uint<13> row, int &rd_ind, int &wr_ind)
 {
 #pragma HLS INLINE
 
@@ -770,7 +774,7 @@ void ProcessBox7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(rd_ind++);
 		else
 			buf[bottom3][col] = 0;
 		buf0 = buf[tp1][col];
@@ -812,11 +816,11 @@ void ProcessBox7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		}
 		else
 		{
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if((NPC == XF_NPPC8))
 			{
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH>(&GradientValues[0], inter_val, 0, 3, shiftx);
 
-				_dst_mat.write(inter_val);
+				_dst_mat.write(wr_ind++,inter_val);
 				shiftx = 0;
 				inter_val = 0;
 
@@ -827,18 +831,18 @@ void ProcessBox7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				if(col >=3 )
 				{
 					inter_val((max_loop-1), (max_loop-step)) = GradientValues[0];
-					_dst_mat.write(inter_val);
+					_dst_mat.write(wr_ind++,inter_val);
 				}
 			}
 		}
 	}// Col_Loop
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
-void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int WORDWIDTH_AP, int TC>
+void RightBorderBox7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
 		XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf4[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf5[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH) src_buf6[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) src_buf7[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH) GradientValues[XF_NPIXPERCYCLE(NPC)], XF_SNAME(WORDWIDTH_DST) &inter_val, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shiftx,
-		ap_uint<13> row)
+		ap_uint<13> row, int &wr_ind)
 {
 #pragma HLS INLINE
 	ap_uint<4> i;
@@ -848,7 +852,7 @@ void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
 
 	if(row >= 3)
 	{
-		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+		if((NPC == XF_NPPC8))
 		{
 			for(i = 0; i < 8; i++)
 			{
@@ -872,7 +876,7 @@ void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
 						&src_buf4[i], &src_buf5[i], &src_buf6[i], &src_buf7[i]);
 			}
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH>(&GradientValues[0], inter_val, 0, 3, shiftx);
-			_dst_mat.write(inter_val);
+			_dst_mat.write(wr_ind++,inter_val);
 
 			shiftx = 0;
 			inter_val = 0;
@@ -900,7 +904,7 @@ void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
 						src_buf5, src_buf6, src_buf7);
 
 				inter_val((max_loop-1), (max_loop-step)) = GradientValues[0];
-				_dst_mat.write(inter_val);
+				_dst_mat.write(wr_ind++,inter_val);
 			}
 		}
 	}
@@ -910,13 +914,14 @@ void RightBorderBox7x7(hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
  * Inputs : _src_mat --> input image of type XF_8U, XF_16U or XF_16S
  * Output : _dst_mat --> output image of input type
  */
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC,
 int WORDWIDTH_DST,int WORDWIDTH_AP, int TC,bool USE_URAM>
-void xFBoxFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_dst_mat, uint16_t img_height, uint16_t img_width)
+void xFBoxFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,
+		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind, row, col;
 	ap_uint<5> tp1,tp2, tp3, mid, bottom1, bottom2, bottom3, i;
+	int rd_ind = 0, wr_ind = 0;
 	// Gradient output values stored in these buffer
 	XF_PTNAME(DEPTH) GradientValues[XF_NPIXPERCYCLE(NPC)];
 #pragma HLS ARRAY_PARTITION variable=GradientValues complete dim=1
@@ -957,7 +962,7 @@ else{
 		buf[0][col] = 0;
 		buf[1][col] = 0;
 		buf[2][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind++);
 	}
 	row_ind++;
 
@@ -967,7 +972,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind++);
 	}
 	row_ind++;
 
@@ -977,7 +982,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(rd_ind++);
 	}
 	row_ind++;
 
@@ -1028,11 +1033,11 @@ else{
 		}
 		inter_val = 0;
 
-		ProcessBox7x7<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>(_src_mat, _dst_mat, buf, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, src_buf6, src_buf7,
-				GradientValues,	inter_val, img_width, img_height, row_ind, shiftx, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row);
+		ProcessBox7x7<SRC_T, ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>(_src_mat, _dst_mat, buf, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, src_buf6, src_buf7,
+				GradientValues,	inter_val, img_width, img_height, row_ind, shiftx, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row, rd_ind, wr_ind);
 
-		RightBorderBox7x7<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>(_dst_mat, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, src_buf6, src_buf7,
-				GradientValues,	inter_val, img_width, img_height, row_ind, shiftx, row);
+		RightBorderBox7x7<SRC_T, ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, WORDWIDTH_AP, TC>(_dst_mat, src_buf1, src_buf2, src_buf3, src_buf4, src_buf5, src_buf6, src_buf7,
+				GradientValues,	inter_val, img_width, img_height, row_ind, shiftx, row, wr_ind);
 		row_ind++;
 		if(row_ind == 7)
 		{
@@ -1042,108 +1047,58 @@ else{
 } // end of function xFBoxFilter7x7
 
 
-/**
- * xFBoxFilter : This function calls the filter operations depending upon the
- * filter type. This acts as a wrapper function.
- */
-template<int ROWS, int COLS,int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,bool USE_URAM>
-void xFBoxFilterKernel(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst,uint8_t _filter_type, uint8_t _border_type,uint16_t img_height,
-		uint16_t img_width)
-{
 
-	assert(((_filter_type == XF_FILTER_3X3) || (_filter_type == XF_FILTER_5X5) || (_filter_type == XF_FILTER_7X7)) && ("Filter width should be 3 or 5 or 7."));
-	assert(_border_type == XF_BORDER_CONSTANT && "Only XF_BORDER_CONSTANT is supported");
-
-	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	img_width = img_width >> XF_BITSHIFT(NPC);
-
-	if(_filter_type == XF_FILTER_3X3)
-	{
-		xFBoxFilter3x3<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-		WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-	}
-	else if(_filter_type == XF_FILTER_5X5)
-	{
-		if(NPC == XF_NPPC16)
-		{
-			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-		else if(NPC == XF_NPPC8)
-		{
-			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-		else
-		{
-			xFBoxFilter5x5<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-	}
-
-	else if(_filter_type == XF_FILTER_7X7)
-	{
-		if(NPC == XF_NPPC16)
-		{
-			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_304SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-		else if(NPC == XF_NPPC8)
-		{
-			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_152SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-		else
-		{
-			xFBoxFilter7x7<ROWS,COLS,DEPTH,NPC,WORDWIDTH_SRC,
-			WORDWIDTH_DST,XF_19SW,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src,_dst, img_height, img_width);
-		}
-	}
-
-} // end of wrapper function
-
+#pragma SDS data data_mover("_src_mat.data":FASTDMA,"_dst_mat.data":FASTDMA)
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
-
-template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1,bool USE_URAM=false>
+template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T, int ROWS, int COLS,int NPC,bool USE_URAM=false>
 void boxFilter(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat)
 {
 
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(SRC_T,NPC)> _dst;
-
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
+//#pragma HLS STREAM variable=_dst_mat.data depth=1
 
-	for(int i=0; i<_src_mat.rows;i++)
+	//xFBoxFilterKernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC)>(_src_mat,_dst_mat,FILTER_TYPE,BORDER_TYPE,_src_mat.rows,_src_mat.cols);
+	assert(((FILTER_TYPE == XF_FILTER_3X3) || (FILTER_TYPE == XF_FILTER_5X5) || (FILTER_TYPE == XF_FILTER_7X7)) && ("Filter width should be 3 or 5 or 7."));
+	assert(BORDER_TYPE == XF_BORDER_CONSTANT && "Only XF_BORDER_CONSTANT is supported");
+
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+
+	uint16_t img_width = _src_mat.cols >> XF_BITSHIFT(NPC);
+	uint16_t img_height = _src_mat.rows;
+
+	if(FILTER_TYPE == XF_FILTER_3X3)
 	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
+		xFBoxFilter3x3<SRC_T,ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),
+		XF_WORDWIDTH(SRC_T,NPC),(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src_mat,_dst_mat, img_height, img_width);
+	}
+	else if(FILTER_TYPE == XF_FILTER_5X5)
+	{
+		if(NPC == XF_NPPC8)
 		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
+			xFBoxFilter5x5<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),
+			XF_WORDWIDTH(SRC_T,NPC),XF_19SP,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src_mat,_dst_mat, img_height, img_width);
+		}
+		else
+		{
+			xFBoxFilter5x5<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),
+			XF_WORDWIDTH(SRC_T,NPC),XF_19SP,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src_mat,_dst_mat, img_height, img_width);
 		}
 	}
 
-
-	xFBoxFilterKernel<ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(SRC_T,NPC),USE_URAM>(_src,_dst,FILTER_TYPE,BORDER_TYPE,_src_mat.rows,_src_mat.cols);
-
-
-	for(int i=0; i<_dst_mat.rows;i++)
+	else if(FILTER_TYPE == XF_FILTER_7X7)
 	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_mat.cols)>>(XF_BITSHIFT(NPC));j++)
+		if(NPC == XF_NPPC8)
 		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = _dst.read();
+			xFBoxFilter7x7<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),
+			XF_WORDWIDTH(SRC_T,NPC),XF_19SP,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src_mat,_dst_mat, img_height, img_width);
+		}
+		else
+		{
+			xFBoxFilter7x7<SRC_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),
+			XF_WORDWIDTH(SRC_T,NPC),XF_19SP,(COLS>>XF_BITSHIFT(NPC)),USE_URAM>(_src_mat,_dst_mat, img_height, img_width);
 		}
 	}
 }

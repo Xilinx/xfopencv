@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -187,11 +187,11 @@ void xFNMS3x3(XF_PTNAME(DEPTH_OUT)* _mask_value,
 	} // end of computeMaskValueLoop
 }
 
-template<int ROWS, int COLS,int DEPTH_IN,int DEPTH_PHASE,int DEPTH_OUT,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_PHASE,
+template<int IN_T1,int IN_T2,int DST_T,int ROWS, int COLS,int DEPTH_IN,int DEPTH_PHASE,int DEPTH_OUT,int NPC,int WORDWIDTH_SRC,int WORDWIDTH_PHASE,
 int WORDWIDTH_DST, int COLS_COUNT>
-void ProcessNms3x3canny(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_PHASE) > & _phase_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
+void ProcessNms3x3canny(xf::Mat<IN_T1, ROWS, COLS, NPC> &_magnitude_mat,//hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
+		xf::Mat<IN_T2, ROWS, COLS, NPC> &_phase_mat,//hls::stream< XF_SNAME(WORDWIDTH_PHASE) > & _phase_mat,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,//hls::stream< XF_SNAME(WORDWIDTH_DST) > & _dst_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[3][(COLS >> XF_BITSHIFT(NPC))],
 		XF_SNAME(WORDWIDTH_PHASE) angle[2][COLS>>XF_BITSHIFT(NPC)],
 		XF_PTNAME(DEPTH_IN) l00_buf[XF_NPIXPERCYCLE(NPC)+2],
@@ -207,7 +207,7 @@ void ProcessNms3x3canny(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
 		ap_uint<13> row_ind,ap_uint<13> read_ind,
 		ap_uint<13> write_ind,
 		uchar_t low_threshold,
-		uchar_t high_threshold)
+		uchar_t high_threshold,int &read_index1,int &read_index2,int &write_index)
 {
 #pragma HLS INLINE
 	uint16_t step_out = XF_PIXELDEPTH(DEPTH_OUT),
@@ -221,8 +221,8 @@ void ProcessNms3x3canny(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
 #pragma HLS pipeline
 		if(row < imgheight)
 		{
-			buf[row_ind][col] = _magnitude_mat.read();
-			angle[read_ind][col] = _phase_mat.read();
+			buf[row_ind][col] = _magnitude_mat.read(read_index1++);
+			angle[read_ind][col] = _phase_mat.read(read_index2++);
 		}
 		else {
 			buf[row_ind][col] = 0;
@@ -259,7 +259,7 @@ void ProcessNms3x3canny(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
 		else
 		{
 			P0.range((max_loop_out-1),( max_loop_out-step_out)) = nmsvalue[0];
-			_dst_mat.write(P0);
+			_dst_mat.write(write_index++,P0);
 			ap_uint<6> j = 1;
 
 			P0loop2:
@@ -291,17 +291,19 @@ void ProcessNms3x3canny(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _magnitude_mat,
  */
 
 
-template<int ROWS, int COLS, int DEPTH_IN,int DEPTH_PHASE, int DEPTH_OUT, int NPC,
+template<int IN_T1,int IN_T2,int DST_T,int ROWS, int COLS, int DEPTH_IN,int DEPTH_PHASE, int DEPTH_OUT, int NPC,
 int WORDWIDTH_SRC, int WORDWIDTH_PHASE,int WORDWIDTH_DST, int COLS_COUNT>
-void xFSuppression3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
-		hls::stream<XF_SNAME(WORDWIDTH_PHASE)>& _phase_mat,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst_mat, uchar_t low_threshold,
+void xFSuppression3x3(xf::Mat<IN_T1, ROWS, COLS, NPC> &_magnitude_mat,//hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
+		xf::Mat<IN_T2, ROWS, COLS, NPC> &_phase_mat,//hls::stream<XF_SNAME(WORDWIDTH_PHASE)>& _phase_mat,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,//hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst_mat,
+		uchar_t low_threshold,
 		uchar_t high_threshold, uint16_t imgheight, uint16_t imgwidth) {
 
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
 	ap_uint<13> row_ind = 1;
 	ap_uint<2> top, mid, bottom;
 	ap_uint<13> read_ind = 1, write_ind = 0;
+	int read_index1=0,read_index2=0,write_index=0;
 	uint16_t step_out = XF_PIXELDEPTH(DEPTH_OUT), max_loop_out = XF_WORDDEPTH(
 			WORDWIDTH_DST);
 	uint16_t buf_size = XF_NPIXPERCYCLE(NPC) + 2;
@@ -331,8 +333,8 @@ void xFSuppression3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
 #pragma HLS LOOP_TRIPCOUNT min=COLS_COUNT max=COLS_COUNT
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _magnitude_mat.read();
-		angle[0][col] = _phase_mat.read();
+		buf[row_ind][col] = _magnitude_mat.read(read_index1++);
+		angle[0][col] = _phase_mat.read(read_index2++);
 	}
 	row_ind = 2;
 
@@ -365,11 +367,11 @@ void xFSuppression3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
 		angle_buf[0] = angle_buf[1] = 0;
 		P0 = 0;
 
-		ProcessNms3x3canny<ROWS, COLS, DEPTH_IN,DEPTH_PHASE, DEPTH_OUT, NPC, WORDWIDTH_SRC,WORDWIDTH_PHASE,
+		ProcessNms3x3canny<IN_T1,IN_T2,DST_T,ROWS, COLS, DEPTH_IN,DEPTH_PHASE, DEPTH_OUT, NPC, WORDWIDTH_SRC,WORDWIDTH_PHASE,
 		WORDWIDTH_DST, COLS_COUNT>(_magnitude_mat, _phase_mat, _dst_mat,
 				buf, angle, l00_buf, l10_buf, l20_buf, angle_buf, nmsvalue, P0,
 				imgwidth, imgheight, top, mid, bottom, row, row_ind, read_ind,
-				write_ind, low_threshold, high_threshold);
+				write_ind, low_threshold, high_threshold,read_index1,read_index2,write_index);
 
 		XF_PTNAME (DEPTH_IN) val = 0;
 
@@ -388,7 +390,7 @@ void xFSuppression3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
 					angle_buf[buf_size - 1], low_threshold, high_threshold);
 		}
 		P0.range((max_loop_out - 1), (max_loop_out - step_out)) = nmsvalue[0];
-		_dst_mat.write(P0);
+		_dst_mat.write(write_index++,P0);
 
 		row_ind++;
 		read_ind++;
@@ -409,11 +411,12 @@ void xFSuppression3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _magnitude_mat,
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
 int WORDWIDTH_SRC, int WORDWIDTH_DST, int COLS_TRIP>
-void xFAngleKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst, uint16_t imgheight,
+void xFAngleKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src1,//hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> &_src2,//hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_dst,//hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
+		uint16_t imgheight,
 		uint16_t imgwidth) {
 
 	XF_SNAME(WORDWIDTH_SRC) val_src1, val_src2;
@@ -429,8 +432,8 @@ void xFAngleKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC))(_src1.read());
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC))(_src2.read());
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC))(_src1.read(i*imgwidth+j));
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC))(_src2.read(i*imgwidth+j));
 
 			int proc_loop = XF_WORDDEPTH(WORDWIDTH_DST), step = XF_PIXELDEPTH(
 					DEPTH_DST);
@@ -472,7 +475,7 @@ void xFAngleKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
 				}
 				val_dst.range(k + (step - 1), k) = angle;
 			}
-			_dst.write(val_dst);		// writing into the output stream
+			_dst.write(i*imgwidth+j,val_dst);		// writing into the output stream
 		}
 	}
 }
@@ -481,15 +484,16 @@ void xFAngleKernel(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
  * xFAngle: This function acts as a wrapper and calls the
  * Kernel function xFAngleKernel.
  */
-template<int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH_SRC, int DEPTH_DST, int NPC,
 int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void xFAngle(hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst, uint16_t imgheight,
+void xFAngle(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src1,//hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src1,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> &_src2,//hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _src2,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_dst,//hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
+		uint16_t imgheight,
 		uint16_t imgwidth) {
 #pragma HLS inline
 	imgwidth = imgwidth >> XF_BITSHIFT(NPC);
-	xFAngleKernel<ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC,
+	xFAngleKernel<SRC_T,DST_T,ROWS, COLS, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC,
 	WORDWIDTH_DST, (COLS >> XF_BITSHIFT(NPC))>(_src1, _src2, _dst, imgheight,
 			imgwidth);
 }

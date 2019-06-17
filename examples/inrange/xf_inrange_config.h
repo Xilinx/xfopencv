@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -27,12 +27,11 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _XF_THRESHOLD_CONFIG_H_
-#define _XF_THRESHOLD_CONFIG_H_
+#ifndef _XF_INRANGE_CONFIG_H_
+#define _XF_INRANGE_CONFIG_H_
 
 #include "hls_stream.h"
 #include "ap_int.h"
-
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
 
@@ -53,7 +52,13 @@ typedef ap_uint<64>      ap_uint64_t;
 #if NO                      
 #define NPIX				XF_NPPC1
 #endif
+#if GRAY
+#define IN_TYPE XF_8UC1
+#define OUT_TYPE XF_8UC1
+#else
+#define IN_TYPE XF_8UC3
+#define OUT_TYPE XF_8UC1
+#endif
 
-
-void inrange_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,unsigned char lower_thresh,unsigned char upper_thresh,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst);
+void inrange_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPIX> &_src,unsigned char* lower_thresh,unsigned char* upper_thresh,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPIX> &_dst);
 #endif  // end of _XF_THRESHOLD_CONFIG_H_

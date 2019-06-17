@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -193,6 +193,27 @@ int main(int argc, char **argv)
 
 	hls_img.create(img_gray.rows, img_gray.cols, img_gray.depth());	// HLS image creation
 	out_img.create(img_gray.rows, img_gray.cols, img_gray.depth());	// HLS image creation
+	
+	/*				Apply Gaussian mask and call opencv canny function					*/
+	cv::Mat img_gray1;
+	img_gray1.create(img_gray.rows, img_gray.cols, img_gray.depth());
+	AverageGaussian(img_gray, img_gray1);							// Gaussian filter
+
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+#if L1NORM
+	cv::Canny(img_gray1, ocv_img, 30.0, 64.0, FILTER_WIDTH, false);		// Opencv canny function
+
+#else
+	cv::Canny(img_gray1, ocv_img, 30.0, 64.0, FILTER_WIDTH, true);		// Opencv canny function
+#endif
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+
 
 	uint16_t img_height, img_width;
 	uchar low_threshold, high_threshold;
@@ -203,8 +224,7 @@ int main(int argc, char **argv)
 
 
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, INTYPE> imgInput(img_gray.rows,img_gray.cols); //XF_NPPC1,XF_NPPC4
-	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, OUTTYPE> nms_output(img_gray.rows,img_gray.cols);
-	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output1(img_gray.rows,img_gray.cols);
+	static xf::Mat<XF_2UC1, HEIGHT, WIDTH, XF_NPPC32> nms_output(img_gray.rows,img_gray.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8> edge_output(img_gray.rows,img_gray.cols);
 
 
@@ -214,7 +234,7 @@ int main(int argc, char **argv)
 	hw_ctr.start();
 	#endif
 
-	canny_accel(imgInput,nms_output,nms_output1,edge_output,low_threshold,high_threshold);
+	canny_accel(imgInput,nms_output,edge_output,low_threshold,high_threshold);
 
 
 	#if __SDSCC__
@@ -225,18 +245,7 @@ int main(int argc, char **argv)
 	out_img.data = edge_output.copyFrom();
 
 
-	/*				Apply Gaussian mask and call opencv canny function					*/
-	cv::Mat img_gray1;
-	img_gray1.create(img_gray.rows, img_gray.cols, img_gray.depth());
-	AverageGaussian(img_gray, img_gray1);							// Gaussian filter
-
-#if L1NORM
-	cv::Canny(img_gray1, ocv_img, 30.0, 64.0, FILTER_WIDTH, false);		// Opencv canny function
-
-#else
-	cv::Canny(img_gray1, ocv_img, 30.0, 64.0, FILTER_WIDTH, true);		// Opencv canny function
-#endif
-
+	
 	absdiff(ocv_img,out_img,diff);									// Absolute difference between opencv and hls result
 	imwrite("hls.png", out_img);									// Save HLS result
 	imwrite("ocv.png", ocv_img);									// Save Opencv result

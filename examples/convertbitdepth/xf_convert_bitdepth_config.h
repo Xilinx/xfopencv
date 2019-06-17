@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -35,7 +35,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
-#include "imgproc/xf_convert_bitdepth.hpp"
+#include "core/xf_convert_bitdepth.hpp"
 
 /* config width and height */
 #define WIDTH 	3840

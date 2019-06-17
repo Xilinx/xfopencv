@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -37,8 +37,11 @@
 #include "xf_config_params.h"
 #include "imgproc/xf_pyr_down.hpp"
 
-
+#if GRAY
 #define TYPE XF_8UC1
+#else
+#define TYPE XF_8UC3
+#endif
 
 void pyr_down_accel(xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, XF_NPPC1> &_dst);
 #endif

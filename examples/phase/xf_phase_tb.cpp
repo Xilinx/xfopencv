@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -65,11 +65,21 @@ int main( int argc, char **argv)
 	cv::Sobel(in_gray, c_grad_x1, CV_32FC1, 1, 0, filter_size, scale, delta, cv::BORDER_CONSTANT );
 	cv::Sobel(in_gray, c_grad_y1, CV_32FC1, 0, 1, filter_size, scale, delta, cv::BORDER_CONSTANT );
 
+
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 #if DEGREES
 	phase(c_grad_x1, c_grad_y1, ocv_ref, true);
 #elif RADIANS
 	phase(c_grad_x1, c_grad_y1, ocv_ref, false);
 #endif
+#if __SDSCC__
+	hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
+
 	/////////   End Opencv Phase computation API  ///////
 
 	cv::Sobel( in_gray, c_grad_x, ddepth, 1, 0, filter_size,
@@ -96,15 +106,16 @@ int main( int argc, char **argv)
 
 
 #if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 
 	//xFphase<DEG_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(imgInputx, imgInputy,imgOutput);
 	phase_accel(imgInputx, imgInputy,imgOutput);
 
 #if __SDSCC__
-	hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
 
 	out_img.data = (unsigned char *)imgOutput.copyFrom();

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -38,7 +38,7 @@
 namespace xf{
 
 template <unsigned int ROWS, unsigned int COLS, unsigned int NPC, unsigned int DEPTH,int PLANES>
-void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image, unsigned short in_rows, unsigned short in_cols)
+void xFpyrUpKernel(xf::Mat<DEPTH, ROWS, COLS, NPC> & _src, xf::Mat<DEPTH, 2*ROWS, 2*COLS, NPC> & _dst, unsigned short in_rows, unsigned short in_cols)
 {
 #pragma HLS INLINE OFF
 #pragma HLS DATAFLOW
@@ -59,7 +59,7 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 			XF_TNAME(DEPTH,NPC) read_input;
 			if(i%2 == 0 && j%2 == 0)
 			{
-				read_input = *(in_image + read_pointer);
+				read_input = _src.read(read_pointer);//*(in_image + read_pointer);
 				read_pointer++;
 			}
 			else
@@ -67,7 +67,7 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 			_filter_in.write(read_input);
 		}
 	}
-	xFPyrUpGaussianBlur<ROWS,COLS, DEPTH, NPC, 0, 0,5,25,PLANES>(_filter_in, _filter_out, 5, XF_BORDER_REPLICATE,output_height,output_width);
+	xFPyrUpGaussianBlur<2*ROWS,2*COLS, DEPTH, NPC, 0, 0,5,25,PLANES>(_filter_in, _filter_out, 5, XF_BORDER_REPLICATE,output_height,output_width);
 	
 	
 	for(int i=0;i<output_height;i++)
@@ -78,7 +78,8 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_FLATTEN OFF
-				*(out_image + write_pointer) = _filter_out.read();
+				//*(out_image + write_pointer) = _filter_out.read();
+				_dst.write(write_pointer,(_filter_out.read()));
 				write_pointer++;
 			
 		}
@@ -95,13 +96,13 @@ void xFpyrUpKernel(XF_TNAME(DEPTH,NPC) *in_image, XF_TNAME(DEPTH,NPC) *out_image
 //#pragma SDS data data_mover("_dst.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int TYPE, int ROWS, int COLS, int NPC=1>
-void pyrUp (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst)
+void pyrUp (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, 2*ROWS, 2*COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
 	unsigned short input_height = _src.rows;
 	unsigned short input_width = _src.cols;
 	
-	xFpyrUpKernel<ROWS, COLS, NPC, TYPE,XF_CHANNELS(TYPE,NPC)>(_src.data, _dst.data, input_height, input_width);
+	xFpyrUpKernel<ROWS, COLS, NPC, TYPE,XF_CHANNELS(TYPE,NPC)>(_src, _dst, input_height, input_width);
 	
 	return;
 }

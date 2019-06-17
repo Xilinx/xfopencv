@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -28,7 +28,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
 
-
 #ifndef _XF_Duplicate_HPP_
 #define _XF_Duplicate_HPP_
 
@@ -41,10 +40,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "common/xf_utility.h"
 
 namespace xf {
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH>
-void xFDuplicate(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
-				 hls::stream< XF_SNAME(WORDWIDTH) > &_dst1_mat,
-				 hls::stream< XF_SNAME(WORDWIDTH) > &_dst2_mat, uint16_t img_height, uint16_t img_width)
+template<int ROWS, int COLS,int SRC_T, int DEPTH, int NPC, int WORDWIDTH>
+void xFDuplicate(hls::stream< XF_TNAME(SRC_T,NPC) > &_src_mat,
+				 hls::stream< XF_TNAME(SRC_T,NPC) > &_dst1_mat,
+				 hls::stream< XF_TNAME(SRC_T,NPC) > &_dst2_mat, uint16_t img_height, uint16_t img_width)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
 
@@ -59,7 +58,7 @@ void xFDuplicate(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 		{
 #pragma HLS LOOP_TRIPCOUNT min=240 max=240
 #pragma HLS pipeline
-			XF_SNAME(WORDWIDTH) tmp_src;
+			XF_TNAME(SRC_T,NPC) tmp_src;
 			tmp_src = _src_mat.read();
 			_dst1_mat.write(tmp_src);
 			_dst2_mat.write(tmp_src);
@@ -98,11 +97,11 @@ void duplicateMat(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, C
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			src.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
+			src.write(_src.read (i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
 		}
 	}
 
-	xFDuplicate< ROWS, COLS, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(src,dst,dst1, _src.rows,_src.cols);
+	xFDuplicate< ROWS, COLS,SRC_T, XF_DEPTH(SRC_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC)>(src,dst,dst1, _src.rows,_src.cols);
 
 	for(int i=0; i<_dst1.rows;i++)
 	{
@@ -112,8 +111,8 @@ void duplicateMat(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, C
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			*(_dst1.data + i*(_dst1.cols>>(XF_BITSHIFT(NPC))) +j) = dst.read();
-			*(_dst2.data + i*(_dst2.cols>>(XF_BITSHIFT(NPC))) +j) = dst1.read();
+			_dst1.write((i*(_dst1.cols>>(XF_BITSHIFT(NPC))) +j),dst.read());
+			_dst2.write((i*(_dst2.cols>>(XF_BITSHIFT(NPC))) +j),dst1.read());
 
 		}
 	}

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -63,7 +63,7 @@ void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, D
 	{
 #pragma HLS pipeline ii=1
 #pragma HLS LOOP_TRIPCOUNT min=1 max=IN_TC
-		in_strm.write(*(_in_mat.data + i));
+		in_strm.write(_in_mat.read(i));
 	}
 
 	// Reads the input data from Input stream and writes the data to the output stream
@@ -89,7 +89,7 @@ void HOGDescriptor(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, xf::Mat<DST_T, 1, D
 	{
 #pragma HLS pipeline ii=1
 #pragma HLS LOOP_TRIPCOUNT min=1 max=IN_TC
-		_desc_mat.data[i] = desc_strm.read();
+		_desc_mat.write(i,desc_strm.read());
 	}
 }
 }

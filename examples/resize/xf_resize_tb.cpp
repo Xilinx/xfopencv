@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -38,13 +38,44 @@ int main(int argc,char **argv){
 		return -1;
 	}
 
+#if GRAY
 	img = cv::imread(argv[1],0);
+	result_ocv.create(cv::Size(NEWWIDTH, NEWHEIGHT),CV_8UC1);
+	error.create(cv::Size(NEWWIDTH, NEWHEIGHT),CV_8UC1);
+#else
+	img = cv::imread(argv[1],1);
+	result_ocv.create(cv::Size(NEWWIDTH, NEWHEIGHT),CV_8UC3);
+	error.create(cv::Size(NEWWIDTH, NEWHEIGHT),CV_8UC3);
+#endif
 
 	if(!img.data){
 		return -1;
 	}
 
 	cv::imwrite("input.png",img);
+	
+	
+	/*OpenCV resize function*/
+
+	#if __SDSCC__
+		perf_counter hw_ctr1;
+	hw_ctr1.start();
+	#endif
+
+#if INTERPOLATION==0
+	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_NN);
+#endif
+#if INTERPOLATION==1
+	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_LINEAR);
+#endif
+#if INTERPOLATION==2
+	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_AREA);
+#endif
+
+	#if __SDSCC__
+		hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+	#endif
 
 	unsigned short in_width,in_height;
 	unsigned short out_width,out_height;
@@ -53,9 +84,6 @@ int main(int argc,char **argv){
 	in_height = img.rows;
 	out_height = NEWHEIGHT;
 	out_width = NEWWIDTH;
-
-	result_ocv.create(cv::Size(NEWWIDTH, NEWHEIGHT),img.depth());
-	error.create(cv::Size(NEWWIDTH, NEWHEIGHT),img.depth());
 
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_height,in_width);
 	static xf::Mat<TYPE, NEWHEIGHT, NEWWIDTH, NPC1> imgOutput(out_height,out_width);
@@ -73,41 +101,16 @@ int main(int argc,char **argv){
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 		
-	/*OpenCV resize function*/
-#if INTERPOLATION==0
-	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_NN);
-#endif
-#if INTERPOLATION==1
-	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_LINEAR);
-#endif
-#if INTERPOLATION==2
-	cv::resize(img,result_ocv,cv::Size(NEWWIDTH,NEWHEIGHT),0,0,CV_INTER_AREA);
-#endif
+	
 
+	float err_per;
 	xf::absDiff(result_ocv,imgOutput,error);
-	int cnt = 0;
-	double minval=256,maxval=0;
-	for (int i=0;i<error.rows;i++){
-		for(int j=0;j<error.cols;j++){
-			uchar v = error.at<uchar>(i,j);
-			if (v>1)
-			{
-				cnt++;
-				error.at<unsigned char>(i,j) = 255;
-			}
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(error.rows*error.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+	xf::analyzeDiff(error,1,err_per);
 	xf::imwrite("hls_out.png",imgOutput);
 	cv::imwrite("resize_ocv.png", result_ocv);
 	cv::imwrite("error.png", error);
 
-	if(maxval>10){
+	if(err_per>0.0f){
 		printf("\nTest Failed\n");
 		return -1;
 	}

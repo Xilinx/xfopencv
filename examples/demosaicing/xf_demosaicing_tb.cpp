@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -151,7 +151,7 @@ int main(int argc, char **argv) {
 	// Create the Bayer pattern CFA output
 	cv::Mat cfa_bayer_output (img.rows, img.cols, CV_8UC1); // simulate the Bayer pattern CFA output
 
-#if (T_16U )
+#if (T_16U || T_10U || T_12U)
 	cv::Mat cfa_bayer_16bit (img.rows, img.cols, CV_16UC1);
 #endif
 	cv::Mat color_cfa_bayer_output(img.rows, img.cols, img.type()); // Bayer pattern CFA output in color
@@ -160,17 +160,25 @@ int main(int argc, char **argv) {
 	bayerizeImage(img, color_cfa_bayer_output, cfa_bayer_output, code);
 	imwrite("bayer_image.png",color_cfa_bayer_output);
 	imwrite("cfa_output.png",cfa_bayer_output);
-#if (T_16U )
+#if (T_16U || T_10U || T_12U)
 	cfa_bayer_output.convertTo(cfa_bayer_16bit,CV_INTYPE);
 #endif
 	// Demosaic the CFA output using reference code
 
 	cv::Mat ref_output_image(img.rows, img.cols, CV_OUTTYPE);
-#if (T_16U )
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+#if (T_16U || T_10U || T_12U)
 	demosaicImage (cfa_bayer_16bit, ref_output_image, code);
 #else
 
 	demosaicImage (cfa_bayer_output, ref_output_image, code);
+#endif
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	imwrite("reference_output_image.png",ref_output_image);
 
@@ -179,73 +187,46 @@ int main(int argc, char **argv) {
 	cv::Mat output_image_hls(img.rows, img.cols, CV_OUTTYPE);
 
 	int step = XF_PIXELDEPTH(XF_DEPTH(SRC_T,NPPC));
-	int out_step = XF_DTPIXELDEPTH(DST_T,NPPC);
 	for(int i=0; i<img.rows;i++){
 		for(int j=0; j<((img.cols) >> (XF_BITSHIFT(NPPC)));j++){
 			XF_TNAME(SRC_T,NPPC) pix=0;
 			for(int k=0; k<NPPC;k++){
-#if (T_16U )
+#if (T_16U || T_10U || T_12U)
 				pix.range(step+step*k-1,step*k) = cfa_bayer_16bit.at<unsigned short>(i,j*NPPC+k);
 #else
 				pix.range(step+step*k-1,step*k) = cfa_bayer_output.data[NPPC*(i*((img.cols) >> (XF_BITSHIFT(NPPC)))+j)+k];
 #endif
 			}
-			in_img.data[i*((img.cols) >> (XF_BITSHIFT(NPPC)))+j] = pix;
+			in_img.write(i*((img.cols) >> (XF_BITSHIFT(NPPC)))+j, pix);
 		}
 	}
 #if __SDSCC__
-perf_counter hw_ctr;
-hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 	/**********Calling the HLS function**********/
 	demosaicing_accel(in_img,out_img);
 #if __SDSCC__
-hw_ctr.stop();
-uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif 
 
-	for (int i=0; i<img.rows; i++) {
-		for (int j=0; j< (img.cols>>XF_BITSHIFT(NPPC)); j++) {
-#if (T_16U )
-			cv::Vec3w out;
-#else
-			cv::Vec3b out;
-#endif
+	xf::imwrite("output_image_hls.jpg",out_img);
 
-			XF_TNAME(DST_T,NPPC) tmp = out_img.data[i*(img.cols>>XF_BITSHIFT(NPPC))+j];
-			for(int k =0,m=0; k<NPPC;++k){
-				for(int l=0; l<3;++l,++m){
-					out[l] = tmp.range(out_step+out_step*m-1,out_step*m);
-				}
-				++m;
-#if (T_16U )
-			output_image_hls.at<cv::Vec3w>(i,j*NPPC+k) = out;
-			cv::Vec3w ref_out = ref_output_image.at<cv::Vec3w>(i,j*NPPC+k);
-#else
-			output_image_hls.at<cv::Vec3b>(i,j*NPPC+k) = out;
-			cv::Vec3b ref_out = ref_output_image.at<cv::Vec3b>(i,j*NPPC+k);
-#endif
+	cv::Mat diff(out_img.rows, out_img.cols, CV_OUTTYPE);
 
-			int err_b = ((int)out[0] - (int)ref_out[0]);
-			int err_g = ((int)out[1] - (int)ref_out[1]);
-			int err_r = ((int)out[2] - (int)ref_out[2]);
-			err_r = __ABS(err_r);
-			err_g = __ABS(err_g);
-			err_b = __ABS(err_b);
-			
-			if ( (err_b > ERROR_THRESHOLD) || (err_g > ERROR_THRESHOLD) || (err_r > ERROR_THRESHOLD) )	{
-				std::cout << "ref: " << (int)ref_out[0] << "\t" << (int)ref_out[1] << "\t" << (int)ref_out[2] << std::endl;
-				std::cout << "hls: " << (int)out[0] << "\t" << (int)out[1] << "\t" << (int)out[2] << std::endl;
-				std::cout << "Error location: row = " << i << "\tcol = " << j*NPPC+k << std::endl;
-				return -1;
-			}
+	xf::absDiff(ref_output_image, out_img, diff);
 
-			}
-		}
+	cv::imwrite("diff_img.jpg",diff);
 
-	}
+	int err_thresh = 1;
+	float err_per = 0;
 
-	imwrite("output_image_hls.jpg",output_image_hls);
+	xf::analyzeDiff(diff, err_thresh, err_per);
+
+
+	if(err_per>0)
+		return 1;
 	
 	return 0;
 }

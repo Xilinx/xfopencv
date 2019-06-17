@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -65,20 +65,27 @@ int main(int argc, char** argv)
 	unsigned short int width=in_img.cols;
 
 	///////////////// 	Opencv  Reference  ////////////////////////
+
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+
 #if !(XF_CONVERT8UTO16S || XF_CONVERT8UTO16U || XF_CONVERT8UTO32S)
 	input_img.convertTo(ocv_ref,OCV_OUTTYPE);
-
-
 #else
 	in_img.convertTo(ocv_ref,OCV_OUTTYPE);
 #endif
+
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 	cv::imwrite("out_ocv.jpg", ocv_ref);
 	//////////////////////////////////////////////////////////////
 
 	ap_int<4> _convert_type = CONVERT_TYPE;
-	#if __SDSCC__
-	perf_counter hw_ctr;
-	#endif
 	int shift = 0;
 
 	static xf::Mat<_SRC_T, HEIGHT, WIDTH, _NPC> imgInput(in_img.rows,in_img.cols);
@@ -87,6 +94,7 @@ int main(int argc, char** argv)
 
 	//in_8bit = xf::imread<XF_8UC1, HEIGHT, WIDTH, _NPC>(argv[1], 0);
 	in_8bit.copyTo(in_img.data);
+
 
 #if (XF_CONVERT16STO8U)
 	//imgInput.copyTo((IN_TYPE *) input_img.data);
@@ -101,20 +109,16 @@ int main(int argc, char** argv)
 #endif
 
 #if __SDSCC__
-hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 	convert_bitdepth_accel(imgInput, imgOutput, _convert_type, shift);
 #if __SDSCC__
-hw_ctr.stop();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
-//	out_img.data = (unsigned char *)imgOutput.copyFrom();
 
 	xf::imwrite("hls_out.png",imgOutput);
-	#if __SDSCC__
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-
-//	imwrite("out_hls.png", out_img);
 
 	//////////////////  Compute Absolute Difference ////////////////////
 	xf::absDiff(ocv_ref,imgOutput,diff);

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -176,7 +176,7 @@ int &rd_ind, int &wr_ind)
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
 		if(row < img_height && col < (img_width>>XF_BITSHIFT(NPC)))
-		buf[row_ind[win_size-1]][col] = _src_mat.data[rd_ind++]; // Read data
+		buf[row_ind[win_size-1]][col] = _src_mat.read(rd_ind++);//data[rd_ind++]; // Read data
 
 		if(NPC == XF_NPPC8)
 		{
@@ -263,7 +263,8 @@ int &rd_ind, int &wr_ind)
 				shift_x = 0;
 				P0 = 0;
 				xfPackPixels<NPC, XF_WORDWIDTH(DEPTH,NPC), XF_DEPTH(DEPTH,NPC)>(OutputValues, P0, 0, npc, shift_x);
-				_dst_mat.data[wr_ind++] = P0;
+
+				_dst_mat.write(wr_ind++,P0);
 			}
 
 			for(int extract_px=0;extract_px<WIN_SZ;extract_px++)
@@ -320,7 +321,7 @@ int &rd_ind, int &wr_ind)
 			xFBilateralProc<NPC, DEPTH,PLANES, WIN_SZ, WIN_SZ_SQ, NUM_DIST, FPRES_SC>(OutputValues,src_buf, win_size, exp_lut_sigma_color, distances_array_revmap);
 			if(col >= (WIN_SZ>>1))
 			{
-				_dst_mat.data[wr_ind++] = OutputValues[0];
+				_dst_mat.write(wr_ind++, OutputValues[0]);
 			}
 			for(int wrap_buf=0;wrap_buf<WIN_SZ;wrap_buf++)
 			{
@@ -387,7 +388,7 @@ uint16_t img_height, uint16_t img_width, ap_ufixed<FPRES_SC,1> exp_lut_sigma_col
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
-			buf[init_buf][col] = _src_mat.data[rd_ind++];
+			buf[init_buf][col] = _src_mat.read(rd_ind++);//_src_mat.data[rd_ind++];
 		}
 	}
 
@@ -517,6 +518,12 @@ int _border_type, uint16_t imgheight, uint16_t imgwidth, float sigma_color, floa
 	ap_ufixed<FPRES_SC,1> exp_lut_sigma_color[WIN_SZ*WIN_SZ][NUM_DIST][256*PLANES];
 #pragma HLS ARRAY_PARTITION variable=exp_lut_sigma_color complete dim=1
 #pragma HLS ARRAY_PARTITION variable=exp_lut_sigma_color complete dim=2
+
+	if(NPC==8)
+	{
+		#pragma HLS ARRAY_PARTITION variable=exp_lut_sigma_color complete dim=3
+	}
+
 	for (unsigned int m=0;m<(256*PLANES);m++)
 	{
 		ap_uint<32> jsq = (ap_uint<16>)m*(ap_uint<16>)m;

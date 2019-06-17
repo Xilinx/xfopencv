@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -58,8 +58,12 @@ int main(int argc, char** argv)
 
 	cv::Mat src, ocv_remapped, hls_remapped;
 	cv::Mat map_x, map_y,diff;
+#if GRAY
 	src = cv::imread( argv[1], 0 ); // read image Grayscale
+#else // RGB
+	src = cv::imread( argv[1], 1 ); // read image RGB
 
+#endif
 	ocv_remapped.create( src.rows,src.cols, src.type()); // opencv result
 	map_x.create( src.rows,src.cols, CV_32FC1 ); // Mapx for opencv remap function
 	map_y.create( src.rows,src.cols, CV_32FC1 ); // Mapy for opencv remap function
@@ -92,7 +96,20 @@ int main(int argc, char** argv)
 	}
 
 	/* Opencv remap function */
+
+
+#if __SDSCC__
+		perf_counter hw_ctr;
+		hw_ctr.start();
+#endif
+
 	cv::remap (src,ocv_remapped,map_x,map_y,CV_INTER_LINEAR,cv::BORDER_CONSTANT,cv::Scalar(0, 0, 0) );
+
+#if __SDSCC__
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 
 	//////////////////	HLS Function Call  ////////////////////////
 	static xf::Mat<TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(src.rows,src.cols);
@@ -107,16 +124,16 @@ int main(int argc, char** argv)
 	inMat.copyTo(src.data);
 
 #if __SDSCC__
-		perf_counter hw_ctr;
-		hw_ctr.start();
+		perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 
 	remap_accel(inMat,remappedMat,mapxMat,mapyMat);
+
 #if __SDSCC__
-		hw_ctr.stop();
-		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+		hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
-	
 
 	/// Save the results
 	imwrite("output_ocv.png", ocv_remapped);      // Opencv Result
@@ -126,24 +143,13 @@ int main(int argc, char** argv)
 	xf::absDiff(ocv_remapped, remappedMat, diff);
 	imwrite("diff.png", diff);
 
-	// Find minimum and maximum differences.
-	double minval=256,maxval=0;
-	int cnt = 0;
-	for (int i=0; i<src.rows; i++)
-	{
-		for(int j=0; j<src.cols; j++)
-		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v>0)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
+	float err_per;
+	xf::analyzeDiff(diff, 0, err_per);
+
+	if(err_per > 0.0f){
+		printf("\nTest Failed\n");
+		return -1;
 	}
-	float err_per = 100.0*(float)cnt/(src.rows*src.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
 	ocv_remapped.~Mat();
 	map_x.~Mat();

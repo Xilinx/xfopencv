@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -52,8 +52,16 @@ void resize (xf::Mat<TYPE, SRC_ROWS, SRC_COLS, NPC> & _src, xf::Mat<TYPE, DST_RO
 	assert(  ((INTERPOLATION_TYPE == XF_INTERPOLATION_NN)
 	        ||(INTERPOLATION_TYPE == XF_INTERPOLATION_BILINEAR)
 			||(INTERPOLATION_TYPE == XF_INTERPOLATION_AREA)) && "Incorrect parameters interpolation type");
+	
+	if(INTERPOLATION_TYPE == XF_INTERPOLATION_AREA)
+		assert( (NPC == XF_NPPC1)  && "Supported Operation Mode for Area Interpolation is XF_NPPC1. XF_NPPC2, XF_NPPC4 and XF_NPPC8 are not supported ");
+	else
+		assert( ((NPC == XF_NPPC8) || (NPC == XF_NPPC4) || (NPC == XF_NPPC2) || (NPC == XF_NPPC1) )  && "Supported Operation Modes XF_NPPC8, XF_NPPC4, XF_NPPC2 and XF_NPPC1");
 
-	assert( ((NPC == XF_NPPC8) || (NPC == XF_NPPC1) )  && "Supported Operation Modes XF_NPPC8 and XF_NPPC1");
+	if(NPC == XF_NPPC2)
+		assert((((_src.cols & 1) == 0) && ((_dst.cols & 1) == 0)) && "Input and ouput image widths should be multiples of 2 in NPPC2 mode");
+	if(NPC == XF_NPPC4)
+		assert((((_src.cols & 3) == 0) && ((_dst.cols & 3) == 0)) && "Input and ouput image widths should be multiples of 4 in NPPC4 mode");
 	if(NPC == XF_NPPC8)
 		assert((((_src.cols & 7) == 0) && ((_dst.cols & 7) == 0)) && "Input and ouput image widths should be multiples of 8 in NPPC8 mode");
 

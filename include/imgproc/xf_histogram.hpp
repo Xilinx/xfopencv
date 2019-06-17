@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -74,12 +74,12 @@ void xFHistogramKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat , uint32_t his
 #pragma HLS PIPELINE II=2
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS LOOP_TRIPCOUNT min=SRC_TC max=SRC_TC
-			in_buf = _src_mat.data[row*(imgwidth) + col];
+			in_buf = _src_mat.read(row*(imgwidth) + col);//.data[row*(imgwidth) + col];
 
 			if(col==(imgwidth-1) )
 				in_buf1 = 0;
 			else
-				in_buf1=_src_mat.data[row*(imgwidth) + col+1];
+				in_buf1=_src_mat.read(row*(imgwidth) + col+1);//.data[row*(imgwidth) + col+1];
 
 			EXTRACT_UPDATE:
 			for(ap_uint<9> i=0,j=0; i < ((8 << XF_BITSHIFT(NPC))*PLANES);j++, i+= 8)

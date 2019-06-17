@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -50,8 +50,8 @@ int AccumulateImageKernel(
 		uint16_t height,uint16_t width)
 {
 	ap_uint<13> i,j,k,l;
-	XF_SNAME(WORDWIDTH_DST) pxl_pack_out;
-	XF_SNAME(WORDWIDTH_SRC) pxl_pack1, pxl_pack2;
+	XF_TNAME(DST_T,NPC) pxl_pack_out;
+	XF_TNAME(SRC_T,NPC) pxl_pack1, pxl_pack2;
 	RowLoop:
 	for( i = 0; i < height; i++)
 	{
@@ -63,20 +63,19 @@ int AccumulateImageKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 			int y;
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);
-			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.data[i*width+j]);
+			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))src1.read(i*width+j);
+			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))src2.read(i*width+j);
 			ProcLoop:
 			for(  k = 0, l = 0; k < ((8<< XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP, l+=XF_OUT_STEP)
 			{
 #pragma HLS UNROLL
-				XF_SNAME(DEPTH_SRC) pxl1 = pxl_pack1.range(k+7, k);
-				XF_SNAME(DEPTH_SRC) pxl2 = pxl_pack2.range(k+7, k);
-				pxl_pack_out.range(l+XF_OUT_STEP-1, l) = (XF_PTNAME(DEPTH_DST))pxl1 +
-													     (XF_PTNAME(DEPTH_DST))pxl2;
+				XF_CTUNAME(SRC_T,NPC) pxl1 = pxl_pack1.range(k+7, k);
+				XF_CTUNAME(SRC_T,NPC) pxl2 = pxl_pack2.range(k+7, k);
+				pxl_pack_out.range(l+XF_OUT_STEP-1, l) = (XF_CTUNAME(DST_T,NPC))pxl1 +(XF_CTUNAME(DST_T,NPC))pxl2;
 			}
 
-
-			dst.data[i*width+j]= ((XF_SNAME(WORDWIDTH_DST))pxl_pack_out);
+           // printf("%d: %d (%d, %d)\n", (int)(i*width+j), (unsigned short)pxl_pack_out, (unsigned int)pxl_pack1, (unsigned int)pxl_pack2);
+			dst.write(i*width+j,pxl_pack_out);
 
 		}
 	}
@@ -86,6 +85,8 @@ int AccumulateImageKernel(
 //#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
 //#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover ("src1.data":FASTDMA,"src2.data":FASTDMA, "dst.data":FASTDMA)
+
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)

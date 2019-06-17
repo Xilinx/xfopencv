@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -476,7 +476,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img,in_img1,out_img,ocv_ref;
+	cv::Mat in_img,in_img1,out_img,ocv_ref,dst;
 	cv::Mat in_gray,in_gray1,diff;
 
 	// reading in the color image
@@ -496,7 +496,7 @@ int main(int argc, char** argv)
 	uint16_t height = in_gray.rows;
 	uint16_t width = in_gray.cols;
 
-	cv::Mat dst, cdst,crefdst,crefxi,crefcv;
+	cv::Mat  cdst,crefdst,crefxi,crefcv;
 	cv::Canny(in_gray, dst, 50, 200, 3);
 
 	cvtColor(dst, cdst, CV_GRAY2BGR);
@@ -519,29 +519,10 @@ int main(int argc, char** argv)
 	short threshold = 75;
 	short maxlines = LINESMAX;
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(dst.rows,dst.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 	imgInput.copyTo(dst.data);
 
 	short accumulator[30][277];
-
-
-#if __SDSCC__
-	perf_counter hw_ctr;
-
-
-	hw_ctr.start();
-#endif
-
-	houghlines_accel(imgInput,outputrho,outputtheta,threshold,maxlines);
-
-#if __SDSCC__
-	hw_ctr.stop();
-
-
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-#endif
-
-	fprintf(stderr,"kernel call done\n");
 
 	std::vector<cv::Vec2f> lines;
 	std::vector<cv::Vec2f> linesxi;
@@ -552,26 +533,35 @@ int main(int argc, char** argv)
 
 	float angleref = (CV_PI*thetaval) /180;
 
-	xiHoughLinesstandard(dst,linesxi,RHOSTEP,angleref,threshold,maxlines,MAXTHETA,MINTHETA); //FLOATING POINT Reference code
 
-	xiHoughLinesstandardfixed(dst,lines,RHOSTEP,angleref,threshold,maxlines,MAXTHETA,MINTHETA); // Fixed point reference code
-
-
-	FILE *fpre1 = fopen("HLSOUT.txt","w");
-	FILE *fpre2 = fopen("FIXEDREFOUT.txt","w");
-	FILE *fpre3 = fopen("FLOATREFOUT.txt","w");
-
-
-	for( size_t i = 0; i < lines.size(); i++ ){
-		fprintf(fpre1,"%f %f\n",outputrho[i],outputtheta[i]);
-		fprintf(fpre2,"%f %f\n",lines[i][0],lines[i][1]);
-		fprintf(fpre3,"%f %f\n",linesxi[i][0],linesxi[i][1]);
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+	xiHoughLinesstandard(dst,lines,RHOSTEP,angleref,threshold,maxlines,MAXTHETA,MINTHETA); // Fixed point reference code
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
 
-	}
-	fclose(fpre1);
-	fclose(fpre2);
-	fclose(fpre3);
+
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+
+	houghlines_accel(imgInput,outputrho,outputtheta,threshold,maxlines);
+
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
+	fprintf(stderr,"kernel call done\n");
+
+
+
 
 	int count=0;
 	float successper=0.0;

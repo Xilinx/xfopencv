@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -923,9 +923,9 @@ void xFFastCornerDetection(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _strm_in,
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
 
 #pragma SDS data copy ("_src_mat.data"[0:"_src_mat.size"])
-#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data copy ("_dst_mat.data"[0:"_dst_mat.size"])
-#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
 template<int NMS,int SRC_T,int ROWS, int COLS,int NPC=1>
 void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,unsigned char _threshold)
@@ -948,7 +948,7 @@ void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, 
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
+			_src.write(_src_mat.read(i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
 		}
 	}
 
@@ -963,7 +963,7 @@ void fast(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, 
 #pragma HLS PIPELINE
 #pragma HLS LOOP_FLATTEN off
 			XF_TNAME(SRC_T,NPC) value = _dst.read();
-			*(_dst_mat.data + i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j) = value;
+			_dst_mat.write( i*(_dst_mat.cols>>(XF_BITSHIFT(NPC))) +j , value);
 		}
 	}
 

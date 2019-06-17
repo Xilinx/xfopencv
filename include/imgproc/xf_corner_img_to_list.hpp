@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,7 +48,7 @@ void cornersImgToList(xf::Mat<TYPE,ROWS,COLS,NPC> &_src, unsigned int list[MAXCO
 		for (unsigned short j=0; j<_src.cols; j++)
 		{
 #pragma HLS PIPELINE
-			ap_uint<8> tempValue = _src.data[i*_src.cols+j];
+			ap_uint<8> tempValue = _src.read(i*_src.cols+j);
 			if(tempValue == 255 && cornerCount < MAXCORNERSNO) //value is 255 if there's a corner
 			{
 				ap_uint<32> point;

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -58,16 +58,14 @@ void xFreduceKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,  xf::Mat<DST_T, 
 
 	XF_SNAME(WORDWIDTH_DST) line_buf[(COLS >> XF_BITSHIFT(NPC))];
 #pragma HLS RESOURCE variable=line_buf core=RAM_S2P_BRAM
-//	XF_SNAME(WORDWIDTH_DST) row_buf[(ROWS >> XF_BITSHIFT(NPC))];
-//#pragma HLS ARRAY_PARTITION variable=line_buf complete dim=1
 
 if(dim==0)
 {
 
-	for(int i=0;i<(COLS >> XF_BITSHIFT(NPC));i++)
+	for(int i=0;i<(width >> XF_BITSHIFT(NPC));i++)
 	{
 #pragma HLS pipeline
-			line_buf[i]=_src_mat.data[i];
+			line_buf[i]=_src_mat.read(i);
 	}
 }
 
@@ -107,7 +105,7 @@ if(dim==0)
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-				val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.data[i*width+j]);  //reading the source stream _src into val_src
+				val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.read(i*width+j));  //reading the source stream _src into val_src
 				if(dim==0)
 				{
 
@@ -151,7 +149,7 @@ if(dim==0)
 
 		if(dim==1)
 		{
-			_dst_mat.data[q]=val_dst;
+			_dst_mat.write(q,val_dst);
 			q++;
 		}
 
@@ -159,36 +157,28 @@ if(dim==0)
 	}
 	if(dim==0)
 	{
-		for(unsigned int out=0; out<((COLS >> XF_BITSHIFT(NPC)));out++ )
+		for(unsigned int out=0; out<((width >> XF_BITSHIFT(NPC)));out++ )
 		{
 				if((REDUCE_OP==REDUCE_SUM))
 				{
-					_dst_mat.data[q]=line_buf[out];
+					_dst_mat.write(q,line_buf[out]);
 					 q++;
 				}
 				else if (REDUCE_OP==REDUCE_AVG)
 				{
-					_dst_mat.data[q]=line_buf[out]/height;
+					_dst_mat.write(q ,line_buf[out]/height);
 					 q++;
 				}
 				else
 				{
 
-						_dst_mat.data[q]= line_buf[out];
+						_dst_mat.write(q, line_buf[out]);
 						 q=q+1;
 				}
 
 		}
 	}
-//	if(dim ==1)
-//	{
-//		for(unsigned int out=0; out<((ROWS >> XF_BITSHIFT(NPC)));out++ )
-//		{
-//			_dst_mat.data[q]= row_buf[out];
-//			q++;
-//		}
-//
-//	}
+
 
 }
 
@@ -196,8 +186,8 @@ if(dim==0)
 
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
-#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 
 template< int REDUCE_OP, int SRC_T,int DST_T, int ROWS, int COLS,int ONE_D_HEIGHT, int ONE_D_WIDTH, int NPC=1>
 void reduce(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,  xf::Mat<DST_T, ONE_D_HEIGHT, ONE_D_WIDTH, 1> & _dst_mat, unsigned char dim)

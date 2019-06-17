@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -147,13 +147,13 @@ void xFComputeUndistortCoordinates(
 	v = fy*(FRAMET(y*kr) + FRAMET(p1*(r2 + 2*y2)) + FRAMET(p2*_2xy)) + v0;
 }
 
-template< int ROWS, int COLS, int CM_SIZE, typename CM_T, int N, typename MAP_T >
+template< int ROWS, int COLS, int CM_SIZE, typename CM_T, int N, int MAP_T, int NPC, typename MAP_type >
 void xFInitUndistortRectifyMapInverseKernel (
 		CM_T *cameraMatrix,
 		CM_T *distCoeffs,
 		CM_T *ir,
-		MAP_T *map1,
-		MAP_T *map2,
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &map1,
+		xf::Mat<MAP_T, ROWS, COLS, NPC> &map2,
 		uint16_t rows, uint16_t cols,
 		int noRotation=false)
 {
@@ -178,8 +178,8 @@ void xFInitUndistortRectifyMapInverseKernel (
 		distCoeffsHLS[i] = distCoeffs[i];
 	}
 
-	MAP_T mx;
-	MAP_T my;
+	MAP_type mx;
+	MAP_type my;
 
 	assert(rows <= ROWS);
 	assert(cols <= COLS);
@@ -203,12 +203,11 @@ void xFInitUndistortRectifyMapInverseKernel (
 			CM_T,CM_SIZE,N>
 			(cameraMatrixHLS,distCoeffsHLS,iRnewCameraMatrixHLS,noRotation,ifixed,jfixed,u,v);
 
-			mx = u;
-			my = v;
+			float mx = (float)u;
+			float my = (float)v;
 
-			*(map1 + idx) = mx;
-			*(map2 + idx) = my;
-			idx++;
+			map1.write_float(idx,mx);
+			map2.write_float(idx++,my);
 		}
 	}
 }
@@ -232,9 +231,10 @@ void InitUndistortRectifyMapInverse (
 {
 #pragma HLS INLINE OFF
 
-	xFInitUndistortRectifyMapInverseKernel<ROWS,COLS,CM_SIZE,ap_fixed<32,12>,DC_SIZE,XF_TNAME(MAP_T,NPC)>(cameraMatrix, distCoeffs, ir, _mapx_mat.data, _mapy_mat.data, _mapx_mat.rows, _mapx_mat.cols);
+	xFInitUndistortRectifyMapInverseKernel<ROWS,COLS,CM_SIZE,ap_fixed<32,12>,DC_SIZE,MAP_T,NPC,XF_TNAME(MAP_T,NPC)>(cameraMatrix, distCoeffs, ir, _mapx_mat, _mapy_mat, _mapx_mat.rows, _mapx_mat.cols);
 }
 }
 #endif  // _XF_STEREO_PIPELINE_HPP_
+
 
 

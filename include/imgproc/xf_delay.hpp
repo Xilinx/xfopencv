@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -27,6 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
+
 
 #ifndef __cplusplus
 #error C++ is needed to include this header
@@ -66,7 +67,7 @@ void delayMat(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS,
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			src.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
+			src.write( _src.read(i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
 		}
 	}
 
@@ -80,7 +81,7 @@ void delayMat(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS,
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			*(_dst.data + i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) = src.read();
+			_dst.write(( i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) ,src.read());
 
 		}
 	}

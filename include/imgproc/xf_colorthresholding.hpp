@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -34,7 +34,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "common/xf_utility.h"
-
+#include "imgproc/xf_inrange.hpp"
 
 typedef unsigned short  uint16_t;
 
@@ -83,6 +83,13 @@ void xFInRange(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, C
 	XF_PTNAME(DEPTH_DST) out_pix;
 	ap_uint<8> h, s, v;
 
+	XF_SNAME(WORDWIDTH_SRC) val_src;
+	XF_PTNAME(DEPTH_DST)  channel_out[XF_CHANNELS(SRC_T,NPC)];
+	XF_SNAME(WORDWIDTH_DST) val_dst;
+
+	XF_PTNAME(DEPTH_DST)  _lower_thresh[XF_CHANNELS(SRC_T,NPC)];//=(XF_PTNAME(DEPTH))lower_thresh;
+	XF_PTNAME(DEPTH_DST)  _upper_thresh[XF_CHANNELS(SRC_T,NPC)];//=(XF_PTNAME(DEPTH))upper_thresh;
+
 	for(uint16_t row = 0; row < img_height; row++)
 	{
 #pragma HLS LOOP_TRIPCOUNT max=ROWS
@@ -90,15 +97,26 @@ void xFInRange(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, C
 		{
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT max=COLS
+			XF_SNAME(WORDWIDTH_DST) tempval=0;
 
-			in_pix = _src_mat.data[row*img_width+col];
+			val_src = _src_mat.read(row*img_width+col);
 
-			h = in_pix.range(7, 0);
-			s = in_pix.range(15, 8);
-			v = in_pix.range(23, 16);
+			for(int k=0;k<MAXCOLOR;k++)
+			{
+				for(int i=0;i< XF_CHANNELS(SRC_T,NPC);i++)
+				{
+					_lower_thresh[i]=(XF_PTNAME(DEPTH_DST))low_thresh[k][i];
+					_upper_thresh[i]=(XF_PTNAME(DEPTH_DST))high_thresh[k][i];
+				}
+				XF_SNAME(WORDWIDTH_DST) tmp_val=0;
 
-			apply_threshold<MAXCOLOR>(low_thresh,high_thresh,out_pix,h,s,v);
-			_dst_mat.data[row*img_width+col] = (out_pix);
+				inrangeproc<WORDWIDTH_SRC,WORDWIDTH_DST,DEPTH_SRC,DEPTH_DST,SRC_T,NPC>(val_src,tmp_val,channel_out,_lower_thresh,_upper_thresh);
+
+				tempval = tempval | tmp_val;
+			}
+
+			_dst_mat.write(row*img_width+col,tempval);
+
 		}
 	}
 }
@@ -123,26 +141,18 @@ void colorthresholding(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T,
 #pragma HLS ARRAY_PARTITION variable=low_th dim=1 complete
 #pragma HLS ARRAY_PARTITION variable=high_th dim=1 complete
 	uint16_t j = 0;
-		for(uint16_t i = 0; i < (MAXCOLORS); i++)
-		{
-	#pragma HLS PIPELINE
-			low_th[i][0]  = low_thresh[i*j];
-			low_th[i][1]  = low_thresh[i*j+1];
-			low_th[i][2]  = low_thresh[i*j+2];
-			high_th[i][0] = high_thresh[i*j];
-			high_th[i][1] = high_thresh[i*j+1];
-			high_th[i][2] = high_thresh[i*j+2];
-			j = j+3;
-		}
+	for(uint16_t i = 0; i < (MAXCOLORS); i++)
+	{
+#pragma HLS PIPELINE
+		low_th[i][0]  = low_thresh[i*j];
+		low_th[i][1]  = low_thresh[i*j+1];
+		low_th[i][2]  = low_thresh[i*j+2];
+		high_th[i][0] = high_thresh[i*j];
+		high_th[i][1] = high_thresh[i*j+1];
+		high_th[i][2] = high_thresh[i*j+2];
+		j = j+3;
+	}
 
-	// Define the low and high thresholds
-	// Want to grab 3 colors (Yellow, Green, Red) for teh input image
-//	unsigned char low_th[3][3] = { { 22, 150, 60 }, // Lower boundary for Yellow
-//			{ 38, 150, 60 }, // Lower boundary for Green
-//			{ 160, 150, 60 } }; // Lower boundary for Red
-//	unsigned char high_th[3][3] = { { 38, 255, 255 }, // Upper boundary for Yellow
-//			{ 75, 255, 255 }, // Upper boundary for Green
-//			{ 179, 255, 255 } }; // Upper boundary for Red
 
 
 	uint16_t img_height = _src_mat.rows;

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -34,14 +34,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#if __SDSCC__
 #undef __ARM_NEON__
 #undef __ARM_NEON
-#include "opencv/cv.h"
-#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
-#include "opencv2/video/tracking.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
 #define __ARM_NEON__
 #define __ARM_NEON
+#else
+#include "opencv/cv.h"
+#include "opencv/highgui.h"
+#include "opencv2/imgproc/imgproc.hpp"
+#endif
 
 
 #if __SDSCC__
@@ -49,8 +54,6 @@
 #define TIME_STAMP_INIT  unsigned int clock_start, clock_end;  clock_start = sds_clock_counter();
 #define TIME_STAMP  { clock_end = sds_clock_counter(); printf("elapsed time %lu \n", clock_end-clock_start); clock_start = sds_clock_counter();  }
 #endif
-
-#include "common/xf_sw_utils.h"
 
 #endif//_XF_HEADERS_H_
 

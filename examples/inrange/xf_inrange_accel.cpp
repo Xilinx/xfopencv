@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -30,10 +30,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_inrange_config.h"
 
-void inrange_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_src,unsigned char lower_thresh,unsigned char upper_thresh,xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> &_dst)
+void inrange_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPIX> &_src,unsigned char* lower_thresh,unsigned char* upper_thresh,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPIX> &_dst)
 {
 	
-	xf::inRange<XF_8UC1,HEIGHT, WIDTH,NPIX>(_src, lower_thresh,upper_thresh,_dst);
+	xf::inRange<IN_TYPE,OUT_TYPE,HEIGHT, WIDTH,NPIX>(_src, lower_thresh,upper_thresh,_dst);
 
 
 }

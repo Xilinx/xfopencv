@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #include "xf_headers.h"
 #include "xf_custom_convolution_config.h"
@@ -40,10 +40,14 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_img, in_gray, in_conv_img, out_img, ocv_ref, diff, filter;
+	cv::Mat in_img, out_img, ocv_ref, diff, filter;
 
 
+#if GRAY
 	in_img = cv::imread(argv[1],0); // reading in the gray image
+#else
+	in_img = cv::imread(argv[1],1); // reading in the gray image
+#endif
 
 
 	if (in_img.data == NULL)
@@ -51,7 +55,6 @@ int main(int argc, char** argv)
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
 		return 0;
 	}
-
 
 
 	unsigned char shift = SHIFT;
@@ -65,30 +68,43 @@ int main(int argc, char** argv)
 		for(int j = 0; j < FILTER_WIDTH; j++)
 		{
 			filter.at<float>(i,j) = (float)0.1111;
-			//filter_ptr[i*FILTER_WIDTH+j] = 1;
 		}
 	}
 
 
-	/*  convert to specific types  */
-	in_img.convertTo(in_conv_img,CV_8U);			//Size conversion
-
-
-		/////////////////    OpenCV reference   /////////////////
+	/////////////////    OpenCV reference   /////////////////
+#if GRAY
 #if   OUT_8U
-	out_img.create(in_conv_img.rows,in_conv_img.cols,CV_8U); // create memory for output image
-	diff.create(in_conv_img.rows,in_conv_img.cols,CV_8U);    // create memory for difference image
+	out_img.create(in_img.rows,in_img.cols,CV_8UC1); // create memory for output image
+	diff.create(in_img.rows,in_img.cols,CV_8UC1);    // create memory for difference image
 #elif OUT_16S
-	out_img.create(in_conv_img.rows,in_conv_img.cols,CV_16S); // create memory for output image
-	diff.create(in_conv_img.rows,in_conv_img.cols,CV_16S);	  // create memory for difference image
+	out_img.create(in_img.rows,in_img.cols,CV_16SC1); // create memory for output image
+	diff.create(in_img.rows,in_img.cols,CV_16SC1);	  // create memory for difference image
+#endif
+#else
+#if   OUT_8U
+	out_img.create(in_img.rows,in_img.cols,CV_8UC3); // create memory for output image
+	diff.create(in_img.rows,in_img.cols,CV_8UC3);    // create memory for difference image
+#elif OUT_16S
+	out_img.create(in_img.rows,in_img.cols,CV_16SC3); // create memory for output image
+	diff.create(in_img.rows,in_img.cols,CV_16SC3);	  // create memory for difference image
+#endif
 #endif
 
 	cv::Point anchor = cv::Point( -1, -1 );
 
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 #if OUT_8U
-	cv::filter2D(in_conv_img, ocv_ref, CV_8U , filter, anchor, 0, cv::BORDER_CONSTANT);
+	cv::filter2D(in_img, ocv_ref, CV_8U , filter, anchor, 0, cv::BORDER_CONSTANT);
 #elif OUT_16S
-	cv::filter2D(in_conv_img, ocv_ref, CV_16S ,filter, anchor, 0, cv::BORDER_CONSTANT );
+	cv::filter2D(in_img, ocv_ref, CV_16S ,filter, anchor, 0, cv::BORDER_CONSTANT );
+#endif
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 	imwrite("ref_img.jpg", ocv_ref);  // reference image
@@ -107,80 +123,39 @@ int main(int argc, char** argv)
 	}
 
 
-
-
-	static xf::Mat<INTYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
-	static xf::Mat<OUTTYPE,HEIGHT,WIDTH,NPC1> imgOutput(in_img.rows,in_img.cols);
-
-
-
+	static xf::Mat<INTYPE, HEIGHT, WIDTH, NPC_T> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<OUTTYPE,HEIGHT,WIDTH,NPC_T> imgOutput(in_img.rows,in_img.cols);
 
 	imgInput.copyTo(in_img.data);
 
 
-	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
-	#endif
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	Filter2d_accel(imgInput,imgOutput,filter_ptr,shift);
 
-	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-	//out_img.data = (unsigned char *)imgOutput.copyFrom();
-
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
 	xf::imwrite("out_img.jpg", imgOutput);
 	xf::absDiff(ocv_ref,imgOutput,diff);    // Compute absolute difference image
-	imwrite("diff_img.jpg",diff);     // Save the difference image for debugging purpose
-//	FILE *fp=fopen("cv.txt","w");
-//	FILE *fp1=fopen("hls.txt","w");
-//	for(int i=0;i<(2073600*CHANNELS);i++)
-//	{
-//		fprintf(fp,"%d\n",ocv_ref.data[i]);
-//		fprintf(fp1,"%d\n",out_img.data[i]);
-//	}
-//	fclose(fp);
-//	fclose(fp1);
-	
-	double minval=256,maxval=0;
-	int cnt = 0;
-	for (int i=0;i<in_img.rows;i++)
-	{
-		for(int j=0;j<in_img.cols;j++)
-		{
-#if OUT_8U
-			unsigned char v1 = ocv_ref.at<unsigned char>(i,j);
-			unsigned char v2 = out_img.at<unsigned char>(i,j);
-			unsigned char v = diff.at<unsigned char>(i,j);
-#elif OUT_16S
-			short int v1 = ocv_ref.at<short int>(i,j);
-			short int v2 = out_img.at<short int>(i,j);
-			short int v = diff.at<short int>(i,j);
-#endif
-			if (v>2)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
 
-	in_gray.~Mat();
-	in_conv_img.~Mat();
+	float err_per;
+	xf::analyzeDiff(diff,2,err_per);
+	cv::imwrite("diff_img.jpg",diff);
 
 	ocv_ref.~Mat();
 	diff.~Mat();
-	int ret  = 0;
-	if(err_per > 0.0f)
-		return 1;
 	in_img.~Mat();
 	out_img.~Mat();
+
+	if(err_per > 0.0f)
+		return 1;
+
 	return 0;
 }
 

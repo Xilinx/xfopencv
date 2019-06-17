@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -90,8 +90,8 @@ void xfPhaseKernel(
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*imgwidth+j]);
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*imgwidth+j]);
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*imgwidth+j));
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*imgwidth+j));
 
 			int proc_loop = XF_WORDDEPTH(WORDWIDTH_DST),
 					step  = XF_PIXELDEPTH(DEPTH_DST);
@@ -129,7 +129,7 @@ void xfPhaseKernel(
 				}
 				val_dst.range(k + (step - 1), k) = result;  //set the values in val_dst.
 			} // end of proc loop
-			_dst_mat.data[i*imgwidth+j] = (val_dst);
+			_dst_mat.write(i*imgwidth+j,(val_dst));
 		} // end of col loop
 	} // end of row loop
 }
@@ -158,13 +158,10 @@ void xFPhaseComputation(
 
 
 }
-
+#pragma SDS data data_mover("_src_matx.data":FASTDMA,"_src_maty.data":FASTDMA,"_dst_mat.data":FASTDMA)
 #pragma SDS data mem_attribute("_src_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_src_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-//#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_matx.data":SEQUENTIAL, "_src_maty.data":SEQUENTIAL,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_matx.data"[0:"_src_matx.size"], "_src_maty.data"[0:"_src_maty.size"],"_dst_mat.data"[0:"_dst_mat.size"])
 
@@ -178,7 +175,6 @@ void phase(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) ) && "NPC must be XF_NPPC1, XF_NPPC8 ");
 
 	uint16_t imgwidth = _src_matx.cols >> XF_BITSHIFT(NPC);
-
 	uint16_t imgheight = _src_matx.rows;
 
 
@@ -188,7 +184,6 @@ void phase(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS
 	xfPhaseKernel<SRC_T, DST_T, ROWS,COLS,XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS>>XF_BITSHIFT(NPC))>(_src_matx,_src_maty,_dst_mat,RET_TYPE,imgheight,imgwidth);
 
 }
-
 }
 
 #endif

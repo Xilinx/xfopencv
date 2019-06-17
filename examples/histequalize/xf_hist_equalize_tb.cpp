@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 
 #include "xf_headers.h"
 #include "xf_hist_equalize_config.h"
@@ -46,6 +46,7 @@ int main(int argc, char** argv)
 	cv::Mat in_img, out_img, ocv_ref, diff;
 
 	// reading in the color image
+
 	in_img = cv::imread(argv[1], 0);
 
 	if (in_img.data == NULL)
@@ -62,7 +63,16 @@ int main(int argc, char** argv)
 	diff.create(in_img.rows, in_img.cols, in_img.depth());
 
 	///////////////// 	Opencv  Reference  ////////////////////////
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 	cv::equalizeHist(in_img, ocv_ref);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 	imwrite("out_ocv.jpg", ocv_ref);
 
 
@@ -73,44 +83,27 @@ int main(int argc, char** argv)
 
 	imgInput.copyTo(in_img.data);
 	imgInput1.copyTo(in_img.data);
-#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
-	#endif
-
-		equalizeHist_accel(imgInput,imgInput1,imgOutput);
 
 #if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+
+	equalizeHist_accel(imgInput,imgInput1,imgOutput);
+
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
 
 	xf::imwrite("out_hls.jpg",imgOutput);
 
 	//////////////////  Compute Absolute Difference ////////////////////
 	xf::absDiff(ocv_ref,imgOutput,diff);
-
 	imwrite("out_error.jpg", diff);
 
-	// Find minimum and maximum differences.
-	double minval=256,maxval=0;
-	int cnt = 0;
-	for (int i=0; i<in_img.rows; i++)
-	{
-		for(int j=0; j<in_img.cols; j++)
-		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v>1)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
-
+	float err_per;
+	xf::analyzeDiff(diff, 1, err_per);
 
 	if(err_per > 0.0f){
 		printf("\nTest Failed\n");

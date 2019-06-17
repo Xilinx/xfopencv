@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -62,7 +62,7 @@ static void CoreProcessDownArea(ap_uint<24> *data0,ap_uint<24> *data1,ap_uint<24
 	joffset2 = joffset + 2;
 	joffset3 = joffset + 3;
 	joffset4 = joffset + 4;
-	static int ic = 0;
+	//int ic = 0;
 	double sum = 0;
 	// if(ic == 0)
 	// {
@@ -81,7 +81,7 @@ static void CoreProcessDownArea(ap_uint<24> *data0,ap_uint<24> *data1,ap_uint<24
 		// cout << "Sum: " << sum << endl;
 	// }
 
-	ic++;
+	//ic++;
 	for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
 	{
 #pragma HLS UNROLL
@@ -398,7 +398,7 @@ void xFResizeAreaDownScale(xf::Mat<DEPTH, SRC_ROWS, SRC_COLS, NPC> &stream_in, x
 #pragma HLS PIPELINE
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS LOOP_TRIPCOUNT min=1 max=SRC_TC
-			lbuf_in[5][x] = stream_in.data[read_index++];
+			lbuf_in[5][x] = stream_in.read(read_index++);
 			for(i=0;i<5;i++)
 			{
 			#pragma HLS UNROLL
@@ -453,14 +453,14 @@ void xFResizeAreaDownScale(xf::Mat<DEPTH, SRC_ROWS, SRC_COLS, NPC> &stream_in, x
 #pragma HLS DEPENDENCE variable=lbuf_in inter false
 #pragma HLS DEPENDENCE variable=lbuf_in intra false
 #pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
+#pragma HLS PIPELINE ii=1
 #pragma HLS LOOP_TRIPCOUNT min=1 max=SRC_TC
 			XF_TNAME(DEPTH,NPC) col_buf[5];
 			if(read_flag)
 			{
 				if(i<(width<<XF_BITSHIFT(NPC)) && j<=height-5)
 				{
-					XF_TNAME(DEPTH,NPC) read_word = stream_in.data[read_index++];
+					XF_TNAME(DEPTH,NPC) read_word = stream_in.read(read_index++);
 					lbuf_in[5][i>>XF_BITSHIFT(NPC)] = read_word;
 					for(int bufi=0;bufi<4;bufi++)
 					{
@@ -538,7 +538,7 @@ void xFResizeAreaDownScale(xf::Mat<DEPTH, SRC_ROWS, SRC_COLS, NPC> &stream_in, x
 					}
 				}
 				XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockArea<DEPTH,NPC,WORDWIDTH,DST_COLS,PLANES>(Hoffset,Hweight,Hreq,Wy,D0,D1,D2,D3,D4,block_start,out_i);
-				resize_out.data[write_index++] = (out_pix);
+				resize_out.write(write_index++,out_pix);
 				out_i += 1<<XF_BITSHIFT(NPC);
 			}
 			for(int bufi=0;bufi<5;bufi++)

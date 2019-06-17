@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -67,13 +67,13 @@ void xFLUTKernel(
 
 	uchar_t lut[npc*PLANES][256];
 
-	if((NPC!=0) || (PLANES==3) )
+	if((NPC!=0) || (PLANES!=1) )
 	{
 #pragma HLS ARRAY_PARTITION variable=lut complete dim=1
 	}
 
 	// creating a temporary buffers for Resource Optimization and Performance optimization
-	if((NPC!=0) || (PLANES==3))
+	if((NPC!=0) || (PLANES!=3))
 	{
 		for( i = 0; i < (npc *PLANES); i++)
 		{
@@ -179,7 +179,7 @@ void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC>
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			_src_stream.write( *(_src.data + i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) );
+			_src_stream.write( (_src.read(i*(_src.cols>>(XF_BITSHIFT(NPC))) +j) ));
 		}
 	}
 
@@ -201,7 +201,7 @@ void LUT(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src, xf::Mat<SRC_T, ROWS, COLS, NPC>
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
 			#pragma HLS loop_flatten off
-			*(_dst.data + i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j) = _dst_stream.read();
+			_dst.write(i*(_dst.cols>>(XF_BITSHIFT(NPC))) +j, _dst_stream.read());
 
 		}
 	}

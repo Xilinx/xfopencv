@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@ void error_check(cv::KalmanFilter kf, float *Xout_ptr, float *Uout_ptr, float *D
 
 			float error = fabs(kernel_output - refernce_output);
 
-			ap_uint<32> error_int = *(int*)(float*)&error;
+			ap_uint<32> error_int = *(int*)&error;
 
 			if(error >  tu_max_error_P || error_int==nan_xf){
 				tu_max_error_P = error;
@@ -84,7 +84,7 @@ void error_check(cv::KalmanFilter kf, float *Xout_ptr, float *Uout_ptr, float *D
 
 		float error = fabs(kernel_output - refernce_output);
 
-		ap_uint<32> error_int = *(int*)(float*)&error;
+		ap_uint<32> error_int = *(int*)&error;
 
 		if(error >  tu_max_error_X || error_int==nan_xf){
 			tu_max_error_X = error;
@@ -103,7 +103,14 @@ void error_check(cv::KalmanFilter kf, float *Xout_ptr, float *Uout_ptr, float *D
 
 int main(int argc, char *argv[])
 {
-
+	//Control Flag Register
+	int INIT_EN 		= 1;
+	int TIMEUPDATE_EN 	= 2;
+	int MEASUPDATE_EN 	= 4;
+	int XOUT_EN_TU 		= 8;
+	int UDOUT_EN_TU		= 16;
+	int XOUT_EN_MU 		= 32;
+	int UDOUT_EN_MU		= 64;
 
 #if __SDSCC__
 	//#if 1
@@ -173,7 +180,7 @@ int main(int argc, char *argv[])
 
 #endif
 
-	//fprintf(stderr,"\n------ Init A");
+	//Initialize Transition matrix A
 	int Acnt=0;
 	for(int i=0; i<KF_N;i++){
 		for(int j=0; j<KF_N;j++){
@@ -183,7 +190,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//fprintf(stderr,"\n------ Init B");
+	//Initialize Control matrix B
 	int Bcnt=0;
 	for(int i=0; i<KF_N;i++){
 		for(int j=0; j<KF_C;j++){
@@ -193,7 +200,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//fprintf(stderr,"\n------ Init H");
+	//Initialize Measurement matrix H
 	int Hcnt=0;
 	for(int i=0; i<KF_M;i++){
 		for(int j=0; j<KF_N;j++){
@@ -203,20 +210,21 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//fprintf(stderr,"\n------ Init X0");
+	//Initialize State matrix X0
 	for(int i=0; i<KF_N;i++){
 		double val = ((double)rand()/(double)(RAND_MAX)) * 5.0;
 		X0_ptr_dp[i] = val;
 		X0_ptr[i] = (float)val;
 	}
 
-	//fprintf(stderr,"\n------ Init R");
+	//Initialize Measurement noise covariance matrix R
 	for(int i=0; i<KF_M;i++){
 		double val = ((double)rand()/(double)(RAND_MAX)) * 0.01;
 		R_ptr_dp[i] = val;
 		R_ptr[i] = (float)val;
 	}
-	//fprintf(stderr,"\n------ Init U0");
+
+	//Initialize U matrix for initial error estimate covariance matrix P
 	for(int i=0; i<KF_N;i++)
 	{
 		for(int jn=(-i), j = 0; j<KF_N; jn++, j++)
@@ -239,7 +247,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//fprintf(stderr,"\n------ Init D0");
+	//Initialize D matrix for initial error estimate covariance matrix P.(only diagonal elements)
 	for(int i=0; i<KF_N;i++)
 	{
 		double val = ((double)rand()/(double)(RAND_MAX)) * 1.0;
@@ -247,7 +255,7 @@ int main(int argc, char *argv[])
 		D0_ptr[i] = (float)val;
 	}
 
-	//fprintf(stderr,"\n------ Init Uq");
+	//Initialize U matrix for process noise covariance matrix Q.
 	for(int i=0; i<KF_N;i++)
 	{
 		for(int jn=(-i), j = 0; j<KF_N; jn++, j++)
@@ -270,7 +278,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	//fprintf(stderr,"\n------ Init Dq");
+	//Initialize D matrix for process noise covariance matrix Q.(only diagonal elements)
 	for(int i=0; i<KF_N;i++)
 	{
 		double val = ((double)rand()/(double)(RAND_MAX)) * 1.0;
@@ -306,8 +314,11 @@ int main(int argc, char *argv[])
 	cv::Mat uk(KF_C, 1,    CV_64FC1);
 	cv::Mat zk(KF_M ,1,    CV_64FC1);
 
+
 	xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	A_mat;
+#if KF_C!=0
 	xf::Mat<KF_TYPE, KF_N, KF_C, KF_NPC> 	B_mat;
+#endif	
 	xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	Uq_mat;
 	xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		Dq_mat;
 	xf::Mat<KF_TYPE, KF_M, KF_N, KF_NPC> 	H_mat;
@@ -315,30 +326,74 @@ int main(int argc, char *argv[])
 	xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	U0_mat;
 	xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		D0_mat;
 	xf::Mat<KF_TYPE, KF_M, 1, KF_NPC> 		R_mat;
+#if KF_C!=0	
 	xf::Mat<KF_TYPE, KF_C, 1, KF_NPC> 		u_mat;
+#endif
 	xf::Mat<KF_TYPE, KF_M, 1, KF_NPC> 		y_mat;
 	xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		Xout_mat;
 	xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	Uout_mat;
 	xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		Dout_mat;
 
-	A_mat.copyTo(A_ptr);
-	B_mat.copyTo(B_ptr);
-	Uq_mat.copyTo(Uq_ptr);
-	Dq_mat.copyTo(Dq_ptr);
-	H_mat.copyTo(H_ptr);
-	X0_mat.copyTo(X0_ptr);
-	U0_mat.copyTo(U0_ptr);
-	D0_mat.copyTo(D0_ptr);
-	R_mat.copyTo(R_ptr);
-	u_mat.copyTo(u_ptr);
-	y_mat.copyTo(y_ptr);
+	//Copy data to	A_mat
+	for(int index=0; index < KF_N*KF_N; index++)
+	{
+		A_mat.write_float(index,A_ptr[index]);
+	}
+#if KF_C!=0
+	//Copy data to	B_mat
+	for(int index=0; index < KF_N*KF_C; index++)
+	{
+		B_mat.write_float(index,B_ptr[index]);
+	}
+#endif
+	//Copy data to	Uq_mat
+	for(int index=0; index < KF_N*KF_N; index++)
+	{
+		Uq_mat.write_float(index,Uq_ptr[index]);
+	}
+
+	//Copy data to	Dq_mat
+	for(int index=0; index < KF_N; index++)
+	{
+		Dq_mat.write_float(index,Dq_ptr[index]);
+	}
+
+	//Copy data to	H_mat
+	for(int index=0; index < KF_M*KF_N; index++)
+	{
+		H_mat.write_float(index,H_ptr[index]);
+	}
+
+	//Copy data to	X0_mat
+	for(int index=0; index < KF_N; index++)
+	{
+		X0_mat.write_float(index,X0_ptr[index]);
+	}
+
+	//Copy data to	U0_mat
+	for(int index=0; index < KF_N*KF_N; index++)
+	{
+		U0_mat.write_float(index,U0_ptr[index]);
+	}
+
+	//Copy data to	D0_mat
+	for(int index=0; index < KF_N; index++)
+	{
+		D0_mat.write_float(index,D0_ptr[index]);
+	}
+
+	//Copy data to	R_mat
+	for(int index=0; index < KF_M; index++)
+	{
+		R_mat.write_float(index,R_ptr[index]);
+	}
 
 	fprintf(stderr,"\n Kalman Filter Verification");
 	fprintf(stderr,"\n Number of state variables: %d", KF_N);
 	fprintf(stderr,"\n Number of measurements: %d", KF_M);
 	fprintf(stderr,"\n Number of control input: %d\n", KF_C);
 
-	//OpenCv Kalman Filter in Double Precision
+	//Initialization: OpenCv Kalman Filter in Double Precision
 	cv::KalmanFilter kf(KF_N, KF_M, KF_C, CV_64F);
 	kf.statePost = X0;
 	kf.errorCovPost = P0;
@@ -348,44 +403,118 @@ int main(int argc, char *argv[])
 	kf.measurementNoiseCov =R;
 	kf.controlMatrix = B;
 
-	//fprintf(stderr,"\n------ Init control parameter");
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+
+	//Initialization: Xilinx Kalman filter in Single Precision
+	kalmanfilter_accel(A_mat, 
+#if KF_C!=0	
+	B_mat, 
+#endif	
+	Uq_mat, Dq_mat,  H_mat, X0_mat, U0_mat, D0_mat, R_mat, 
+#if KF_C!=0	
+	u_mat, 
+#endif	
+	y_mat, Xout_mat, Uout_mat, Dout_mat, INIT_EN);
+
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	fprintf(stderr,"\n Hardware Latency for Initialization = %d cycles",(int)hw_cycles);
+#endif
+
+	//Initialize control input
 	for(int i=0; i<KF_C;i++){
 		double val = ((double)rand()/(double)(RAND_MAX)) * 10.0;
 		u_ptr[i] = (float)val;
 		uk.at<double>(i) = val;
 	}
-	u_mat.copyTo(u_ptr);
+#if KF_C!=0	
+	//Copy data to	u_mat
+	for(int index=0; index < KF_C; index++)
+	{
+		u_mat.write_float(index,u_ptr[index]);
+	}
+#endif
 
-	//OpenCv Kalman Filter in Double Precision
+	//Time Update:OpenCv Kalman Filter in Double Precision
 	kf.predict(uk);
 
-	//fprintf(stderr,"\n------ Init measurement parameter");
+#if __SDSCC__
+	hw_ctr.start();
+#endif
+
+	//Time Update: Xilinx Kalman filter in Single Precision
+	kalmanfilter_accel(A_mat, 
+#if KF_C!=0	
+	B_mat, 
+#endif	
+	Uq_mat, Dq_mat,  H_mat, X0_mat, U0_mat, D0_mat, R_mat, 
+#if KF_C!=0	
+	u_mat, 
+#endif	
+	y_mat, Xout_mat, Uout_mat, Dout_mat, TIMEUPDATE_EN + XOUT_EN_TU + UDOUT_EN_TU);
+
+#if __SDSCC__
+	hw_ctr.stop();
+	hw_cycles = hw_ctr.avg_cpu_cycles();
+	fprintf(stderr,"\n Hardware Latency for Time Update = %d cycles",(int)hw_cycles);
+#endif
+
+	//Initialize measurements
 	for(int i=0; i<KF_M;i++){
 		double val = ((double)rand()/(double)(RAND_MAX)) * 5.0;
 		y_ptr[i] = (float)val;
 		zk.at<double>(i) = val;
 	}
-	y_mat.copyTo(y_ptr);
+	//Copy data to	y_mat
+	for(int index=0; index < KF_M; index++)
+	{
+		y_mat.write_float(index,y_ptr[index]);
+	}
 
-	//OpenCv Kalman Filter in Double Precision
+	//Measurement Update: OpenCv Kalman Filter in Double Precision
 	kf.correct(zk);
 
-	#if __SDSCC__
-	perf_counter hw_ctr;
+#if __SDSCC__
 	hw_ctr.start();
-	#endif
+#endif
 
-	//Xilinx Kalman filter in Single Precision
-	kalmanfilter_accel(A_mat, B_mat, Uq_mat, Dq_mat,  H_mat, X0_mat, U0_mat, D0_mat, R_mat, u_mat, y_mat, Xout_mat, Uout_mat, Dout_mat, 103);
+	//Measurement Update: Xilinx Kalman filter in Single Precision
+	kalmanfilter_accel(A_mat, 
+#if KF_C!=0	
+	B_mat, 
+#endif	
+	Uq_mat, Dq_mat,  H_mat, X0_mat, U0_mat, D0_mat, R_mat, 
+#if KF_C!=0	
+	u_mat, 
+#endif	
+	y_mat, Xout_mat, Uout_mat, Dout_mat, MEASUPDATE_EN + XOUT_EN_MU + UDOUT_EN_MU);
 
-	Xout_ptr = (float *)Xout_mat.copyFrom();
-	Uout_ptr = (float *)Uout_mat.copyFrom();
-	Dout_ptr = (float *)Dout_mat.copyFrom();
-
-	#if __SDSCC__
+#if __SDSCC__
 	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
+	hw_cycles = hw_ctr.avg_cpu_cycles();
+	fprintf(stderr,"\n Hardware Latency for Measurement Update = %d cycles",(int)hw_cycles);
+#endif
+
+	//Copy from	Xout_mat
+	for(int index=0; index < KF_N; index++)
+	{
+		Xout_ptr[index] = Xout_mat.read_float(index);
+	}
+
+	//Copy from	Uout_mat
+	for(int index=0; index < KF_N*KF_N; index++)
+	{
+		Uout_ptr[index] = Uout_mat.read_float(index);
+	}
+	//Copy from	Dout_mat
+	for(int index=0; index < KF_N; index++)
+	{
+		Dout_ptr[index] = Dout_mat.read_float(index);
+	}
 
 	float error;
 	error_check(kf, Xout_ptr, Uout_ptr, Dout_ptr, 1, &error);
@@ -400,4 +529,5 @@ int main(int argc, char *argv[])
 		fprintf(stderr,"\n********** Test Fail\n");
 		return -1;
 	}
+
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -49,6 +49,18 @@ int main(int argc, char** argv) {
 	uchar_t threshold = 20;								// threshold
 
 	cvtColor(in_img, in_gray, CV_BGR2GRAY);
+	
+	//OPenCV reference function
+
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+	cv::FAST(in_gray, keypoints, threshold, NMS);
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
 	unsigned short imgwidth = in_img.cols;
 	unsigned short imgheight = in_img.rows;
@@ -75,17 +87,16 @@ int main(int argc, char** argv) {
 	//out_hls.data = (unsigned char *) imgOutput.copyFrom();
 	xf::imwrite("hls_out.jpg",imgOutput);
 
-	//OPenCV reference function
+	
 
-	cv::FAST(in_gray, keypoints, threshold, NMS);
 	std::vector<cv::Point> hls_points;
 	std::vector<cv::Point> ocv_points;
 	std::vector<cv::Point> common_points;
 	std::vector<cv::Point> noncommon_points;
 
-	FILE *fp, *fp1;
-	fp = fopen("ocvpoints.txt", "w");
-	fp1 = fopen("hlspoints.txt", "w");
+	//FILE *fp, *fp1;
+	//fp = fopen("ocvpoints.txt", "w");
+	//fp1 = fopen("hlspoints.txt", "w");
 
 	int nsize = keypoints.size();
 
@@ -95,9 +106,9 @@ int main(int argc, char** argv) {
 		int x = keypoints[i].pt.x;
 		int y = keypoints[i].pt.y;
 		ocv_points.push_back(cv::Point(x, y));
-		fprintf(fp, "x = %d, y = %d\n", x, y);
+		//fprintf(fp, "x = %d, y = %d\n", x, y);
 	}
-	fclose(fp);
+	//fclose(fp);
 
 	out_img_ocv = in_img.clone();
 
@@ -124,7 +135,7 @@ int main(int argc, char** argv) {
 		for (int i = 0; i < (imgOutput.cols>>XF_BITSHIFT(NPC1)); i++) {
 
 			if(NPC1==XF_NPPC8){
-				ap_uint<64> value = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPC1))+i];
+				ap_uint<64> value = imgOutput.read(j*(imgOutput.cols>>XF_BITSHIFT(NPC1))+i);
 				for(int k=0; k<64;k+=8,l++){
 					uchar pix = value.range(k+7,k);
 					if(pix != 0)
@@ -145,7 +156,7 @@ int main(int argc, char** argv) {
 			}
 
 			if(NPC1==XF_NPPC1){
-				unsigned char value = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPC1))+i];//.at<unsigned char>(j, i);
+				unsigned char value = imgOutput.read(j*(imgOutput.cols>>XF_BITSHIFT(NPC1))+i);//.at<unsigned char>(j, i);
 
 				if (value != 0) {
 					short int y, x;
@@ -175,9 +186,9 @@ int main(int argc, char** argv) {
 		int a, b;
 		a = (int) hls_points[r].x;
 		b = (int) hls_points[r].y;
-		fprintf(fp1, "x = %d, y = %d\n", a, b);
+		//fprintf(fp1, "x = %d, y = %d\n", a, b);
 	}
-	fclose(fp1);
+	//fclose(fp1);
 
 	for (int j = 0; j < Nocv; j++) {
 		for (int k = 0; k < Nhls; k++) {
@@ -189,14 +200,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	FILE *fpt3;
-	fpt3 = fopen("common.txt", "w");
-
-	for (int p = 0; p < common_points.size(); p++) {
-		fprintf(fpt3, "x = %d, y = %d\n", common_points[p].x,
-				common_points[p].y);
-	}
-	fclose(fpt3);
+	
 
 	float persuccess, perloss, pergain;
 

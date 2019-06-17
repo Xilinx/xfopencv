@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -30,11 +30,11 @@
 #ifndef __XF_DENSE_NONPYR_OPTICAL_FLOW_CONFIG__
 #define __XF_DENSE_NONPYR_OPTICAL_FLOW_CONFIG__
 
-#include <iostream>
+
 #include "common/xf_common.h"
 #include "common/xf_types.h"
 #include "xf_config_params.h"
-#include "imgproc/xf_dense_npyr_optical_flow.hpp"
+#include "video/xf_dense_npyr_optical_flow.hpp"
 
 #if WORD_SZ == 2
 	#define NPPC XF_NPPC2

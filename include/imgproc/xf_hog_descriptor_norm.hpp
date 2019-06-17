@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -65,11 +65,11 @@ void xFDHOGnormalizeKernel1 (ssv_type ssv_1, ssv_type ssv_2,  uint16_t bj,
 #pragma HLS INLINE OFF
 
 	// temporary arrays to hold the ssv values of 4 cells
-	ap_uint<46> tmp_nf_1, tmp_nf_2;
+	ap_uint<51> tmp_nf_1, tmp_nf_2;
 
 	tmp_nf_1 = ssv_1[bj] + ssv_2[bj];
 	tmp_nf_2 = ssv_1[bj+1] + ssv_2[bj+1];
-	ap_ufixed<47,47,AP_TRN,AP_SAT> tmp_nf_sum;
+	ap_ufixed<50,50,AP_TRN,AP_SAT> tmp_nf_sum;
 
 	// contains the added up ssv values Q31.16 format
 	tmp_nf_sum = (tmp_nf_1 + tmp_nf_2);
@@ -218,7 +218,7 @@ void xFDHOGNormalize( hist_type HA_1[][NOB], hist_type HA_2[][NOB],
 	// number of horizontal block index
 	uint16_t bj = 0;
 
-	ap_uint<24> tmp_nf_sq24_1[1], tmp_nf_sq24_2[1];
+	ap_uint<26> tmp_nf_sq24_1[1], tmp_nf_sq24_2[1];
 	uint32_t nf_1[1], nf_2[1];
 	char n_1[1], n_2[1];
 #pragma HLS RESOURCE variable=nf_1 core=RAM_1P_LUTRAM

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -114,48 +114,22 @@ int main(int argc, char** argv)
 	cl::CommandQueue q(context, device,CL_QUEUE_PROFILING_ENABLE);
 
 	std::string device_name = device.getInfo<CL_DEVICE_NAME>(); 
-	std::string binaryFile = xcl::find_binary_file(device_name,"krnl_stereopipeline");
+	std::string binaryFile = xcl::find_binary_file(device_name,"krnl_stereo_pipeline");
 	cl::Program::Binaries bins = xcl::import_binary_file(binaryFile);
 	devices.resize(1);
 	cl::Program program(context, devices, bins);
 	cl::Kernel krnl(program,"stereopipeline_accel");
 
-	std::vector<cl::Memory> inBuf_left, inBuf_right, outBuf_disp;
-	std::vector<cl::Memory> inBuf_cam_matL, inBuf_cam_matR, inBuf_distcoefL, inBuf_distcoefR, inBuf_raL, inBuf_raR;
-	std::vector<cl::Memory> inBuf_sbmstate;
-
-	cl::Buffer imageToDeviceL(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, rows*cols, (ap_uint<INPUT_PTR_WIDTH>*)left_img.data);
-	cl::Buffer imageToDeviceR(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, rows*cols, (ap_uint<INPUT_PTR_WIDTH>*)right_img.data);
-	cl::Buffer imageFromDevice(context,CL_MEM_USE_HOST_PTR | CL_MEM_WRITE_ONLY,2*rows*cols, (ap_uint<OUTPUT_PTR_WIDTH>*)disp_img.data);
-	cl::Buffer arrToDeviceCML(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, cameraMA_l_fix);
-	cl::Buffer arrToDeviceCMR(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, cameraMA_r_fix);
-	cl::Buffer arrToDeviceDCL(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE, distC_l_fix);
-	cl::Buffer arrToDeviceDCR(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE, distC_r_fix);
-	cl::Buffer arrToDeviceRAL(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, irA_l_fix);
-	cl::Buffer arrToDeviceRAR(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, irA_r_fix);
-	cl::Buffer structToDevicesbmstate(context,CL_MEM_USE_HOST_PTR | CL_MEM_READ_ONLY, 11*sizeof(int), bm_state_arr);
-
-	inBuf_left.push_back(imageToDeviceL);
-	inBuf_right.push_back(imageToDeviceR);
-	outBuf_disp.push_back(imageFromDevice);
-	inBuf_cam_matL.push_back(arrToDeviceCML);
-	inBuf_cam_matR.push_back(arrToDeviceCMR);
-	inBuf_distcoefL.push_back(arrToDeviceDCL);
-	inBuf_distcoefR.push_back(arrToDeviceDCR);
-	inBuf_raL.push_back(arrToDeviceRAL);
-	inBuf_raR.push_back(arrToDeviceRAR);
-	inBuf_sbmstate.push_back(structToDevicesbmstate);
-
-	/* Copy input vectors to memory */
-	q.enqueueMigrateMemObjects(inBuf_left,0); /* 0 means from host*/
-	q.enqueueMigrateMemObjects(inBuf_right,0);
-	q.enqueueMigrateMemObjects(inBuf_cam_matL,0);
-	q.enqueueMigrateMemObjects(inBuf_cam_matR,0);
-	q.enqueueMigrateMemObjects(inBuf_distcoefL,0);
-	q.enqueueMigrateMemObjects(inBuf_distcoefR,0);
-	q.enqueueMigrateMemObjects(inBuf_raL,0);
-	q.enqueueMigrateMemObjects(inBuf_raR,0);
-	q.enqueueMigrateMemObjects(inBuf_sbmstate,0);
+	cl::Buffer imageToDeviceL(context, CL_MEM_READ_ONLY, rows*cols);
+	cl::Buffer imageToDeviceR(context, CL_MEM_READ_ONLY, rows*cols);
+	cl::Buffer imageFromDevice(context, CL_MEM_WRITE_ONLY,rows*cols*2);
+	cl::Buffer arrToDeviceCML(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE);
+	cl::Buffer arrToDeviceCMR(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE);
+	cl::Buffer arrToDeviceDCL(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE);
+	cl::Buffer arrToDeviceDCR(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE);
+	cl::Buffer arrToDeviceRAL(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE);
+	cl::Buffer arrToDeviceRAR(context, CL_MEM_READ_ONLY, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE);
+	cl::Buffer structToDevicesbmstate(context, CL_MEM_READ_ONLY, sizeof(int)*11);
 
 	// Set the kernel arguments
 	krnl.setArg(0, imageToDeviceL);
@@ -170,6 +144,17 @@ int main(int argc, char** argv)
 	krnl.setArg(9, structToDevicesbmstate);
 	krnl.setArg(10,rows);
 	krnl.setArg(11,cols);
+
+	//Copying input data to Device buffer from host memory
+	q.enqueueWriteBuffer(imageToDeviceL, CL_TRUE, 0, rows*cols, left_img.data);
+	q.enqueueWriteBuffer(imageToDeviceR, CL_TRUE, 0, rows*cols, right_img.data);
+	q.enqueueWriteBuffer(arrToDeviceCML, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, cameraMA_l_fix);
+	q.enqueueWriteBuffer(arrToDeviceCMR, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, cameraMA_r_fix);
+	q.enqueueWriteBuffer(arrToDeviceDCL, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE, distC_l_fix);
+	q.enqueueWriteBuffer(arrToDeviceDCR, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_DIST_COEFF_SIZE, distC_r_fix);
+	q.enqueueWriteBuffer(arrToDeviceRAL, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, irA_l_fix);
+	q.enqueueWriteBuffer(arrToDeviceRAR, CL_TRUE, 0, sizeof(ap_fixed<32,12>)*XF_CAMERA_MATRIX_SIZE, irA_r_fix);
+	q.enqueueWriteBuffer(structToDevicesbmstate, CL_TRUE, 0, sizeof(int)*11, bm_state_arr);
 
 	// Profiling Objects
 	cl_ulong start= 0;
@@ -187,7 +172,9 @@ int main(int argc, char** argv)
 	diff_prof = end-start;
 	std::cout<<(diff_prof/1000000)<<"ms"<<std::endl;
 
-	q.enqueueMigrateMemObjects(outBuf_disp,CL_MIGRATE_MEM_OBJECT_HOST);
+	//Copying Device result data to Host memory
+	q.enqueueReadBuffer(imageFromDevice, CL_TRUE, 0, rows*cols*2, disp_img.data);
+
 	q.finish();
 /////////////////////////////////////// end of CL ////////////////////////
 

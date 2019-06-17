@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -163,84 +163,73 @@ XF_PTNAME(DEPTH)xFapplygaussian3x3(XF_PTNAME(DEPTH) D1, XF_PTNAME(DEPTH) D2, XF_
 
 	sum = (value1)*weights[0] + sum2*weights[1];
 
-	unsigned char val = (sum)>>16; //(sum + 32768)>>16;
+#if __x86_64__
+	unsigned char val = (sum + 32768)>>16;
+#else
+	unsigned char val = (sum)>>16;
+#endif
 
 	out_pix = (XF_PTNAME(DEPTH))val;
 
 	return out_pix;
-//	for(int i=0,k=0;i<3;i++,k+=8)
-//	{
-//
-//		ap_uint<8> _D4=D4.range(k+7,k);ap_uint<8> _D5=D5.range(k+7,k);ap_uint<8> _D6=D6.range(k+7,k);
-//		ap_uint<8> _D3=D3.range(k+7,k);ap_uint<8> _D2=D2.range(k+7,k);ap_uint<8> _D7=D7.range(k+7,k);
-//		ap_uint<8> _D8=D8.range(k+7,k);ap_uint<8> _D1=D1.range(k+7,k);ap_uint<8> _D9=D9.range(k+7,k);
-//
-//	sum2 = (_D4+_D6) * weights[0] + _D5 * weights[1];
-//
-//	ap_uint<15> sumvalue0 = _D1+_D3+_D7+_D9;
-//
-//	ap_uint<15> sumvalue1 = _D2+_D8;
-//
-//	unsigned int value1 = sumvalue0*weights[0] + sumvalue1*weights[1];
-//
-//	sum = (value1)*weights[0] + sum2*weights[1];
-//
-//	unsigned char val = (sum)>>16; //(sum + 32768)>>16;
-//
-////	out_pix = (XF_PTNAME(DEPTH))val;
-//	out_val.range(k+7,k)=val;
-//	}
-//	return out_val;
-}
+
+		}
 
 template<int PLANES,int DEPTH,bool FOR_IMAGE_PYRAMID>
 XF_PTNAME(DEPTH) xfapplygaussian5x5(XF_PTNAME(DEPTH) *src_buf1,  XF_PTNAME(DEPTH) *src_buf2,  XF_PTNAME(DEPTH) *src_buf3,  XF_PTNAME(DEPTH) *src_buf4,  XF_PTNAME(DEPTH) *src_buf5,
-unsigned char weights[5])
-{
+		unsigned char weights[5])
+		{
 #pragma HLS INLINE OFF
 	unsigned int sum = 0.0,sumval=0;
 	unsigned char value=0;
-	unsigned short int val =0;
+
 	XF_PTNAME(DEPTH) out_pix = 0;
 
 	ap_uint<10> tmp[10] = {0,0,0,0,0,0,0,0,0,0};
-//	src_buf1[j],src_buf2[j],src_buf3[j],src_buf4[j], src_buf5[j]
-for(int i=0,k=0;i<PLANES;i++,k+=8)
-{
-	tmp[0] = src_buf1[0].range(k+7,k) +  src_buf1[4].range(k+7,k);
-	tmp[1] = src_buf2[0].range(k+7,k) + src_buf2[4].range(k+7,k);
-	tmp[2] = src_buf3[0].range(k+7,k) + src_buf3[4].range(k+7,k);
-	tmp[3] = src_buf4[0].range(k+7,k) + src_buf4[4].range(k+7,k);
-	tmp[4] = src_buf5[0].range(k+7,k) + src_buf5[4].range(k+7,k);
 
-	tmp[5] = src_buf1[1].range(k+7,k) + src_buf1[3].range(k+7,k);
-	tmp[6] = src_buf2[1].range(k+7,k) + src_buf2[3].range(k+7,k);
-	tmp[7] = src_buf3[1].range(k+7,k) + src_buf3[3].range(k+7,k);
-	tmp[8] = src_buf4[1].range(k+7,k) + src_buf4[3].range(k+7,k);
-	tmp[9] = src_buf5[1].range(k+7,k) + src_buf5[3].range(k+7,k);
-
-	ap_uint<24> tmp_sum[5] = {0,0,0,0,0};
-
-
-	tmp_sum[0] = (ap_uint<24>)(tmp[0]+tmp[4])*weights[0] + (ap_uint<24>)(tmp[5]+tmp[9])*weights[1] + (ap_uint<24>)(src_buf1[2].range(k+7,k)+src_buf5[2].range(k+7,k)) * weights[2];
-	tmp_sum[1] = (ap_uint<24>)(tmp[1]+tmp[3])*weights[0] + (ap_uint<24>)(tmp[6]+tmp[8])*weights[1] + (ap_uint<24>)(src_buf2[2].range(k+7,k)+src_buf4[2].range(k+7,k)) * weights[2];
-	tmp_sum[2] = (ap_uint<24>)tmp[2] * weights[0] + (ap_uint<24>)tmp[7]*weights[1] + (ap_uint<24>)src_buf3[2].range(k+7,k) *weights[2];
-
-	sumval = (unsigned int)tmp_sum[0]*weights[0] + tmp_sum[1]*weights[1] +tmp_sum[2]*weights[2];
-
-	val = (unsigned short int)((sumval)>>16);//(unsigned short int)((sumval +32768)>>16);
-	if(val >= 255)
+	for(int i=0,k=0;i<PLANES;i++,k+=8)
 	{
-		value=255;
-	}
-	else
-	{
-		value = val;
-	}
+		tmp[0] = src_buf1[0].range(k+7,k) +  src_buf1[4].range(k+7,k);
+		tmp[1] = src_buf2[0].range(k+7,k) + src_buf2[4].range(k+7,k);
+		tmp[2] = src_buf3[0].range(k+7,k) + src_buf3[4].range(k+7,k);
+		tmp[3] = src_buf4[0].range(k+7,k) + src_buf4[4].range(k+7,k);
+		tmp[4] = src_buf5[0].range(k+7,k) + src_buf5[4].range(k+7,k);
 
-	out_pix.range(k+7,k) = (XF_PTNAME(DEPTH))value;
+		tmp[5] = src_buf1[1].range(k+7,k) + src_buf1[3].range(k+7,k);
+		tmp[6] = src_buf2[1].range(k+7,k) + src_buf2[3].range(k+7,k);
+		tmp[7] = src_buf3[1].range(k+7,k) + src_buf3[3].range(k+7,k);
+		tmp[8] = src_buf4[1].range(k+7,k) + src_buf4[3].range(k+7,k);
+		tmp[9] = src_buf5[1].range(k+7,k) + src_buf5[3].range(k+7,k);
 
-}
+		ap_uint<24> tmp_sum[5] = {0,0,0,0,0};
+
+
+		tmp_sum[0] = (ap_uint<24>)(tmp[0]+tmp[4])*weights[0] + (ap_uint<24>)(tmp[5]+tmp[9])*weights[1] + (ap_uint<24>)(src_buf1[2].range(k+7,k)+src_buf5[2].range(k+7,k)) * weights[2];
+		tmp_sum[1] = (ap_uint<24>)(tmp[1]+tmp[3])*weights[0] + (ap_uint<24>)(tmp[6]+tmp[8])*weights[1] + (ap_uint<24>)(src_buf2[2].range(k+7,k)+src_buf4[2].range(k+7,k)) * weights[2];
+		tmp_sum[2] = (ap_uint<24>)tmp[2] * weights[0] + (ap_uint<24>)tmp[7]*weights[1] + (ap_uint<24>)src_buf3[2].range(k+7,k) *weights[2];
+
+		sumval = (unsigned int)tmp_sum[0]*weights[0] + tmp_sum[1]*weights[1] +tmp_sum[2]*weights[2];
+
+
+#if __x86_64__
+		unsigned short val = ((sumval+32768)>>16);
+#else
+		unsigned short val = ((sumval)>>16);
+#endif
+		if(val >= 255)
+		{
+			value=255;
+		}
+		else
+		{
+			value = val;
+		}
+
+		out_pix.range(k+7,k) = (XF_PTNAME(DEPTH))value;
+
+
+
+	}
 	return out_pix;
 		}
 
@@ -255,45 +244,34 @@ XF_PTNAME(DEPTH) xfapplygaussian7x7(XF_PTNAME(DEPTH)*src_buf1,XF_PTNAME(DEPTH) *
 	unsigned short val=0;
 	for(int c=0,k=0;c <PLANES ;c++,k+=8)
 	{
-//	out_pix = 0;
-//		sum_val =0;
-//		val=0;
+
 		unsigned long long int sum_value=0;
-		unsigned short val=0;
-	unsigned int sum = 0.0,sum1=0.0,sum2=0.0,sum3=0.0,sum4=0.0,sum5=0.0,sum6=0.0;
+		unsigned int sum = 0.0,sum1=0.0,sum2=0.0,sum3=0.0,sum4=0.0,sum5=0.0,sum6=0.0;
+		sum3 = (unsigned int)(src_buf4[0].range(k+7,k) + src_buf4[6].range(k+7,k))*weights[0] + (src_buf4[1].range(k+7,k) + src_buf4[5].range(k+7,k))*weights[1] + (src_buf4[2].range(k+7,k) +src_buf4[4].range(k+7,k))*weights[2] +  src_buf4[3].range(k+7,k)*weights[3];
+		sum  = (unsigned int)(src_buf1[0].range(k+7,k) + src_buf1[6].range(k+7,k) + src_buf7[0].range(k+7,k)+ src_buf7[6].range(k+7,k))*weights[0] + (src_buf1[1].range(k+7,k) + src_buf1[5].range(k+7,k)+src_buf7[1].range(k+7,k) + src_buf7[5].range(k+7,k))*weights[1] + (src_buf1[2].range(k+7,k) +src_buf1[4].range(k+7,k)+src_buf7[2].range(k+7,k) +src_buf7[4].range(k+7,k))*weights[2] + (src_buf1[3].range(k+7,k)+src_buf7[3].range(k+7,k))*weights[3];
+		sum1 = (unsigned int)(src_buf2[0].range(k+7,k) + src_buf2[6].range(k+7,k) + src_buf6[0].range(k+7,k) + src_buf6[6].range(k+7,k))*weights[0]+ (src_buf2[1].range(k+7,k) + src_buf2[5].range(k+7,k)+src_buf6[1].range(k+7,k) + src_buf6[5].range(k+7,k))*weights[1] + (src_buf2[2].range(k+7,k) +src_buf2[4].range(k+7,k)+src_buf6[2].range(k+7,k) +src_buf6[4].range(k+7,k))*weights[2] + (src_buf2[3].range(k+7,k)+src_buf6[3].range(k+7,k))*weights[3];
+		sum2 = (unsigned int)(src_buf3[0].range(k+7,k) + src_buf3[6].range(k+7,k) + src_buf5[0].range(k+7,k) + src_buf5[6].range(k+7,k))*weights[0] + (src_buf3[1].range(k+7,k) + src_buf3[5].range(k+7,k)+src_buf5[1].range(k+7,k) + src_buf5[5].range(k+7,k))*weights[1] +(src_buf3[2].range(k+7,k) +src_buf3[4].range(k+7,k)+src_buf5[2].range(k+7,k) +src_buf5[4].range(k+7,k))*weights[2] + (src_buf3[3].range(k+7,k)+src_buf5[3].range(k+7,k))*weights[3];
 
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf1[0].range(k+7,k),(unsigned char)src_buf1[1].range(k+7,k),(unsigned char)src_buf1[2].range(k+7,k),(unsigned char)src_buf1[3].range(k+7,k),(unsigned char)src_buf1[4].range(k+7,k),(unsigned char)src_buf1[5].range(k+7,k),(unsigned char)src_buf1[6].range(k+7,k),(unsigned char)src_buf1[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf2[0].range(k+7,k),(unsigned char)src_buf2[1].range(k+7,k),(unsigned char)src_buf2[2].range(k+7,k),(unsigned char)src_buf2[3].range(k+7,k),(unsigned char)src_buf2[4].range(k+7,k),(unsigned char)src_buf2[5].range(k+7,k),(unsigned char)src_buf2[6].range(k+7,k),(unsigned char)src_buf2[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf3[0].range(k+7,k),(unsigned char)src_buf3[1].range(k+7,k),(unsigned char)src_buf3[2].range(k+7,k),(unsigned char)src_buf3[3].range(k+7,k),(unsigned char)src_buf3[4].range(k+7,k),(unsigned char)src_buf3[5].range(k+7,k),(unsigned char)src_buf3[6].range(k+7,k),(unsigned char)src_buf3[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf4[0].range(k+7,k),(unsigned char)src_buf4[1].range(k+7,k),(unsigned char)src_buf4[2].range(k+7,k),(unsigned char)src_buf4[3].range(k+7,k),(unsigned char)src_buf4[4].range(k+7,k),(unsigned char)src_buf4[5].range(k+7,k),(unsigned char)src_buf4[6].range(k+7,k),(unsigned char)src_buf4[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf5[0].range(k+7,k),(unsigned char)src_buf5[1].range(k+7,k),(unsigned char)src_buf5[2].range(k+7,k),(unsigned char)src_buf5[3].range(k+7,k),(unsigned char)src_buf5[4].range(k+7,k),(unsigned char)src_buf5[5].range(k+7,k),(unsigned char)src_buf5[6].range(k+7,k),(unsigned char)src_buf5[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf6[0].range(k+7,k),(unsigned char)src_buf6[1].range(k+7,k),(unsigned char)src_buf6[2].range(k+7,k),(unsigned char)src_buf6[3].range(k+7,k),(unsigned char)src_buf6[4].range(k+7,k),(unsigned char)src_buf6[5].range(k+7,k),(unsigned char)src_buf6[6].range(k+7,k),(unsigned char)src_buf6[7].range(k+7,k));
-//	printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n",(unsigned char)src_buf7[0].range(k+7,k),(unsigned char)src_buf7[1].range(k+7,k),(unsigned char)src_buf7[2].range(k+7,k),(unsigned char)src_buf7[3].range(k+7,k),(unsigned char)src_buf7[4].range(k+7,k),(unsigned char)src_buf7[5].range(k+7,k),(unsigned char)src_buf7[6].range(k+7,k),(unsigned char)src_buf7[7].range(k+7,k));
+		sum_value = (sum)*weights[0] + (sum1)*weights[1] + (sum2)*weights[2] +(sum3)*weights[3];
 
-	sum3 = (unsigned int)(src_buf4[0].range(k+7,k) + src_buf4[6].range(k+7,k))*weights[0] + (src_buf4[1].range(k+7,k) + src_buf4[5].range(k+7,k))*weights[1] + (src_buf4[2].range(k+7,k) +src_buf4[4].range(k+7,k))*weights[2] +  src_buf4[3].range(k+7,k)*weights[3];
+#if __x86_64__
+		unsigned short val = ((sum_value+32768)>>16);
+#else
+		unsigned short val = ((sum_value)>>16);
+#endif
+		unsigned char value;
 
-	sum  = (unsigned int)(src_buf1[0].range(k+7,k) + src_buf1[6].range(k+7,k) + src_buf7[0].range(k+7,k)+ src_buf7[6].range(k+7,k))*weights[0] + (src_buf1[1].range(k+7,k) + src_buf1[5].range(k+7,k)+src_buf7[1].range(k+7,k) + src_buf7[5].range(k+7,k))*weights[1] + (src_buf1[2].range(k+7,k) +src_buf1[4].range(k+7,k)+src_buf7[2].range(k+7,k) +src_buf7[4].range(k+7,k))*weights[2] + (src_buf1[3].range(k+7,k)+src_buf7[3].range(k+7,k))*weights[3];
-	sum1 = (unsigned int)(src_buf2[0].range(k+7,k) + src_buf2[6].range(k+7,k) + src_buf6[0].range(k+7,k) + src_buf6[6].range(k+7,k))*weights[0]+ (src_buf2[1].range(k+7,k) + src_buf2[5].range(k+7,k)+src_buf6[1].range(k+7,k) + src_buf6[5].range(k+7,k))*weights[1] + (src_buf2[2].range(k+7,k) +src_buf2[4].range(k+7,k)+src_buf6[2].range(k+7,k) +src_buf6[4].range(k+7,k))*weights[2] + (src_buf2[3].range(k+7,k)+src_buf6[3].range(k+7,k))*weights[3];
-	sum2 = (unsigned int)(src_buf3[0].range(k+7,k) + src_buf3[6].range(k+7,k) + src_buf5[0].range(k+7,k) + src_buf5[6].range(k+7,k))*weights[0] + (src_buf3[1].range(k+7,k) + src_buf3[5].range(k+7,k)+src_buf5[1].range(k+7,k) + src_buf5[5].range(k+7,k))*weights[1] +(src_buf3[2].range(k+7,k) +src_buf3[4].range(k+7,k)+src_buf5[2].range(k+7,k) +src_buf5[4].range(k+7,k))*weights[2] + (src_buf3[3].range(k+7,k)+src_buf5[3].range(k+7,k))*weights[3];
-
-	 sum_value = (sum)*weights[0] + (sum1)*weights[1] + (sum2)*weights[2] +(sum3)*weights[3];
-
-	 val = (unsigned short)((sum_value)>>16);//(unsigned short)((sum_value+32768)>>16);
-
-//	printf("the final sum values are %lu\t%lu\t%lu\t%lu\t%d\t%d\n",sum,sum1,sum2,sum3,sum_value,val);
-	unsigned char value;
-
-	if(val >= 255)
-	{
-		value=255;
-	}
-	else
-	{
-		value = val;
-	}
+		if(val >= 255)
+		{
+			value=255;
+		}
+		else
+		{
+			value = val;
+		}
 
 
-	out_pix.range(k+7,k) = (uchar_t)value;
+		out_pix.range(k+7,k) = (uchar_t)value;
 	}
 	return out_pix;
 
@@ -307,8 +285,8 @@ void auGaussian3x3(
 		XF_PTNAME(DEPTH) *src_buf3,unsigned char weights[3])
 {
 #pragma HLS INLINE
-int p=0;
-ap_uint<24> val;
+	int p=0;
+	ap_uint<24> val;
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < (XF_NPIXPERCYCLE(NPC)); j++)
 	{
@@ -316,24 +294,13 @@ ap_uint<24> val;
 		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
 		{
 #pragma HLS UNROLL
-//		ap_uint<8> srcbuf10 =src_buf1[0].range(k+7,k);
-//		ap_uint<8> srcbuf11 =src_buf1[1].range(k+7,k);
-//		ap_uint<8> srcbuf12 =src_buf1[2].range(k+7,k);
-//		ap_uint<8> srcbuf20 =src_buf2[0].range(k+7,k);
-//		ap_uint<8> srcbuf21 =src_buf2[1].range(k+7,k);
-//		ap_uint<8> srcbuf22 =src_buf2[2].range(k+7,k);
-//		ap_uint<8> srcbuf30 =src_buf3[0].range(k+7,k);
-//		ap_uint<8> srcbuf31 =src_buf3[1].range(k+7,k);
-//		ap_uint<8> srcbuf32 =src_buf3[2].range(k+7,k);
-		val.range(k+7,k)= xFapplygaussian3x3<DEPTH>(src_buf1[j].range(k+7,k), src_buf1[j+1].range(k+7,k), src_buf1[j+2].range(k+7,k),src_buf2[j].range(k+7,k), src_buf2[j+1].range(k+7,k), src_buf2[j+2].range(k+7,k),src_buf3[j].range(k+7,k), src_buf3[j+1].range(k+7,k), src_buf3[j+
-																																																																					 2].range(k+7,k),weights);
+
+			val.range(k+7,k)= xFapplygaussian3x3<DEPTH>(src_buf1[j].range(k+7,k), src_buf1[j+1].range(k+7,k), src_buf1[j+2].range(k+7,k),src_buf2[j].range(k+7,k), src_buf2[j+1].range(k+7,k), src_buf2[j+2].range(k+7,k),src_buf3[j].range(k+7,k), src_buf3[j+1].range(k+7,k), src_buf3[j+
+																																																																						 2].range(k+7,k),weights);
 		}
 		OutputValues[p]=val;
 		p++;
-//		OutputValues[j] = xFapplygaussian3x3<DEPTH>(
-//				src_buf1[j], src_buf1[j+1], src_buf1[j+2],
-//				src_buf2[j], src_buf2[j+1], src_buf2[j+2],
-//				src_buf3[j], src_buf3[j+1], src_buf3[j+2],weights);
+
 	}
 
 
@@ -359,7 +326,7 @@ void ProcessGaussian3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom][col] = _src_mat.data[read_index++]; // Read data
+			buf[bottom][col] = _src_mat.read(read_index++); // Read data
 		else
 			buf[bottom][col] = 0;
 
@@ -410,7 +377,7 @@ void ProcessGaussian3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 				P0 = OutputValues[0];
 			}
 
-			_out_mat.data[write_index++] = (P0);
+			_out_mat.write(write_index++,P0);
 
 			shift_x = 0;
 			P0 = 0;
@@ -468,7 +435,7 @@ void xfGaussianFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<SRC_
 #pragma HLS pipeline
 		//#pragma HLS LOOP_FLATTEN off
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++) ;//data[read_index++];
 	}
 	row_ind++;
 
@@ -510,7 +477,6 @@ void xfGaussianFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<SRC_
 				ap_uint<8> srcbuf10=src_buf1[buf_size-3].range(k+7,k);ap_uint<8> srcbuf11=src_buf1[buf_size-2].range(k+7,k);
 				ap_uint<8> srcbuf20=src_buf2[buf_size-3].range(k+7,k);ap_uint<8> srcbuf21=src_buf2[buf_size-2].range(k+7,k);
 				ap_uint<8> srcbuf30=src_buf3[buf_size-3].range(k+7,k);ap_uint<8> srcbuf31=src_buf3[buf_size-2].range(k+7,k);
-//			OutputValues[0] = xFapplygaussian3x3<DEPTH>(src_buf1[buf_size-3], src_buf1[buf_size-2], 0,src_buf2[buf_size-3], src_buf2[buf_size-2], 0, src_buf3[buf_size-3], src_buf3[buf_size-2], 0,weights);
 				out_val1.range(k+7,k)=xFapplygaussian3x3<DEPTH>(srcbuf10, srcbuf11, 0,srcbuf20, srcbuf21, 0, srcbuf30, srcbuf31, 0,weights);
 
 			}
@@ -527,7 +493,7 @@ void xfGaussianFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat, xf::Mat<SRC_
 			P0 = OutputValues[0];
 		}
 
-		_out_mat.data[write_index++] = (P0);
+		_out_mat.write(write_index++,P0);//data[write_index++] = (P0);
 
 		shift_x = 0;
 		P0 = 0;
@@ -554,16 +520,8 @@ void xFGaussian5x5(
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++ )
 	{
-//#pragma HLS LOOP_TRIPCOUNT min=8 max=8
-//#pragma HLS PIPELINE
-//		for(ap_uint<5> c=0,k=0; c<PLANES; c++,k+=8)
-//		{
-//#pragma HLS loop flatten off
-//#pragma HLS UNROLL
+
 		OutputValues[j] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(&src_buf1[j],&src_buf2[j],&src_buf3[j],&src_buf4[j], &src_buf5[j], weights);
-//		}
-//		OutputValues[p]=val;
-//		p++;
 	}
 }
 
@@ -589,7 +547,7 @@ void ProcessGaussian5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom2][col] = _src_mat.data[read_index++];
+			buf[bottom2][col] = _src_mat.read(read_index++);//.data[read_index++];
 		else
 			buf[bottom2][col] = 0;
 
@@ -633,47 +591,42 @@ void ProcessGaussian5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T
 		{
 			shift_x = 0;
 			inter_valx = 0;
-			if(NPC == XF_NPPC8)
-			{
-				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 2, (npc-2), shift_x);
-			}
-			else
-			{
-				inter_valx = OutputValues[0];
-			}
+
+			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 2, (npc-2), shift_x);
+
+			inter_valx = OutputValues[0];
+
 
 		}
 		else
 		{
 			if(NPC == XF_NPPC8)
 			{
-				if(NPC == XF_NPPC8)
-				{
-					xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 2, shift_x);
-				}
-				else
-				{
-					inter_valx = OutputValues[0];
-				}
-				_out_mat.data[write_index++] = (inter_valx);
+
+				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 2, shift_x);
+
+				_out_mat.write(write_index++,inter_valx);
 
 				shift_x = 0;
 				inter_valx = 0;
-				if(NPC == XF_NPPC8)
-				{
-					xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 2, (npc-2), shift_x);
-				}
-				else
-				{
-					inter_valx = OutputValues[0];
-				}
+
+				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 2, (npc-2), shift_x);
+
 			}
 			else
 			{
 				if(col >= 2)
 				{
-					inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
-					_out_mat.data[write_index++] = (inter_valx);
+					if(PLANES==1)
+					{
+						inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
+						_out_mat.write(write_index++,inter_valx);
+					}
+					else
+					{
+						//						_out_mat.data[write_index++] = (OutputValues[0]);
+						_out_mat.write(write_index++,OutputValues[0]);
+					}
 
 				}
 			}
@@ -731,7 +684,7 @@ void xFGaussianFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS pipeline
 		buf[0][col] = 0;
 		buf[1][col] = 0;
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++);//.data[read_index++];
 	}
 
 	row_ind++;
@@ -742,7 +695,7 @@ void xFGaussianFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++);//_src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -814,40 +767,51 @@ void xFGaussianFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 
 			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 2, shift_x);
 
-			_out_mat.data[write_index++] = (inter_valx);
+			//_out_mat.data[write_index++] = (inter_valx);
+			_out_mat.write(write_index++,inter_valx);
 
 		}
 		else
 		{
 #pragma HLS ALLOCATION instances=xfapplygaussian5x5 limit=1
-			for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
-			{
-#pragma HLS UNROLL
-			OutputValues[0].range(k+7,k) = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
-					&src_buf1[0],
-					&src_buf2[0],
-					&src_buf3[0],
-					&src_buf4[0],
-					&src_buf5[0],weights);
+				src_buf1[buf_size-1] = 0;
+			src_buf2[buf_size-1] = 0;
+			src_buf3[buf_size-1] = 0;
+			src_buf4[buf_size-1] = 0;
+			src_buf5[buf_size-1] = 0;
+				OutputValues[0] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+						&src_buf1[0],
+						&src_buf2[0],
+						&src_buf3[0],
+						&src_buf4[0],
+						&src_buf5[0],weights);
 
-			}
-//			inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
-			ap_uint<24> inter_valx1=OutputValues[0];
-			_out_mat.data[write_index++] = (inter_valx1);
-			for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
-			{
-#pragma HLS UNROLL
-			OutputValues[0].range(k+7,k) = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
-					&src_buf1[0],
-					&src_buf2[0],
-					&src_buf3[0],
-					&src_buf4[0],
-					&src_buf5[0],weights);
+			
+						inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
+			
 
+			_out_mat.write(write_index++,inter_valx);
+			for(ap_uint<4> i = 0; i < 4; i++)
+			{
+#pragma HLS unroll
+				src_buf1[i] = src_buf1[buf_size-(4 - i)];
+				src_buf2[i] = src_buf2[buf_size-(4 - i)];
+				src_buf3[i] = src_buf3[buf_size-(4 - i)];
+				src_buf4[i] = src_buf4[buf_size-(4 - i)];
+				src_buf5[i] = src_buf5[buf_size-(4 - i)];
 			}
-		//	inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
-			ap_uint<24> inter_valx2=OutputValues[0];
-			_out_mat.data[write_index++] = (inter_valx2);
+			
+				OutputValues[0] = xfapplygaussian5x5<PLANES,DEPTH,FOR_IMAGE_PYRAMID>(
+						&src_buf1[0],
+						&src_buf2[0],
+						&src_buf3[0],
+						&src_buf4[0],
+						&src_buf5[0],weights);
+
+			
+			
+			inter_valx((max_loop-1), (max_loop-step)) = OutputValues[0];
+			_out_mat.write(write_index++,inter_valx);
 
 		}
 		row_ind++;
@@ -871,12 +835,12 @@ void xFGaussian7x7(XF_PTNAME(DEPTH)* OutputValues,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 #pragma HLS UNROLL
-//		for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
-//		{
+		//		for(ap_uint<8> c=0,k=0;c<PLANES;c++,k+=8)
+		//		{
 		OutputValues[j] = xfapplygaussian7x7<PLANES,DEPTH>(&src_buf1[j], &src_buf2[j],
 				&src_buf3[j], &src_buf4[j], &src_buf5[j], &src_buf6[j],
 				&src_buf7[j],weights);
-//		}
+		//		}
 	}
 }
 
@@ -901,7 +865,7 @@ void ProcessGaussian7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row_index  < img_height)
-			buf[bottom3][col] = _src_mat.data[read_index++];
+			buf[bottom3][col] = _src_mat.read(read_index++);//_src_mat.data[read_index++];
 		else
 			buf[bottom3][col] = 0;
 
@@ -955,7 +919,8 @@ void ProcessGaussian7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 				xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 3, shiftx);
 
 
-				_out_mat.data[write_index++] = (inter_valx);
+				//				_out_mat.data[write_index++] = (inter_valx);
+				_out_mat.write(write_index++,inter_valx);
 
 				shiftx = 0;
 
@@ -972,12 +937,14 @@ void ProcessGaussian7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 				{
 					if(PLANES==1)
 					{
-					inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
-					_out_mat.data[write_index++] = (inter_valx);
+						inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
+						//_out_mat.data[write_index++] = (inter_valx);
+						_out_mat.write(write_index++,inter_valx);
 					}
 					else
 					{
-						_out_mat.data[write_index++] = (OutputValues[0]);
+						//						_out_mat.data[write_index++] = (OutputValues[0]);
+						_out_mat.write(write_index++,OutputValues[0]);
 					}
 
 
@@ -1035,7 +1002,7 @@ void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 		buf[0][col] = 0;
 		buf[1][col] = 0;
 		buf[2][col] = 0;
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++);//data[read_index++];
 	}
 	row_ind++;
 
@@ -1045,7 +1012,7 @@ void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++);//_src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -1055,7 +1022,7 @@ void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.data[read_index++];
+		buf[row_ind][col] = _src_mat.read(read_index++);//_src_mat.data[read_index++];
 	}
 	row_ind++;
 
@@ -1139,7 +1106,8 @@ void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], inter_valx, 0, 3, shiftx);
 
 
-			_out_mat.data[write_index++] = (inter_valx);
+			//_out_mat.data[write_index++] = (inter_valx);
+			_out_mat.write(write_index++,inter_valx);
 
 			shiftx =  0;
 			inter_valx = 0;
@@ -1171,13 +1139,16 @@ void xFGaussianFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
 						src_buf5, src_buf6, src_buf7);
 				if(PLANES==1)
 				{
-				inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
+					inter_valx((max_loop-1), (max_loop-8)) = OutputValues[0];
 
-				_out_mat.data[write_index++] = (inter_valx);
+					//				_out_mat.data[write_index++] = (inter_valx);
+					_out_mat.write(write_index++,inter_valx);
 				}
 				else
 				{
-					_out_mat.data[write_index++] = ( OutputValues[0]);
+					//					_out_mat.data[write_index++] = ( OutputValues[0]);
+					_out_mat.write(write_index++,OutputValues[0]);
+
 				}
 			}
 		}

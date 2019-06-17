@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -60,7 +60,7 @@ namespace xf{
 template <int SRC_T, int DST_T, int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC,
 int WORDWIDTH_SRC, int WORDWIDTH_DST, int COLS_TRIP>
 void xFMagnitudeKernel(
-		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<DST_T, ROWS, COLS, NPC> & _src2,
+		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<SRC_T, ROWS, COLS, NPC> & _src2,
 		xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
 		int _norm_type,uint16_t &imgheight,uint16_t &imgwidth)
 {
@@ -84,8 +84,8 @@ void xFMagnitudeKernel(
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*imgwidth+j]);
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*imgwidth+j]);
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*imgwidth+j));
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*imgwidth+j));
 
 			int proc_loop = XF_WORDDEPTH(WORDWIDTH_DST),
 					step  = XF_PIXELDEPTH(DEPTH_DST);
@@ -114,44 +114,20 @@ void xFMagnitudeKernel(
 				}
 				val_dst.range(k + (step - 1), k) = result;
 			}
-			_dst_mat.data[i*imgwidth+j] = (val_dst);		// writing into the output stream
+			_dst_mat.write(i*imgwidth+j, (val_dst));		// writing into the output stream
 		}
 	}
 }
 
-
-
-/**
- * xFMagnitude: This function acts as a wrapper and calls the
- * Kernel function xFMagnitudeKernel.
- */
-template <int ROWS, int COLS, int DEPTH_SRC,int DEPTH_DST, int NPC,
-int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void xFMagnitudeComputation(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& src1,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& src2,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _dst,
-		int _norm_type,uint16_t imgheight,uint16_t imgwidth)
-{
-
-
-	xFMagnitudeKernel<ROWS,COLS,DEPTH_SRC,DEPTH_DST,NPC, WORDWIDTH_SRC,
-	WORDWIDTH_DST,(COLS>>XF_BITSHIFT(NPC))>(src1,src2,_dst,_norm_type,imgheight,imgwidth);
-
-}
-
-
+#pragma SDS data data_mover("_src_matx.data":FASTDMA,"_src_maty.data":FASTDMA,"_dst_mat.data":FASTDMA)
 #pragma SDS data mem_attribute("_src_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_src_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-//#pragma SDS data data_mover("_src_matx.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_src_maty.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_matx.data":SEQUENTIAL, "_src_maty.data":SEQUENTIAL,"_dst_mat.data":SEQUENTIAL)
 #pragma SDS data copy("_src_matx.data"[0:"_src_matx.size"], "_src_maty.data"[0:"_src_maty.size"],"_dst_mat.data"[0:"_dst_mat.size"])
 
 template<int NORM_TYPE,int SRC_T,int DST_T, int ROWS, int COLS,int NPC>
-void magnitude(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _src_maty,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
+void magnitude(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_matx,xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_maty,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat)
 {
 	
 	assert(((_src_matx.rows <= ROWS ) && (_src_matx.cols <= COLS)) && "ROWS and COLS should be greater than input image");

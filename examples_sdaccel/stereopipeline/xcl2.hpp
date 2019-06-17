@@ -1,5 +1,5 @@
 /**********
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CL_HPP_MINIMUM_OPENCL_VERSION 120
 #define CL_HPP_ENABLE_PROGRAM_CONSTRUCTION_FROM_ARRAY_COMPATIBILITY 1
 
-#include <CL/cl2.hpp>//"/opt/intel/opencl-1.2-4.4.0.117/include/CL/cl.h"
+#include <CL/cl2.hpp>
 #include <iostream>
 #include <fstream>
 

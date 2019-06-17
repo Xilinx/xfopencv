@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -64,7 +64,7 @@ void XFIntegralImageKernel(
 #pragma HLS LOOP_FLATTEN OFF
 #pragma HLS PIPELINE
 
-			val = (XF_SNAME(XF_8UW))_src_mat.data[i*width+j];
+			val = (XF_SNAME(XF_8UW))_src_mat.read(i*width+j);
 
 			prev = prev + val;
 
@@ -78,7 +78,7 @@ void XFIntegralImageKernel(
 			}
 
 			linebuff[j] = cur_sum;
-			_dst_mat.data[i*width+j] = cur_sum;
+			_dst_mat.write(i*width+j,cur_sum);
 		}//ColLoop
 
 	}//rowLoop

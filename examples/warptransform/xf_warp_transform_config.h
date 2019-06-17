@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -31,16 +31,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __XF_TRANSFORM_CONFIG__
 #define __XF_TRANSFORM_CONFIG__
 #include <ap_int.h>
-#include <cmath>
-#include <iostream>
 #include <math.h>
-#include <iostream>
 #include "hls_stream.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
 #include "imgproc/xf_warp_transform.hpp"
 
+#if GRAY
 #define TYPE XF_8UC1
-
+#else
+#define TYPE XF_8UC3	
+#endif
 void warp_transform_accel(xf::Mat<TYPE,HEIGHT,WIDTH,XF_NPPC1> &_src, xf::Mat<TYPE,HEIGHT,WIDTH,XF_NPPC1> &_dst, float *R);
 #endif

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 	out_img.create(in_gray.rows, in_gray.cols, in_gray.depth()); // create memory for output image
 
 
-	xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
+	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgInput(in_gray.rows,in_gray.cols);
 
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat1(in_gray.rows,in_gray.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC1> imgmat2(in_gray.rows,in_gray.cols);

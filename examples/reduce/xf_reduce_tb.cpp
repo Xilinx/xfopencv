@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -66,6 +66,40 @@ int main(int argc, char** argv)
 	ocv_ref.create( 1,in_img.cols, CV_8UC1);
 #endif
 
+        int bytes;
+
+	////////////////  reference code  ////////////////
+       if((REDUCTION_OP        == XF_REDUCE_AVG) || (REDUCTION_OP      == XF_REDUCE_SUM))
+        {
+                 bytes=4;
+        #if __SDSCC__
+                perf_counter hw_ctr1;
+        hw_ctr1.start();
+        #endif
+                cv::reduce(in_img,ocv_ref,DIM,REDUCTION_OP,CV_32SC1);   //avg,sum
+        
+        #if __SDSCC__
+                hw_ctr1.stop();
+        uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+        #endif
+        }
+        else
+        {
+                 bytes=1;
+        #if __SDSCC__
+                perf_counter hw_ctr2;
+        hw_ctr2.start();
+        #endif
+
+        cv::reduce(in_img,ocv_ref,DIM,REDUCTION_OP,CV_8UC1);
+
+        #if __SDSCC__
+                hw_ctr2.stop();
+        uint64_t hw_cycles2 = hw_ctr2.avg_cpu_cycles();
+        #endif
+        }
+
+
 	////////////////////// HLS TOP function call ////////////////////////////
 
 	static xf::Mat<SRC_T, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
@@ -90,20 +124,6 @@ int main(int argc, char** argv)
 #endif
 
 	dst_hls.data = imgOutput.copyFrom();
-
-	int bytes;
-	////////////////  reference code  ////////////////
-	if((REDUCTION_OP	== XF_REDUCE_AVG) || (REDUCTION_OP	== XF_REDUCE_SUM))
-	{
-		 bytes=4;
-		cv::reduce(in_img,ocv_ref,DIM,REDUCTION_OP,CV_32SC1);	//avg,sum
-	}
-	else
-	{
-		 bytes=1;
-	cv::reduce(in_img,ocv_ref,DIM,REDUCTION_OP,CV_8UC1);
-	}
-	//////////////////  end C reference code//////////
 
 
 	FILE *fp=fopen("hls","w");

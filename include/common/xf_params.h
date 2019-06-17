@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -22,7 +22,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -128,7 +128,8 @@ enum _pixel_per_cycle
 	XF_NPPC4  = 4,
 	XF_NPPC8  = 8,
 	XF_NPPC16 = 16,
-	XF_NPPC32 = 32
+	XF_NPPC32 = 32,
+	XF_NPPC64 = 64
 };
 typedef _pixel_per_cycle XF_nppc_e;
 
@@ -156,48 +157,61 @@ enum _pixel_type
 	XF_10UP = 17,
 	XF_12UP = 18,
 	XF_40UP = 19,
-	XF_48UP = 20		 
+	XF_48UP = 20,
+	XF_30UP = 21,
+	XF_36UP = 22		 
 };
 typedef _pixel_type XF_pixel_type_e;
 
 //Word width
 enum _word_width
 {
-	XF_8UW   = 0,
-	XF_16UW  = 1,
-	XF_64UW  = 2,
-	XF_128UW = 3,
-	XF_256UW = 4,
-	XF_512UW = 5,
-	XF_22UW  = 6,
-	XF_176UW = 7,
-	XF_352UW = 8,
-	XF_32UW  = 9,
-	XF_19SW  = 10,
-	XF_152SW = 11,
-	XF_304SW = 12,
-	XF_35SW  = 13,
-	XF_280SW = 14,
-	XF_560SW = 15,
-	XF_192SW = 16,
-	XF_160SW = 17,
-	XF_24SW  = 18,
-	XF_9UW   = 19,
-	XF_72UW  = 20,
-	XF_144UW = 21,
-	XF_576UW = 22,
-	XF_32FW = 23,
-	XF_2UW = 24,
-	XF_48UW = 25,
-	XF_24UW = 26,
-	XF_48SW =27,
-	XF_10UW = 28,
-	XF_12UW = 29,
-	XF_40UW = 30,
-	XF_20UW = 31,
-	XF_80UW = 32,
-	XF_96UW = 33,
-	XF_192UW = 34		  
+	XF_2UW   = 0,
+	XF_8UW   = 1,
+	XF_9UW   = 2,
+	XF_10UW  = 3,
+	XF_12UW  = 4,
+	XF_16UW  = 5,
+	XF_19SW  = 6,
+	XF_20UW  = 7,
+	XF_22UW  = 8,
+	XF_24UW  = 9,
+	XF_24SW  = 10,
+	XF_30UW  = 11,
+	XF_32UW  = 12,
+	XF_32FW  = 13,
+	XF_35SW  = 14,
+	XF_36UW  = 15,
+	XF_40UW  = 16,
+	XF_48UW  = 17,
+	XF_48SW  = 18,
+	XF_60UW  = 19,
+	XF_64UW  = 20,
+	XF_72UW  = 21,
+	XF_80UW  = 22,
+	XF_96UW  = 23,
+	XF_96SW  = 24,
+	XF_120UW = 25,
+	XF_128UW = 26,
+	XF_144UW = 27,
+	XF_152SW = 28,
+	XF_160UW = 29,
+	XF_160SW = 30,
+	XF_176UW = 31,
+	XF_192UW = 32,
+	XF_192SW = 33,
+	XF_240UW = 34,
+	XF_256UW = 35,
+	XF_280SW = 36,
+	XF_288UW = 37,
+	XF_304SW = 38,
+	XF_320UW = 39,
+	XF_352UW = 40,
+	XF_384UW = 41,
+	XF_384SW = 42,
+	XF_512UW = 43,
+	XF_560SW = 44,
+	XF_576UW = 45
 };
 typedef _word_width XF_word_width_e;
 
@@ -341,7 +355,14 @@ enum XF_demosaicing
 //};
 //typedef _pixel_percycle XF_nppc_e;
 
+// enumerations for Architecture
+enum _ARCH_type
+{
+	XF_STREAM 		= 0,
+	XF_MEMORYMAPPED         = 1
 
+};
+typedef _ARCH_type _ARCH_type_e;
 enum _pixeltype
 {
 	XF_8UC1  = 0,
@@ -360,9 +381,29 @@ enum _pixeltype
 	XF_10UC1 = 13,
 	XF_10UC4 = 14,
 	XF_12UC1 = 15,
-	XF_12UC4 = 16			  
+	XF_12UC4 = 16,
+	XF_10UC3 = 17,
+	XF_12UC3 = 18			  
 };
 typedef _pixeltype XF_npt_e;
 
+
+enum _ramtype
+{
+    RAM_1P_BRAM    =  0,
+    RAM_1P_LUTRAM  =  1,
+    RAM_1P_URAM    =  2,
+    RAM_2P_BRAM    =  3,
+    RAM_2P_LUTRAM  =  4,
+    RAM_2P_URAM    =  5,
+    RAM_S2P_BRAM   =  6,
+    RAM_S2P_LUTRAM =  7,
+    RAM_S2P_URAM   =  8,
+    RAM_T2P_BRAM   =  9,
+    RAM_T2P_URAM   =  10
+};
+typedef _ramtype XF_ramtype_e; 
+
 #endif//_XF_PARAMS_H_
+
 

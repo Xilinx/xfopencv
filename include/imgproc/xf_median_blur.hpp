@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -167,8 +167,10 @@ void ProcessMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, R
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
+		if (col == (WIN_SZ>>1)+1662)
+			int a = 0;
 		if(row < img_height && col < (img_width>>XF_BITSHIFT(NPC))){
-			buf[row_ind[win_size-1]][col] = _src_mat.data[rd_ind];//.data[(row*img_width>>XF_BITSHIFT(NPC)) + col]; // Read data
+			buf[row_ind[win_size-1]][col] = _src_mat.read(rd_ind);//.data[(row*img_width>>XF_BITSHIFT(NPC)) + col]; // Read data
 			rd_ind++;
 		}
 
@@ -258,7 +260,7 @@ void ProcessMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, R
 				shift_x = 0;
 				P0 = 0;
 				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(OutputValues, P0, 0, npc, shift_x);
-				_out_mat.data[wr_ind] = P0;
+				_out_mat.write(wr_ind,P0);
 				wr_ind++;
 			}
 			
@@ -315,9 +317,14 @@ void ProcessMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, xf::Mat<TYPE, R
 				}
 			}
 			xFMedianProc<PLANES,NPC, TYPE, WIN_SZ, WIN_SZ_SQ>(OutputValues,src_buf, win_size);
+
 			if(col >= (WIN_SZ>>1))
 			{
-				_out_mat.data[wr_ind] = OutputValues[0];
+				_out_mat.write(wr_ind,OutputValues[0]);
+				if(wr_ind == 2073341 )
+					int a = 0;
+//				if (row == (img_height+(win_size>>1)-1))
+//					printf("%d ",(int)OutputValues[0]);
 				wr_ind++;
 			}
 			for(int wrap_buf=0;wrap_buf<WIN_SZ;wrap_buf++)
@@ -386,7 +393,7 @@ void xFMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
 	#pragma HLS pipeline
 	#pragma HLS LOOP_FLATTEN OFF
-			buf[init_buf][col] = _src.data[rd_ind];//.data[(init_buf*(img_width>>XF_BITSHIFT(NPC))) + col];
+			buf[init_buf][col] = _src.read(rd_ind);//.data[(init_buf*(img_width>>XF_BITSHIFT(NPC))) + col];
 			rd_ind++;
 		}
 	}
@@ -409,6 +416,8 @@ void xFMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS
 	{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
 		
+		if (row == (img_height+(win_size>>1)-1))
+			int a = 0;
 		P0 = 0;
 		ProcessMedian3x3<ROWS, COLS,PLANES, TYPE, NPC, WORDWIDTH, TC, WIN_SZ, WIN_SZ_SQ>
 		(_src, _dst, buf, src_buf,OutputValues, P0, img_width, img_height, shift_x, row_ind, row,win_size, rd_ind, wr_ind);
@@ -425,8 +434,8 @@ void xFMedian3x3(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS
 	} // Row_Loop
 }
 
-#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int FILTER_SIZE, int BORDER_TYPE, int TYPE, int ROWS, int COLS, int NPC=1>

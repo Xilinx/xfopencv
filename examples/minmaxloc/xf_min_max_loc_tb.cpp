@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -73,7 +73,15 @@ int main(int argc, char** argv)
 	cv::Point cv_minloc,cv_maxloc;
 
 	/////////  OpenCV reference  ///////
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
 	cv::minMaxLoc(in_conv, &cv_minval, &cv_maxval, &cv_minloc, &cv_maxloc, cv::noArray());
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	int32_t min_value, max_value;
 	uint16_t _min_locx,_min_locy,_max_locx,_max_locy;
@@ -96,13 +104,13 @@ int main(int argc, char** argv)
 #endif
 	
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 	#endif
 	min_max_loc_accel(imgInput, min_value, max_value, _min_locx, _min_locy, _max_locx, _max_locy);
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 	/////// OpenCV output ////////

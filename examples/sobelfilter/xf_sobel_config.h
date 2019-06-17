@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -40,17 +40,6 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef unsigned int uint32_t;
 
-#define __SDSOC 0
-/* Optimization type */
-
-//#define RO 0 // Resource Optimized (8-pixel implementation)
-//#define NO 1 // Normal Operation (1-pixel implementation)
-
-/*  Set Filter size  */
-
-//#define FILTER_SIZE_3  0
-//#define FILTER_SIZE_5  0
-//#define FILTER_SIZE_7  1
 
 //////////////  To set the parameters in Top and Test bench //////////////////
 
@@ -67,7 +56,7 @@ typedef unsigned int uint32_t;
 #elif FILTER_SIZE_7
 #define FILTER_WIDTH   7
 #endif
-
+#if GRAY
 #if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
 #if RO
 #define IN_TYPE      XF_8UC1
@@ -89,6 +78,29 @@ typedef unsigned int uint32_t;
 #endif
 #endif
 
+#else
+
+#if (FILTER_WIDTH == 3 | FILTER_WIDTH == 5)
+#if RO
+#define IN_TYPE      XF_8UC3
+#define OUT_TYPE     XF_8UC3
+#define NPC1 XF_NPPC8
+#endif
+#if NO
+#define IN_TYPE      XF_8UC3
+#define OUT_TYPE	XF_8UC3
+#define NPC1 XF_NPPC1
+#endif
+#endif
+
+#if (FILTER_WIDTH == 7)
+#if NO
+#define IN_TYPE      XF_8UC3
+#define OUT_TYPE     XF_8UC3
+#define NPC1 XF_NPPC1
+#endif
+#endif
+#endif
 void sobel_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
 
 #endif //  _XF_SOBEL_CONFIG_H_

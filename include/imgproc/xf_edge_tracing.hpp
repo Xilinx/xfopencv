@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -229,10 +229,10 @@ void TopDown(ap_uint<64> iBuff[BRAMS][DEPTH], uint16_t width, uint16_t height, i
 /**
  * xfEdgeTracing : Connects edge
  */
-template<int HEIGHT, int WIDTH,bool USE_URAM>
-static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_in, uint16_t height, uint16_t width) {
+template<int SRC_T, int DST_T,int NPC_SRC,int NPC_DST,int HEIGHT, int WIDTH,bool USE_URAM>
+static void xfEdgeTracing(xf::Mat<DST_T, HEIGHT, WIDTH, NPC_DST> & _dst,xf::Mat<SRC_T, HEIGHT, WIDTH, NPC_SRC> & _src, uint16_t height, uint16_t width) {
 
-
+#pragma HLS INLINE
 #define BRAM_DEPTH (USE_URAM ? 4096 : 1024)
 
 	enum
@@ -298,7 +298,7 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 #pragma HLS DEPENDENCE variable=iBuff inter false
 #pragma HLS DEPENDENCE variable=iBuff intra false
 				int ind_1=0,ind_2=0,val_ind=0;
-				iReg[0] = *(nms_in + offset + i); // Reading Input
+				iReg[0] = _src.read(offset + i); // Reading Input
 
 				if (idx1 == ram_row_depth) {
 					idx1 = 0;
@@ -359,7 +359,7 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 				}
 
 				oReg[0] = iBuff[idx2][idx1 + dep];
-				*(nms_in + offset + i) = oReg[0];
+				_src.write((offset + i),oReg[0]);
 
 				idx1++;
 			}
@@ -375,7 +375,7 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 		{
 #pragma HLS pipeline
 #pragma HLS loop_tripcount min=RAM_ROW_DEPTH max=RAM_ROW_DEPTH
-			oBuff[k] = *(nms_in + (ii * ram_row_depth)+k);
+			oBuff[k] = _src.read((ii * ram_row_depth)+k);
 		}
 
 		ap_uint<3> id = 0;
@@ -396,7 +396,7 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 					oRegF[0].range(l + 7, l) = 0;
 			}
 			id++;
-			*(_dst_mat + ii * width/8 + j) = oRegF[0];
+			_dst.write((ii * width/8 + j),oRegF[0]);
 		}
 	}
 
@@ -408,7 +408,8 @@ static void xfEdgeTracing(unsigned long long* _dst_mat, unsigned long long *nms_
 template<int SRC_T, int DST_T, int ROWS, int COLS,int NPC_SRC,int NPC_DST,bool USE_URAM=false>
 void EdgeTracing(xf::Mat<SRC_T, ROWS, COLS, NPC_SRC> & _src,xf::Mat<DST_T, ROWS, COLS, NPC_DST> & _dst)
 {
-	xfEdgeTracing<ROWS ,COLS,USE_URAM>((unsigned long long *)_dst.data,(unsigned long long *)_src.data,_dst.rows,_dst.cols);
+#pragma HLS INLINE
+	xfEdgeTracing<SRC_T,DST_T,NPC_SRC,NPC_DST,ROWS ,COLS,USE_URAM>(_dst,_src,_dst.rows,_dst.cols);
 }
 
 }

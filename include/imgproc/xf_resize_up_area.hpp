@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -235,14 +235,14 @@ if (NPC!=XF_NPPC1)
 	for (x=0;x<width;x++){
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=1 max = SRC_TC
-		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.data[read_index++];
+		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.read(read_index++);
 		lbuf_in0[x] = tmp_in;
 	}
 	out_j++;
 	for (x=0;x<width;x++){
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=1 max = SRC_TC
-		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.data[read_index++];
+		XF_TNAME(DEPTH,NPC) tmp_in = stream_in.read(read_index++);
 		lbuf_in1[x] = tmp_in;
 	}
 	out_j++;
@@ -316,7 +316,7 @@ if (NPC!=XF_NPPC1)
 			{
 				if(read_into==0)
 				{
-					lbuf_in0[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
+					lbuf_in0[i>>XF_BITSHIFT(NPC)] = stream_in.read(read_index++);
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -334,7 +334,7 @@ if (NPC!=XF_NPPC1)
 				}
 				else if(read_into==1)
 				{
-					lbuf_in1[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
+					lbuf_in1[i>>XF_BITSHIFT(NPC)] = stream_in.read(read_index++);
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -352,7 +352,7 @@ if (NPC!=XF_NPPC1)
 				}
 				else
 				{
-					lbuf_in2[i>>XF_BITSHIFT(NPC)] = stream_in.data[read_index++];
+					lbuf_in2[i>>XF_BITSHIFT(NPC)] = stream_in.read(read_index++);
 					for(k=0;k<2;k++)
 					{
 		#pragma HLS UNROLL
@@ -409,7 +409,7 @@ if (NPC!=XF_NPPC1)
 				}
 			}
 			XF_TNAME(DEPTH,NPC) out_pix = ProcessBlockAreaUp<DEPTH,NPC,WORDWIDTH,PLANES>(Hoffset,Hweight,Yweight,D0,D1,block_start,i);
-			resize_out.data[write_index++] = (out_pix);
+			resize_out.write(write_index++,out_pix);
 		}
 	}
 }

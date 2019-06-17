@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -30,7 +30,7 @@
 
 #include "xf_headers.h"
 #include "xf_gaussian_filter_config.h"
-#include <iostream>
+
 
 using namespace std;
 
@@ -47,16 +47,27 @@ int main(int argc, char **argv) {
 	cv::Mat in_gray, in_gray1, diff;
 
 
-
+#if GRAY
 	in_img = cv::imread(argv[1], 0); // reading in the color image
+#else
+	in_img = cv::imread(argv[1], 1); // reading in the color image
+#endif
 	if (!in_img.data) {
 		printf("Failed to load the image ... !!!");
 		return -1;
 	}
 	//extractChannel(in_img, in_img, 1);
+#if GRAY
+
 	out_img.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for output image
 	diff.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for OCV-ref image
 	ocv_ref.create(in_img.rows, in_img.cols, CV_8UC1); // create memory for OCV-ref image
+	
+#else
+	out_img.create(in_img.rows, in_img.cols, CV_8UC3); // create memory for output image
+	diff.create(in_img.rows, in_img.cols, CV_8UC3); // create memory for OCV-ref image
+	ocv_ref.create(in_img.rows, in_img.cols, CV_8UC3); // create memory for OCV-ref image
+#endif
 
 #if FILTER_WIDTH==3
 	float sigma = 0.5f;
@@ -70,61 +81,45 @@ int main(int argc, char **argv) {
 
 
 	// OpenCV Gaussian filter function
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 	cv::GaussianBlur(in_img, ocv_ref, cvSize(FILTER_WIDTH, FILTER_WIDTH),FILTER_WIDTH / 6.0, FILTER_WIDTH / 6.0, cv::BORDER_CONSTANT);
-
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 	imwrite("output_ocv.png", ocv_ref);
 
 
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
 
-		imgInput.copyTo(in_img.data);
-	#if __SDSCC__
-	TIME_STAMP_INIT
-	#endif
+	imgInput.copyTo(in_img.data);
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	gaussian_filter_accel(imgInput,imgOutput,sigma);
 
-	#if __SDSCC__
-	TIME_STAMP
-	#endif
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
+
 	// Compute absolute difference image
 	xf::absDiff(ocv_ref, imgOutput, diff);
 
 	imwrite("error.png", diff); // Save the difference image for debugging purpose
 
-	// 	Find minimum and maximum differences.
+	float err_per;
+	xf::analyzeDiff(diff, 0, err_per);
 
-	std::cout<< CV_VERSION<<std::endl; 
-	double minval = 256, maxval = 0;
-	int cnt = 0;
-	for (int i = 0; i < in_img.rows; i++) {
-		for (int j = 0; j < in_img.cols; j++) {
-			uchar v = diff.at<uchar>(i, j);
-			if (v > 0)
-				cnt++;
-			if (minval > v)
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	float err_per = 100.0 * (float) cnt / (in_img.rows * in_img.cols);
-	printf(
-			"Minimum error in intensity = %f\n\
-				Maximum error in intensity = %f\n\
-				Percentage of pixels above error threshold = %f\n",
-			minval, maxval, err_per);
-
-	if(err_per > 1){
-		printf("\nTest failed\n");
-		return -1;
-	}
-	else{
-		printf("\nTest Pass\n");
+	
 	return 0;
-	}
 
 }

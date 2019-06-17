@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -38,7 +38,7 @@
 namespace xf{
 
 template <unsigned int ROWS, unsigned int COLS, unsigned int TYPE, unsigned int NPC, int PLANES, bool USE_URAM>
-void xFpyrDownKernel(XF_TNAME(TYPE,NPC) *in_image, XF_TNAME(TYPE,NPC) *out_image, unsigned short in_rows, unsigned short in_cols)
+void xFpyrDownKernel(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NPC> & _dst, unsigned short in_rows, unsigned short in_cols)
 {
 #pragma HLS DATAFLOW
 	hls::stream< XF_TNAME(TYPE,NPC) > _filter_in;
@@ -51,11 +51,12 @@ void xFpyrDownKernel(XF_TNAME(TYPE,NPC) *in_image, XF_TNAME(TYPE,NPC) *out_image
 		{
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 #pragma HLS PIPELINE II=1
-			_filter_in.write( *(in_image + read_pointer) );
+			_filter_in.write(_src.read(read_pointer));
 			read_pointer++;
 		}
 	}
-	xFPyrDownGaussianBlur<ROWS,COLS,TYPE, NPC, XF_WORDWIDTH(TYPE,NPC), 0,5,25, PLANES, USE_URAM>(_filter_in, _filter_out, 5, XF_BORDER_CONSTANT,in_rows,in_cols);
+	xFPyrDownGaussianBlur<ROWS,COLS,TYPE, NPC, XF_WORDWIDTH(TYPE,NPC), 0,5,25, PLANES>(_filter_in, _filter_out, 5, XF_BORDER_CONSTANT,in_rows,in_cols);
+
 	unsigned int write_ptr = 0;
 	for(int i=0;i<in_rows;i++)
 	{
@@ -67,7 +68,7 @@ void xFpyrDownKernel(XF_TNAME(TYPE,NPC) *in_image, XF_TNAME(TYPE,NPC) *out_image
 			XF_TNAME(TYPE,NPC) read_fil_out = _filter_out.read();
 			if(i%2 == 0 && j%2 == 0)
 			{
-				*(out_image + write_ptr) = read_fil_out;
+				_dst.write(write_ptr,read_fil_out);
 				write_ptr++;
 			}
 		}
@@ -89,7 +90,7 @@ void pyrDown (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, N
 #pragma HLS INLINE OFF
 	unsigned short input_height = _src.rows;
 	unsigned short input_width = _src.cols;
-	xFpyrDownKernel<ROWS, COLS, TYPE, NPC, XF_CHANNELS(TYPE,NPC), USE_URAM>(_src.data, _dst.data, input_height, input_width);
+	xFpyrDownKernel<ROWS, COLS, TYPE, NPC, XF_CHANNELS(TYPE,NPC), USE_URAM>(_src, _dst, input_height, input_width);
 	return;
 }
 }

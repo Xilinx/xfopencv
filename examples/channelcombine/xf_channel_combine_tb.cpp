@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -34,13 +34,30 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int main(int argc, char **argv)
 {
+#if FOUR_INPUT
 	if(argc != 5)
 	{
 		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
 		fprintf(stderr,"<Executable Name> <input image1 path> <input image2 path> <input image3 path> <input image4 path>\n");
 		return -1;
 	}
-
+#endif
+#if THREE_INPUT
+	if(argc != 4)
+	{
+		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
+		fprintf(stderr,"<Executable Name> <input image1 path> <input image2 path> <input image3 path> \n");
+		return -1;
+	}
+#endif
+#if TWO_INPUT
+	if(argc != 3)
+	{
+		fprintf(stderr,"Invalid Number of Arguments!\nUsage:\n");
+		fprintf(stderr,"<Executable Name> <input image1 path> <input image2 path> \n");
+		return -1;
+	}
+#endif
 	cv::Mat in_gray1, in_gray2;
 	cv::Mat in_gray3, in_gray4;
 	cv::Mat out_img, ref;
@@ -49,60 +66,105 @@ int main(int argc, char **argv)
 	// Read images
 	in_gray1 = cv::imread(argv[1], 0);
 	in_gray2 = cv::imread(argv[2], 0);
-	in_gray3 = cv::imread(argv[3], 0);
-	in_gray4 = cv::imread(argv[4], 0);
 
-	if ((in_gray1.data == NULL) | (in_gray2.data == NULL) | (in_gray3.data == NULL) | (in_gray4.data == NULL))
+	if ((in_gray1.data == NULL) | (in_gray2.data == NULL))
 	{
-		fprintf(stderr, "Cannot open image \n");
+		fprintf(stderr, "Cannot open input images \n");
 		return 0;
 	}
 
+#if !TWO_INPUT
+	in_gray3 = cv::imread(argv[3], 0);
+	if ((in_gray3.data == NULL))
+		{
+			fprintf(stderr, "Cannot open input images \n");
+			return 0;
+		}
+
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> imgInput3(in_gray3.rows,in_gray3.cols);
+
 	//creating memory for diff image
-	diff.create(in_gray1.rows, in_gray1.cols, CV_8UC4);
+	diff.create(in_gray1.rows, in_gray1.cols, CV_TYPE);
+#endif
+
+#if FOUR_INPUT
+
+	in_gray4 = cv::imread(argv[4], 0);
+
+	if ((in_gray4.data == NULL))
+	{
+		fprintf(stderr, "Cannot open image 4\n");
+		return 0;
+	}
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> imgInput4(in_gray4.rows,in_gray4.cols);
+
+#endif
 
 
 	// image height and width
 	uint16_t height = in_gray1.rows;
 	uint16_t width = in_gray1.cols;
 
+	//OpenCV Reference
+        std::vector<cv::Mat> bgr_planes;
+        cv::Mat merged;
 
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput2(in_gray2.rows,in_gray2.cols);
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput3(in_gray3.rows,in_gray3.cols);
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgInput4(in_gray4.rows,in_gray4.cols);
-	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+#if (!TWO_INPUT)
+        bgr_planes.push_back(in_gray3);
+#endif
+        bgr_planes.push_back(in_gray2);
+        bgr_planes.push_back(in_gray1);
+
+#if FOUR_INPUT
+        bgr_planes.push_back(in_gray4);
+#endif
+
+#if __SDSCC__
+        perf_counter hw_ctr1;
+        hw_ctr1.start();
+#endif
+        cv::merge(bgr_planes, merged);
+#if __SDSCC__
+        hw_ctr1.stop();
+        uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> imgInput2(in_gray2.rows,in_gray2.cols);
+	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
+
+#if (!TWO_INPUT)
 	imgInput3.copyTo(in_gray3.data);
+#endif
+#if FOUR_INPUT
 	imgInput4.copyTo(in_gray4.data);
+#endif
+
 
 #if __SDSCC__
 	perf_counter hw_ctr;
-
-
 	hw_ctr.start();
 #endif
+
+#if FOUR_INPUT
 		channel_combine_accel(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
+#elif THREE_INPUT
+		channel_combine_accel(imgInput1, imgInput2, imgInput3, imgOutput);
+#else
+		channel_combine_accel(imgInput1, imgInput2, imgOutput);
+#endif
+
 #if __SDSCC__
 	hw_ctr.stop();
-
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 	// Write output image
+#if !TWO_INPUT
 	xf::imwrite("hls_out.jpg",imgOutput);
-
-	// OpenCV reference
-	std::vector<cv::Mat> bgr_planes;
-	cv::Mat merged;
-	bgr_planes.push_back(in_gray3);
-	bgr_planes.push_back(in_gray2);
-	bgr_planes.push_back(in_gray1);
-	bgr_planes.push_back(in_gray4);
-
-	cv::merge(bgr_planes, merged);
 	cv::imwrite("out_ocv.jpg", merged);
 
 	// compute the absolute difference
@@ -113,26 +175,13 @@ int main(int argc, char **argv)
 
 	// Find minimum and maximum differences.
 	double minval = 256, maxval = 0;
-	int cnt = 0;
-	for (int i = 0; i < diff.rows; i++)
-	{
-		for(int j = 0; j < diff.cols; j++)
-		{
-			int v = diff.at<int>(i,j);
-			if (v > 0) cnt++;
-			if (minval > v ) minval = v;
-			if (maxval < v)  maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_gray1.rows * in_gray1.cols);
+	float err_per = 0;
+	xf::analyzeDiff(diff, 0, err_per);
 
-	fprintf(stderr,"Minimum error in intensity = %f\n"
-			"Maximum error in intensity = %f\n"
-			"Percentage of pixels above error threshold = %f\n",
-			minval, maxval, err_per);
-
-	if(err_per > 0.0f)
-		return (int)-1;
+	if(err_per>0)
+		return 1;
+#endif
 
 	return 0;
 }
+

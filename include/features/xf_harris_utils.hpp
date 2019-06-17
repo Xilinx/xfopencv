@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -38,10 +38,10 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /**
  *  xFDuplicate
  */
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void xFDuplicate(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
-				 hls::stream< XF_SNAME(WORDWIDTH) > &_dst1_mat,
-				 hls::stream< XF_SNAME(WORDWIDTH) > &_dst2_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void xFDuplicate(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+				xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst1_mat,
+				xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst2_mat, uint16_t img_height, uint16_t img_width)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
 
@@ -57,21 +57,20 @@ void xFDuplicate(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 			XF_SNAME(WORDWIDTH) tmp_src;
-			tmp_src = _src_mat.read();
-			_dst1_mat.write(tmp_src);
-			_dst2_mat.write(tmp_src);
+			tmp_src = _src_mat.read(row*img_width+col);
+			_dst1_mat.write(row*img_width+col,tmp_src);
+			_dst2_mat.write(row*img_width+col,tmp_src);
 		}
 	}
 }
-// xFDuplicate
 
 /**
  * xFSquare : Compute square of the input image
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH,
 		 int NPC, int IN_WW, int OUT_WW, int TC, typename SCALE_T>
-void xFSquare(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
-			  hls::stream < XF_SNAME(OUT_WW) > &_dst_mat,
+void xFSquare(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+			  xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,
 			  SCALE_T scale, uint8_t filter_width, uint16_t img_height, uint16_t img_width)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
@@ -96,7 +95,7 @@ void xFSquare(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 		{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-			tmp_src = _src_mat.read();
+			tmp_src = _src_mat.read(row*img_width+col);
 			xfExtractPixels<NPC, IN_WW, IN_DEPTH>(src_buf, tmp_src, 0);
 
 			Square_Loop:
@@ -129,7 +128,7 @@ void xFSquare(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 			tmp_dst = 0;
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&dst_buf[0], tmp_dst, 0, npc, shift);
 			shift = 0;
-			_dst_mat.write(tmp_dst);									// Write the data in to output stream
+			_dst_mat.write(row*img_width+col,tmp_dst);									// Write the data in to output stream
 		} // Col_Loop
 	} // Row_Loop
 }
@@ -138,11 +137,11 @@ void xFSquare(hls::stream < XF_SNAME(IN_WW) > &_src_mat,
 /**
  *  xFMultiply : Compute dst = src1 * src2
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC,
          int IN_WW, int OUT_WW, int TC,  typename SCALE_T>
-void xFMultiply(hls::stream< XF_SNAME(IN_WW) > &_src1_mat,
-				hls::stream< XF_SNAME(IN_WW) > &_src2_mat,
-				hls::stream< XF_SNAME(OUT_WW) > &_dst_mat,
+void xFMultiply(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat1,
+		  xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat2,
+		  xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,
 		        SCALE_T scale, uint8_t filter_width, uint16_t img_height, uint16_t img_width)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
@@ -159,6 +158,7 @@ void xFMultiply(hls::stream< XF_SNAME(IN_WW) > &_src1_mat,
 	uint16_t npc = XF_NPIXPERCYCLE(NPC);
 	uint16_t shift = 0;
 
+
 	Row_Loop:
 	for(row = 0 ; row < img_height; row++)
 	{
@@ -169,8 +169,10 @@ void xFMultiply(hls::stream< XF_SNAME(IN_WW) > &_src1_mat,
 		{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-			tmp_src1 = _src1_mat.read();	// Read data from the source1
-			tmp_src2 = _src2_mat.read();	// Read data from the source2
+			tmp_src1 = _src_mat1.read(row*img_width+col);	// Read data from the source1
+			tmp_src2 = _src_mat2.read(row*img_width+col);	// Read data from the source2
+
+
 
 			/* Extract data from source */
 			xfExtractPixels<NPC, IN_WW, IN_DEPTH>(src_buf1, tmp_src1, 0);
@@ -197,9 +199,11 @@ void xFMultiply(hls::stream< XF_SNAME(IN_WW) > &_src1_mat,
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&dst_buf[0], tmp_dst, 0, npc, shift);
 			shift = 0;
 
-			_dst_mat.write(tmp_dst);   // Write data into the output stream
+			_dst_mat.write(row*img_width+col,(tmp_dst));   // Write data into the output stream
 		} // Col_Loop
+
 	} // Row_Loop
+
 }
 // xFMultiply
 
@@ -207,9 +211,9 @@ void xFMultiply(hls::stream< XF_SNAME(IN_WW) > &_src1_mat,
  * Thresholding function
  * Arguments: Input Stream, Output Stream, Threshold
  */
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void xFThreshold(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
-				 hls::stream< XF_SNAME(WORDWIDTH) > &_dst_mat,
+template<int SRC_T, int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void xFThreshold(xf::Mat<SRC_T, ROWS, COLS, NPC>  &_src_mat,
+				xf::Mat<SRC_T, ROWS, COLS, NPC> &_dst_mat,
 				 uint16_t threshold, uint16_t img_height, uint16_t img_width)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
@@ -220,6 +224,8 @@ void xFThreshold(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 	int res[(1 << XF_BITSHIFT(NPC))];
 	ap_uint<9> i, j;
 	ap_uint<8> STEP = XF_PIXELDEPTH(XF_32UP);
+
+	
 	Row_Loop:
 	for(uint16_t row = 0 ; row < img_height; row++)
 	{
@@ -230,7 +236,9 @@ void xFThreshold(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 		{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-			tmp_src = _src_mat.read(); // Read data from the input stream
+			tmp_src = _src_mat.read(row*img_width+col); // Read data from the input stream
+
+			
 
 			Threshold_Loop:
 			for(i = 0, j = 0; i < (32 << XF_BITSHIFT(NPC)); i+=32)
@@ -257,9 +265,11 @@ void xFThreshold(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
 			}
 			shift = 0;
 
-			_dst_mat.write(tmp_src);	// Write data into output pixel
+			_dst_mat.write(row*img_width+col,tmp_src);	// Write data into output pixel
 		} // Col_Loop
+		
 	} // Row_Loop
+	
 }
 // xFThreshold
 
@@ -271,11 +281,11 @@ void xFThreshold(hls::stream< XF_SNAME(WORDWIDTH) > &_src_mat,
  *  _src1_mat --> gy^2
  *  _dst_mat --> Result
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void xFComputeScore(hls::stream < XF_SNAME(IN_WW) > &_src1_mat,
-					hls::stream < XF_SNAME(IN_WW) > &_src2_mat,
-					hls::stream < XF_SNAME(IN_WW) > &_src3_mat,
-					hls::stream < XF_SNAME(OUT_WW) > &_dst_mat, uint16_t img_height,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void xFComputeScore(xf::Mat<SRC_T, ROWS, COLS, NPC>  &_src1_mat,
+					xf::Mat<SRC_T, ROWS, COLS, NPC>  &_src2_mat,
+					xf::Mat<SRC_T, ROWS, COLS, NPC>  &_src3_mat,
+					xf::Mat<DST_T, ROWS, COLS, NPC>  &_dst_mat, uint16_t img_height,
 					uint16_t img_width, uint16_t thresold, uint8_t _filter_type)
 {
 	img_width = img_width >> XF_BITSHIFT(NPC);
@@ -309,9 +319,9 @@ void xFComputeScore(hls::stream < XF_SNAME(IN_WW) > &_src1_mat,
 		{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-			tmp_src1 = _src1_mat.read();
-			tmp_src2 = _src2_mat.read();
-			tmp_src3 = _src3_mat.read();
+			tmp_src1 = _src1_mat.read(row*img_width+col);
+			tmp_src2 = _src2_mat.read(row*img_width+col);
+			tmp_src3 = _src3_mat.read(row*img_width+col);
 
 			Determinant_Loop:
 			for(i = 0, j= 0; i < in_sumloop; i += in_step)
@@ -356,7 +366,7 @@ void xFComputeScore(hls::stream < XF_SNAME(IN_WW) > &_src1_mat,
 			tmp_dst = 0;
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&dst_buf[0], tmp_dst, 0, npc, shift);
 			shift = 0;
-			_dst_mat.write(tmp_dst); // Write data into output pixel
+			_dst_mat.write(row*img_width+col,(tmp_dst)); // Write data into output pixel
 		}
 	}
 }

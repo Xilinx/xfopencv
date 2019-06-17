@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -71,7 +71,7 @@ int sumKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1,  xf::Scalar<XF_CHANNELS(SR
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);
+			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.read(i*width+j));
 			ProcLoop:
 			for( k = 0,c=0; k < ((8<<XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP,c++ )
 			{

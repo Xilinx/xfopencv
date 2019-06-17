@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 #if GRAY_T
 	cvtColor(img_raw, img, CV_BGR2GRAY);
 #elif RGB_T
-	cvtColor(img_raw, img, CV_BGR2RGBA);
+	cvtColor(img_raw, img, CV_BGR2RGB);
 #endif
 
 	// creating the input pointers
@@ -83,16 +83,25 @@ int main(int argc, char **argv)
 	int dim = (total_no_of_windows*XF_NODPW);
 
 	/////////////     Reference for HOG implementation     /////////
-	AURHOGDescriptor d(Size(64,128),Size(16,16),Size(8,8),Size(8,8),9);
+	AURHOGDescriptor d(Size(XF_WIN_WIDTH,XF_WIN_HEIGHT),Size(XF_BLOCK_WIDTH,XF_BLOCK_HEIGHT),Size(XF_CELL_WIDTH,XF_CELL_HEIGHT),Size(XF_CELL_WIDTH,XF_CELL_HEIGHT),XF_NO_OF_BINS);
 
 	vector<float> descriptorsValues;
 	vector<Point> locations;
-
-#if GRAY_T
-	d.AURcompute(img, descriptorsValues, Size(8,8), Size(0,0), locations);
-#elif RGB_T
+#if RGB_T
 	cvtColor(img_raw, img_raw, CV_BGR2RGB);
-	d.AURcompute(img_raw, descriptorsValues, Size(8,8), Size(0,0), locations);
+#endif
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+#if GRAY_T
+	d.AURcompute(img, descriptorsValues, Size(XF_CELL_WIDTH,XF_CELL_HEIGHT), Size(0,0), locations);
+#elif RGB_T
+	d.AURcompute(img_raw, descriptorsValues, Size(XF_CELL_WIDTH,XF_CELL_HEIGHT), Size(0,0), locations);
+#endif
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
 	float* ocv_out_fl = (float*)malloc(dim * sizeof(float));
@@ -104,9 +113,6 @@ int main(int argc, char **argv)
 	//////////////////	HLS TOP Function Call  ////////////////////////
 	static xf::Mat<XF_INPUT_TYPE, XF_HEIGHT, XF_WIDTH, XF_NPPC1> inMat(img.rows,img.cols);
 	inMat.copyTo(img.data);
-	#ifdef __SDSCC__
-	perf_counter hw_ctr;
-	#endif
 #if REPETITIVE_BLOCKS
 	static xf::Mat<XF_32UC1, 1, XF_DESC_SIZE, XF_NPPC1> outMat(1,dim_rb);
 #elif NON_REPETITIVE_BLOCKS
@@ -114,12 +120,13 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef __SDSCC__
-	hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 	hog_descriptor_accel(inMat,outMat);
 #ifdef __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
 
 #if REPETITIVE_BLOCKS
@@ -132,7 +139,7 @@ int main(int argc, char **argv)
 
 	for(int i=0;i<dim_nrb;i++)
 	{
-		output[i]=outMat.data[i];
+		output[i]=outMat.read(i);
 	}
 
 #elif REPETITIVE_BLOCKS
@@ -144,7 +151,7 @@ int main(int argc, char **argv)
 	int cnt=0;
 	for(int i=0;i<(dim_rb);i++)
 	{
-		temp=outMat.data[i];
+		temp=outMat.read(i);
 		high=15;low=0;
 		for(int j=0;j<2;j++)
 		{

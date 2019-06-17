@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -73,7 +73,7 @@ void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.data[i*width+j]);  //reading the source stream _src into val_src
+			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src_mat.read(i*width+j));  //reading the source stream _src into val_src
 
 			for(k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));k += XF_PIXELDEPTH(DEPTH))
 			{
@@ -102,7 +102,7 @@ void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T
 				}
 			}
 
-			_dst_mat.data[i*width+j] = (val_dst);  //writing the val_dst into output stream _dst
+			_dst_mat.write(i*width+j,(val_dst));  //writing the val_dst into output stream _dst
 		}
 	}
 }
@@ -112,7 +112,6 @@ void xFThresholdKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<SRC_T
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_mat.data"[0:"_dst_mat.size"])
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-
 
 template<int THRESHOLD_TYPE, int SRC_T, int ROWS, int COLS,int NPC=1>
 void Threshold(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst_mat,short int thresh,short int maxval )

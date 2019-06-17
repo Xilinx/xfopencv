@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -67,6 +67,10 @@ int main(int argc, char** argv)
 	diff.create(in_img.rows,in_img.cols,in_conv_img.depth()); // create memory for output image
 
 	/////////////////    OpenCV reference  /////////////////
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 #if FILTER_SIZE_3
 	cv::boxFilter(in_conv_img,ocv_ref,-1,cv::Size(3,3),cv::Point(-1,-1),true,cv::BORDER_CONSTANT);
 #elif FILTER_SIZE_5
@@ -74,12 +78,14 @@ int main(int argc, char** argv)
 #elif FILTER_SIZE_7
 	cv::boxFilter(in_conv_img,ocv_ref,-1,cv::Size(7,7),cv::Point(-1,-1),true,cv::BORDER_CONSTANT);
 #endif
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 
 	unsigned short height  = in_img.rows;
 	unsigned short width  = in_img.cols;
-	#if __SDSCC__
-	perf_counter hw_ctr;
-	#endif
+	
 	static xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
 	static xf::Mat<IN_T, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> in_8bit(in_img.rows,in_img.cols);
@@ -93,17 +99,16 @@ int main(int argc, char** argv)
 	in_8bit.convertTo(imgInput, XF_CONVERT_8U_TO_16S);
 #endif
 	#if __SDSCC__
-	hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 	#endif
 
 
 	boxfilter_accel(imgInput,imgOutput);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	
-
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 

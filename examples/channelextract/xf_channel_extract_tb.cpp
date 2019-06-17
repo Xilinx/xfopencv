@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -62,11 +62,24 @@ int main(int argc, char **argv)
 	// Channel to be extracted < see au_channel_extract_e >
 	uint16_t channel = XF_EXTRACT_CH_R;
 
+	std::vector<cv::Mat> bgr_planes;
+        // call OpenCV function
+        #if __SDSCC__
+                 perf_counter hw_ctr1;
+                 hw_ctr1.start();
+        #endif
+                 cv::split( in_src, bgr_planes );
+        #if __SDSCC__
+                 hw_ctr1.stop();
+                 uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+        #endif
+                                                 
 
 	static xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> imgInput(in_rgba.rows,in_rgba.cols);
 	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> imgOutput(in_rgba.rows,in_rgba.cols);
 
 	imgInput.copyTo(in_rgba.data);
+
 	 #if __SDSCC__
 	perf_counter hw_ctr;   
 	hw_ctr.start();
@@ -81,9 +94,7 @@ int main(int argc, char **argv)
 
 	xf::imwrite("hls_out.png",imgOutput);
 
-	std::vector<cv::Mat> bgr_planes;
-	// call OpenCV function
-	cv::split( in_src, bgr_planes );
+
 	// write output and OpenCV reference image
 	cv::imwrite("out_ocv.png",bgr_planes[2]);
 

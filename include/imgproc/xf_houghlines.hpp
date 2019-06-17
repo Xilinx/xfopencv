@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -27,6 +27,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
+
 #ifndef _XF_HOUGHLINES_HPP_
 #define _XF_HOUGHLINES_HPP_
 
@@ -214,7 +215,7 @@ void xfVoting(
 #pragma HLS DEPENDENCE  array inter false
 #pragma HLS LOOP_FLATTEN off
 
-			img_pixel_val = _src_mat.data[row_index]; // Reading one pixel at a time (address auto incremented) in raster scan order
+			img_pixel_val = _src_mat.read(row_index); // Reading one pixel at a time (address auto incremented) in raster scan order
 			j_eq_width = ( j == (width-1))? 1:0;
 			j_eq_0 = ( j == 0)? 1:0;
 
@@ -386,7 +387,7 @@ void xfThinning(ap_uint<12>  accumulator[AngleN+1][rhoN+1],	short threshold)
 	RHOLOOPTHINNING:for(ap_uint<13> r = 0; r < rhoN+1; r++ )
 	{
 #pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
+//#pragma HLS PIPELINE
 		THINNINGINIT:for (ap_uint<10> ang1 =0; ang1 < AngleN; ang1++)
 		{
 #pragma HLS UNROLL
@@ -505,7 +506,9 @@ void xfSorting(ap_uint<12>  accumulator[AngleN+1][rhoN+1],
 
 		float mintheta_radn = (MINTHETA * pai_by_180);
 
-		float angle_radn = (maxangle * pai_by_360*(theta));
+		float ang_temp=pai_by_360*(theta);
+
+		float angle_radn = (maxangle * ang_temp);
 
 		float _rho = (maxrho- diag_offset) * rho; //rho computation
 		float _angle = angle_radn + mintheta_radn;// Theta computation

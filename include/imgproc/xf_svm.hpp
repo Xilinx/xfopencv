@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -54,8 +54,8 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ***************************************************************/
 namespace xf {
 
-template<int SRC1_T, int SRC2_T, int DST_T, int NPC, int N>
-ap_int<XF_PIXELDEPTH(DST_T)> xfSVM(ap_int<XF_DTPIXELDEPTH(SRC1_T, NPC)>* in_1, ap_int<XF_PIXELDEPTH(SRC2_T)>* in_2, uint16_t idx1,
+template<int SRC1_T, int SRC2_T, int DST_T, int ROWS1, int COLS1, int ROWS2, int COLS2, int NPC, int N>
+ap_int<XF_PIXELDEPTH(DST_T)> xfSVM(xf::Mat<SRC1_T, ROWS1, COLS1, NPC> &in_1, xf::Mat<SRC2_T, ROWS2, COLS2, NPC> &in_2, uint16_t idx1,
 		uint16_t idx2, uchar_t frac1, uchar_t frac2, uint16_t n,
 		uchar_t *out_frac)
 {
@@ -73,28 +73,15 @@ ap_int<XF_PIXELDEPTH(DST_T)> xfSVM(ap_int<XF_DTPIXELDEPTH(SRC1_T, NPC)>* in_1, a
 #pragma HLS PIPELINE
 
 		// Dot product operation
-		ap_int<XF_PIXELDEPTH(DST_T)> tmp_svm = (ap_int<XF_PIXELDEPTH(DST_T)>)(in_1[idx1+i] * in_2[idx2+i]);
+		ap_int<XF_PIXELDEPTH(DST_T)> tmp_svm = (ap_int<XF_PIXELDEPTH(DST_T)>)(in_1.read(idx1+i) * in_2.read(idx2+i));
 		result += tmp_svm;
 	}
 
 	*out_frac = frac1 + frac2;
 	return result;
 }
-/*
-#pragma SDS data zero_copy(in_1[0:IN_ARRAY_SIZE_1])
-#pragma SDS data zero_copy(in_2[0:IN_ARRAY_SIZE_2])
-#pragma SDS data mem_attribute (in_1:NON_CACHEABLE|PHYSICAL_CONTIGUOUS, in_2:NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-template<int I1, int I2, int O, int N>
-void xFSVM(ap_int<I1>* in_1, ap_int<I2>* in_2, uint16_t idx1,
-		uint16_t idx2, uchar_t frac1, uchar_t frac2, uint16_t n,
-		uchar_t out_frac, ap_int<O> *result){
 
-	ap_int<O> svm_res = xfSVM<I1,I2,O,N>(in_1, in_2, idx1, idx2, frac1, frac2, n, &out_frac);
-	
-	*result = svm_res;
 
-}
-*/
 #pragma SDS data copy("in_1.data"[0:"in_1.size"])
 #pragma SDS data copy("in_2.data"[0:"in_2.size"])
 //#pragma SDS data data_mover("in_1.data":AXIDMA_SIMPLE)
@@ -106,8 +93,10 @@ template<int SRC1_T, int SRC2_T, int DST_T, int ROWS1, int COLS1, int ROWS2, int
 void SVM(xf::Mat<SRC1_T, ROWS1, COLS1, NPC> &in_1, xf::Mat<SRC2_T, ROWS2, COLS2, NPC> &in_2, uint16_t idx1,
 		uint16_t idx2, uchar_t frac1, uchar_t frac2, uint16_t n,
 		uchar_t *out_frac, ap_int<XF_PIXELDEPTH(DST_T)> *result){
+	assert(((SRC1_T == XF_16SC1)) && "Only 16 bit, single channel images are supported");
+	assert(((SRC2_T == XF_16SC1)) && "Only 16 bit, single channel images are supported");
 
-	ap_int<XF_PIXELDEPTH(DST_T)> svm_res = xfSVM<SRC1_T, SRC2_T, DST_T, NPC, N>((ap_int<XF_DTPIXELDEPTH(SRC1_T, NPC)>*)in_1.data, (ap_int<XF_DTPIXELDEPTH(SRC2_T, NPC)>*)in_2.data, idx1, idx2, frac1, frac2, n, out_frac);
+	ap_int<XF_PIXELDEPTH(DST_T)> svm_res = xfSVM<SRC1_T, SRC2_T, DST_T, ROWS1, COLS1, ROWS2, COLS2, NPC, N>(in_1, in_2, idx1, idx2, frac1, frac2, n, out_frac);
 	
 	*result = svm_res;
 

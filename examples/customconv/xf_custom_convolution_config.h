@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -50,12 +50,12 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define 	WIDTH  		3840
 
 #if RO
-#define NPC1				XF_NPPC8
+#define NPC_T				XF_NPPC8
 #endif                      
 #if NO                      
-#define NPC1				XF_NPPC1
+#define NPC_T				XF_NPPC1
 #endif
-
+#if GRAY
 #if OUT_8U
 
 #define INTYPE XF_8UC1
@@ -69,7 +69,23 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OUTTYPE XF_16SC1
 
 #endif
-void Filter2d_accel(xf::Mat<INTYPE, HEIGHT, WIDTH, NPC1> &_src, xf::Mat<OUTTYPE, HEIGHT, WIDTH, NPC1> &_dst, short int *filter_ptr, unsigned char shift);
+
+#else
+#if OUT_8U
+
+#define INTYPE XF_8UC3
+#define OUTTYPE XF_8UC3
+
+#endif
+
+#if OUT_16S
+
+#define INTYPE XF_8UC3
+#define OUTTYPE XF_16SC3
+
+#endif
+#endif
+void Filter2d_accel(xf::Mat<INTYPE, HEIGHT, WIDTH, NPC_T> &_src, xf::Mat<OUTTYPE, HEIGHT, WIDTH, NPC_T> &_dst, short int *filter_ptr, unsigned char shift);
 
 
 #endif  // end of _XF_CUSTOM_CONV_CONFIG_H_

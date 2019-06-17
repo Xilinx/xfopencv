@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -169,16 +169,16 @@ void xFSobel3x3(
 #pragma HLS UNROLL
 		for(ap_uint<5> c=0,k=0;c<PLANES;c++,k+=8)
 		{
-			GradientvaluesX[j].range(p+(STEP-1) ,p) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
-					src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
-					src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
-					src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
+		GradientvaluesX[j].range(p+(STEP-1) ,p) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
+				src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
+				src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
+				src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
 
-			GradientvaluesY[j].range(p+(STEP-1) ,p) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
-					src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
-					src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
-					src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
-			p+=STEP;
+		GradientvaluesY[j].range(p+(STEP-1) ,p) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
+				src_buf1[j].range(k+7 ,k), src_buf1[j+1].range(k+7 ,k), src_buf1[j+2].range(k+7 ,k),
+				src_buf2[j].range(k+7 ,k), src_buf2[j+1].range(k+7 ,k), src_buf2[j+2].range(k+7 ,k),
+				src_buf3[j].range(k+7 ,k), src_buf3[j+1].range(k+7 ,k),	src_buf3[j+2].range(k+7 ,k));
+		p+=STEP;
 		}
 	}
 }
@@ -187,14 +187,14 @@ void xFSobel3x3(
 /**************************************************************************************
  * ProcessSobel3x3 : Computes gradients for the column input data
  **************************************************************************************/
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void ProcessSobel3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _gradx_mat,
+		xf::Mat<DST_T, ROWS, COLS, NPC> & _grady_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH_SRC) src_buf3[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)], XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)],
 		XF_SNAME(WORDWIDTH_DST) &P0, XF_SNAME(WORDWIDTH_DST) &P1, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shift_x, uint16_t &shift_y,
-		ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row)
+		ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row, int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 
@@ -208,7 +208,7 @@ void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.read(); // Read data
+			buf[row_ind][col] = _src_mat.read(read_index++); // Read data
 		else
 			buf[bottom][col] = 0;
 		buf0 = buf[tp][col];
@@ -246,8 +246,8 @@ void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], P0, 0, 1, shift_x);
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], P1, 0, 1, shift_y);
 
-			_gradx_mat.write(P0);
-			_grady_mat.write(P1);
+			_gradx_mat.write(write_index,P0);
+			_grady_mat.write(write_index++,P1);
 
 			shift_x = 0; shift_y = 0;
 			P0 = 0; P1 = 0;
@@ -275,16 +275,16 @@ void ProcessSobel3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC, bool USE_URAM>
-void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_gradx_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > &_grady_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int DST_T,int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC, bool USE_URAM>
+void xFSobelFilter3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty,
+		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind;
 	ap_uint<2> tp, mid, bottom;
 	ap_uint<8> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
 	uint16_t shift_x = 0, shift_y = 0;
 	ap_uint<13> row, col;
+	int read_index = 0, write_index = 0;
 
 	XF_PTNAME (DEPTH_DST)
 	GradientValuesX[XF_NPIXPERCYCLE(NPC)];										// X-Gradient result buffer
@@ -301,15 +301,15 @@ void xFSobelFilter3x3(hls::stream< XF_SNAME(WORDWIDTH_SRC) > &_src_mat,
 	XF_SNAME(WORDWIDTH_DST) P0, P1;																	// Output data is packed
 	// Line buffer to hold image data
 	XF_SNAME(WORDWIDTH_SRC) buf[3][(COLS >> XF_BITSHIFT(NPC))];													// Line buffer
-if(USE_URAM)
-{	
+	if(USE_URAM)
+	{
 #pragma HLS array reshape variable=buf dim=1 factor=3 cyclic
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
-}
-else{
+	}
+	else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
-}
+	}
 	row_ind = 1;
 
 	Clear_Row_Loop:
@@ -318,7 +318,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.read(); 														// Read data
+		buf[row_ind][col] = _src_mat.read(read_index++);														// Read data
 	}
 	row_ind++;
 
@@ -345,11 +345,11 @@ else{
 
 		/***********		Process complete row			**********/
 		P0 = P1 = 0;
-		ProcessSobel3x3<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>
-		(_src_mat, _gradx_mat, _grady_mat, buf, src_buf1, src_buf2, src_buf3, GradientValuesX, GradientValuesY, P0, P1, img_width, img_height, row_ind, shift_x, shift_y, tp, mid, bottom, row);
+		ProcessSobel3x3<SRC_T, DST_T, ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>
+		(_src_mat, _dst_matx, _dst_maty, buf, src_buf1, src_buf2, src_buf3, GradientValuesX, GradientValuesY, P0, P1, img_width, img_height, row_ind, shift_x, shift_y, tp, mid, bottom, row, read_index, write_index);
 
 		/*			Last column border care	for RO & PO Case			*/
-		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+		if((NPC == XF_NPPC8))
 		{
 			//	Compute gradient at last column
 			GradientValuesX[0] = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
@@ -375,24 +375,24 @@ else{
 			}
 			for(ap_uint<7> i=0,k=0;i< PLANES;i++,k+=8)
 			{
-				GradientValuesX[0].range(q+(STEP-1) ,q) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
-						src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
-						src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
-						src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
+			GradientValuesX[0].range(q+(STEP-1) ,q) = xFGradientX3x3<DEPTH_SRC, DEPTH_DST>(
+					src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+					src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+					src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
 
-				GradientValuesY[0].range(q+(STEP-1) ,q) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
-						src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
-						src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
-						src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
-				q+=STEP;
+			GradientValuesY[0].range(q+(STEP-1) ,q) = xFGradientY3x3<DEPTH_SRC, DEPTH_DST>(
+					src_buf1[buf_size-3].range(k+7 ,k), src_buf1[buf_size-2].range(k+7 ,k), 0,
+					src_buf2[buf_size-3].range(k+7 ,k), src_buf2[buf_size-2].range(k+7 ,k), 0,
+					src_buf3[buf_size-3].range(k+7 ,k), src_buf3[buf_size-2].range(k+7 ,k), 0);
+			q+=STEP;
 			}
 		}
 
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], P0, 0, 1, shift_x);
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], P1, 0, 1, shift_y);
 
-		_gradx_mat.write(P0);
-		_grady_mat.write(P1);
+		_dst_matx.write(write_index,P0);
+		_dst_maty.write(write_index++,P1);
 
 		shift_x = 0; shift_y = 0;
 		P0 = 0; P1 = 0;
@@ -429,7 +429,7 @@ else{
 template<int PLANES,int DEPTH_SRC, int DEPTH_DST>
 XF_PTNAME(DEPTH_DST) xFGradientX5x5(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DEPTH_SRC) *src_buf2,
 		XF_PTNAME(DEPTH_SRC) *src_buf3, XF_PTNAME(DEPTH_SRC) *src_buf4,	XF_PTNAME(DEPTH_SRC) *src_buf5)
-		{
+{
 #pragma HLS INLINE off
 	XF_PTNAME(DEPTH_DST) g_x = 0,out_val=0;
 	int STEP,p=0;
@@ -565,7 +565,7 @@ void xFSobel5x5(
 	Compute_Grad_Loop:
 	for(ap_uint<5> j = 0; j < XF_NPIXPERCYCLE(NPC); j++ )
 	{
-		
+
 #pragma HLS LOOP_TRIPCOUNT min=8 max=8
 #pragma HLS UNROLL
 		GradientvaluesX[j] = xFGradientX5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[j], &src_buf2[j], &src_buf3[j], &src_buf4[j], &src_buf5[j]);
@@ -577,14 +577,14 @@ void xFSobel5x5(
 /**************************************************************************************
  * ProcessSobel5x5 : Computes gradients for the column input data
  **************************************************************************************/
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void ProcessSobel5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty,
+
 		XF_SNAME(WORDWIDTH_SRC) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH_SRC) src_buf3[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH_SRC) src_buf4[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(DEPTH_SRC) src_buf5[XF_NPIXPERCYCLE(NPC)+4],
 		XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)], XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)],
 		XF_SNAME(WORDWIDTH_DST) &inter_valx, XF_SNAME(WORDWIDTH_DST) &inter_valy, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shift_x, uint16_t &shift_y,
-		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row)
+		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<13> row, int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 	XF_SNAME(WORDWIDTH_SRC)  buf0, buf1, buf2, buf3, buf4;
@@ -599,7 +599,7 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(read_index++);
 		else
 			buf[bottom2][col] = 0;
 
@@ -649,13 +649,13 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		}
 		else
 		{
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if((NPC == XF_NPPC8))
 			{
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], inter_valx, 0, 2, shift_x);
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], inter_valy, 0, 2, shift_y);
 
-				_gradx_mat.write(inter_valx);
-				_grady_mat.write(inter_valy);
+				_dst_matx.write(write_index,inter_valx);
+				_dst_maty.write(write_index++,inter_valy);
 
 				shift_x = 0; shift_y = 0;
 				inter_valx = 0; inter_valy = 0;
@@ -668,8 +668,8 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				{
 					inter_valx((max_loop-1), (max_loop-step)) = GradientValuesX[0];
 					inter_valy((max_loop-1), (max_loop-step)) = GradientValuesY[0];
-					_gradx_mat.write(inter_valx);
-					_grady_mat.write(inter_valy);
+					_dst_matx.write(write_index,inter_valx);
+					_dst_maty.write(write_index++,inter_valy);
 				}
 			}
 		}
@@ -683,10 +683,9 @@ void ProcessSobel5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS, int PLANES,int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC,bool USE_URAM>
-void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int DST_T, int ROWS, int COLS, int PLANES,int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC,bool USE_URAM>
+void xFSobelFilter5x5(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty,
+		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind;
 	ap_uint<13> row, col;
@@ -697,6 +696,7 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 	ap_uint<9> step = XF_PIXELDEPTH(DEPTH_DST);
 	ap_uint<9> max_loop = XF_WORDDEPTH(WORDWIDTH_DST);
 	uint16_t shift_x = 0, shift_y = 0;
+	int read_index = 0, write_index = 0;
 
 	XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)];
 	XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)];
@@ -718,15 +718,15 @@ void xFSobelFilter5x5(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 	XF_SNAME(WORDWIDTH_DST) inter_valx = 0, inter_valy = 0;
 	// Temporary buffer to hold image data from five rows
 	XF_SNAME(WORDWIDTH_SRC)  buf[5][(COLS >> XF_BITSHIFT(NPC))];
-if(USE_URAM)
-{
+	if(USE_URAM)
+	{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
 #pragma HLS array reshape variable=buf dim=1 factor=5 cyclic
-}
-else{
+	}
+	else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
-}
+	}
 
 	row_ind = 2;
 
@@ -737,7 +737,7 @@ else{
 #pragma HLS pipeline
 		buf[0][col] = 0;
 		buf[1][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 
 	row_ind++;
@@ -748,7 +748,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 	row_ind++;
 
@@ -787,8 +787,8 @@ else{
 
 		inter_valx = inter_valy = 0;
 
-		ProcessSobel5x5<ROWS, COLS, PLANES,DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat,  _grady_mat, buf, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	GradientValuesX, GradientValuesY,
-				inter_valx, inter_valy, img_width, img_height, row_ind, shift_x, shift_y, tp1, tp2, mid, bottom1, bottom2, row);
+		ProcessSobel5x5<SRC_T, DST_T, ROWS, COLS, PLANES,DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _dst_matx,  _dst_maty, buf, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	GradientValuesX, GradientValuesY,
+				inter_valx, inter_valy, img_width, img_height, row_ind, shift_x, shift_y, tp1, tp2, mid, bottom1, bottom2, row, read_index, write_index);
 
 		if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
 		{
@@ -809,8 +809,8 @@ else{
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], inter_valx, 0, 2, shift_x);
 			xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], inter_valy, 0, 2, shift_y);
 
-			_gradx_mat.write(inter_valx);
-			_grady_mat.write(inter_valy);
+			_dst_matx.write(write_index,inter_valx);
+			_dst_maty.write(write_index++,inter_valy);
 		}
 		else
 		{
@@ -827,8 +827,8 @@ else{
 			GradientValuesY[0] = xFGradientY5x5<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0], &src_buf4[0], &src_buf5[0]);
 			inter_valx((max_loop-1), (max_loop-step)) = GradientValuesX[0];
 			inter_valy((max_loop-1), (max_loop-step)) = GradientValuesY[0];
-			_gradx_mat.write(inter_valx);
-			_grady_mat.write(inter_valy);
+			_dst_matx.write(write_index,inter_valx);
+			_dst_maty.write(write_index++,inter_valy);
 
 			for(ap_uint<4> i = 0; i < 4; i++)
 			{
@@ -850,8 +850,9 @@ else{
 
 			inter_valx((max_loop-1), (max_loop-step)) = GradientValuesX[0];
 			inter_valy((max_loop-1), (max_loop-step)) = GradientValuesY[0];
-			_gradx_mat.write(inter_valx);
-			_grady_mat.write(inter_valy);
+			_dst_matx.write(write_index,inter_valx);
+			_dst_maty.write(write_index++,inter_valy);
+
 		}
 
 		row_ind++;
@@ -1054,7 +1055,7 @@ XF_PTNAME(DEPTH_DST) xFGradientY7x7(XF_PTNAME(DEPTH_SRC) *src_buf1, XF_PTNAME(DE
 		p+=STEP;
 	}
 
-	
+
 	return val;
 
 		}
@@ -1091,14 +1092,14 @@ void xFSobel7x7(XF_PTNAME(DEPTH_DST) *GradientvaluesX, XF_PTNAME(DEPTH_DST) *Gra
  * ProcessSobel7x7 : Computes gradients for the column input data
  **************************************************************************************/
 
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
+
+template<int SRC_T, int DST_T, int ROWS, int COLS, int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void ProcessSobel7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _gradx_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _grady_mat,
 		XF_SNAME(WORDWIDTH_SRC) buf[7][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf4[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf5[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf6[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf7[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)], XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)],
 		XF_SNAME(WORDWIDTH_DST) &inter_valx, XF_SNAME(WORDWIDTH_DST) &inter_valy, uint16_t img_width, uint16_t img_height, ap_uint<13> row_ind, uint16_t &shiftx, uint16_t &shifty,
-		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> tp3, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<4> bottom3, ap_uint<13> row)
+		ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> tp3, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, ap_uint<4> bottom3, ap_uint<13> row, int &read_index, int &write_index)
 {
 #pragma HLS INLINE
 	XF_SNAME(WORDWIDTH_SRC) buf0, buf1, buf2, buf3, buf4, buf5, buf6;
@@ -1111,7 +1112,7 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(read_index++);
 		else
 			buf[bottom3][col] = 0;
 		buf0 = buf[tp1][col];
@@ -1138,7 +1139,7 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 			src_buf6[6] = buf5;
 			src_buf7[6] = buf6;
 		}
-		xFSobel7x7<NPC,PLANES, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
+		xFSobel7x7<NPC, PLANES, DEPTH_SRC, DEPTH_DST>(GradientValuesX, GradientValuesY,
 				src_buf1, src_buf2, src_buf3, src_buf4,
 				src_buf5, src_buf6, src_buf7);
 
@@ -1158,13 +1159,13 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		}
 		else
 		{
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if((NPC == XF_NPPC8))
 			{
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], inter_valx, 0, 3, shiftx);
 				xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], inter_valy, 0, 3, shifty);
 
-				_gradx_mat.write(inter_valx);
-				_grady_mat.write(inter_valy);
+				_gradx_mat.write(write_index,inter_valx);
+				_grady_mat.write(write_index++,inter_valy);
 				shiftx = 0;
 				shifty = 0;
 				inter_valx = 0;
@@ -1180,29 +1181,28 @@ void ProcessSobel7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 				{
 					inter_valx((max_loop-1), (max_loop-XF_PIXELDEPTH(DEPTH_DST))) = GradientValuesX[0];
 					inter_valy((max_loop-1), (max_loop-XF_PIXELDEPTH(DEPTH_DST))) = GradientValuesY[0];
-					_gradx_mat.write(inter_valx);
-					_grady_mat.write(inter_valy);
+					_gradx_mat.write(write_index,inter_valx);
+					_grady_mat.write(write_index++,inter_valy);
 				}
 			}
 		}
 	}// Col_Loop
 }
 
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat, hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void RightBorder7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _gradx_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _grady_mat,
 		XF_PTNAME(DEPTH_SRC) src_buf1[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf2[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf3[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf4[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf5[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_SRC) src_buf6[XF_NPIXPERCYCLE(NPC)+6],
 		XF_PTNAME(DEPTH_SRC) src_buf7[XF_NPIXPERCYCLE(NPC)+6], XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)],
-		XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)],	XF_SNAME(WORDWIDTH_DST) &inter_valx, XF_SNAME(WORDWIDTH_DST) &inter_valy, uint16_t &shiftx, uint16_t &shifty)
+		XF_PTNAME(DEPTH_DST) GradientValuesY[XF_NPIXPERCYCLE(NPC)],	XF_SNAME(WORDWIDTH_DST) &inter_valx, XF_SNAME(WORDWIDTH_DST) &inter_valy, uint16_t &shiftx, uint16_t &shifty, int &read_index, int &write_index)
 {
-#pragma HLS INLINE off
+//#pragma HLS INLINE off
 	ap_uint<4> i = 0;
 	ap_uint<5> buf_size = (XF_NPIXPERCYCLE(NPC)+6);
 	ap_uint<10> max_loop = XF_WORDDEPTH(WORDWIDTH_DST);
 
-	if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+	if((NPC == XF_NPPC8))
 	{
 		for(i = 0; i < 8; i++)
 		{
@@ -1221,11 +1221,11 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=3 max=3
 #pragma HLS unroll
 
-			GradientValuesX[i] = xFGradientX7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
+			GradientValuesX[i] = xFGradientX7x7<PLANES, DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
 					&src_buf4[i], &src_buf5[i], &src_buf6[i],
 					&src_buf7[i]);
 
-			GradientValuesY[i] = xFGradientY7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
+			GradientValuesY[i] = xFGradientY7x7<PLANES, DEPTH_SRC, DEPTH_DST>(&src_buf1[i], &src_buf2[i], &src_buf3[i],
 					&src_buf4[i], &src_buf5[i], &src_buf6[i],
 					&src_buf7[i]);
 
@@ -1233,8 +1233,8 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesX[0], inter_valx, 0, 3, shiftx);
 		xfPackPixels<NPC, WORDWIDTH_DST, DEPTH_DST>(&GradientValuesY[0], inter_valy, 0, 3, shifty);
 
-		_gradx_mat.write(inter_valx);
-		_grady_mat.write(inter_valy);
+		_gradx_mat.write(write_index,inter_valx);
+		_grady_mat.write(write_index++,inter_valy);
 		shiftx = 0;
 		shifty = 0;
 		inter_valx = 0;
@@ -1256,11 +1256,11 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 #pragma HLS ALLOCATION instances=xFGradientX7x7 limit=1 function
 #pragma HLS ALLOCATION instances=xFGradientY7x7 limit=1 function
 
-			GradientValuesX[0] = xFGradientX7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
+			GradientValuesX[0] = xFGradientX7x7<PLANES, DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
 					&src_buf4[0], &src_buf5[0], &src_buf6[0],
 					&src_buf7[0]);
 
-			GradientValuesY[0] = xFGradientY7x7<PLANES,DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
+			GradientValuesY[0] = xFGradientY7x7<PLANES, DEPTH_SRC, DEPTH_DST>(&src_buf1[0], &src_buf2[0], &src_buf3[0],
 					&src_buf4[0], &src_buf5[0], &src_buf6[0],
 					&src_buf7[0]);
 
@@ -1268,8 +1268,8 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 					src_buf5, src_buf6, src_buf7);
 			inter_valx((max_loop-1), (max_loop-XF_PIXELDEPTH(DEPTH_DST))) = GradientValuesX[0];
 			inter_valy((max_loop-1), (max_loop-XF_PIXELDEPTH(DEPTH_DST))) = GradientValuesY[0];
-			_gradx_mat.write(inter_valx);
-			_grady_mat.write(inter_valy);
+			_gradx_mat.write(write_index,inter_valx);
+			_grady_mat.write(write_index++,inter_valy);
 		}
 	}
 
@@ -1281,14 +1281,14 @@ void RightBorder7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
  * _gradx_mat	: GradientX output
  * _grady_mat	: GradientY output
  */
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC,bool USE_URAM>
-void xFSobelFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _gradx_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) > & _grady_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int DST_T,int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC,bool USE_URAM>
+void xFSobelFilter7x7(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _gradx_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _grady_mat,
+		uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind, row, col;
 	ap_uint<4> tp1,tp2, tp3, mid, bottom1, bottom2, bottom3;
 	ap_uint<5> i;
+	int read_index = 0, write_index = 0;
 
 	// Gradient output values stored in these buffer
 	XF_PTNAME(DEPTH_DST) GradientValuesX[XF_NPIXPERCYCLE(NPC)];
@@ -1312,15 +1312,15 @@ void xFSobelFilter7x7(hls::stream< XF_SNAME(WORDWIDTH_SRC) > & _src_mat,
 	uint16_t shiftx = 0, shifty = 0;
 
 	XF_SNAME(WORDWIDTH_SRC) buf[7][(COLS >> XF_BITSHIFT(NPC))];
-if(USE_URAM)
-{
+	if(USE_URAM)
+	{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_URAM
 #pragma HLS array reshape variable=buf dim=1 factor=7 cyclic
-}
-else{
+	}
+	else{
 #pragma HLS RESOURCE variable=buf core=RAM_S2P_BRAM
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
-}
+	}
 	row_ind = 3;
 	Clear_Row_Loop:
 	for(col = 0; col < img_width; col++)
@@ -1330,7 +1330,7 @@ else{
 		buf[0][col] = 0;
 		buf[1][col] = 0;
 		buf[2][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 	row_ind++;
 
@@ -1340,7 +1340,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 	row_ind++;
 
@@ -1350,7 +1350,7 @@ else{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 	row_ind++;
 
@@ -1401,11 +1401,11 @@ else{
 		}
 		inter_valx = inter_valy = 0;
 		/***********		Process complete row			**********/
-		ProcessSobel7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
-				inter_valx, inter_valy, img_width, img_height, row_ind, shiftx, shifty, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row);
+		ProcessSobel7x7<SRC_T, DST_T, ROWS, COLS, PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, buf,  src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
+				inter_valx, inter_valy, img_width, img_height, row_ind, shiftx, shifty, tp1, tp2, tp3, mid, bottom1, bottom2, bottom3, row, read_index, write_index);
 
-		RightBorder7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
-				inter_valx, inter_valy, shiftx, shifty);
+		RightBorder7x7<SRC_T, DST_T, ROWS, COLS, PLANES, DEPTH_SRC, DEPTH_DST, NPC, WORDWIDTH_SRC, WORDWIDTH_DST, TC>( _src_mat, _gradx_mat, _grady_mat, src_buf1,	src_buf2, src_buf3, src_buf4, src_buf5,	src_buf6, src_buf7,	GradientValuesX, GradientValuesY,
+				inter_valx, inter_valy, shiftx, shifty, read_index, write_index);
 
 		row_ind++;
 		if(row_ind == 7)
@@ -1419,106 +1419,55 @@ else{
 
 
 
-/*********************************************************************
- * xFSobelFilter : Calls the Main Function depend on Requirements
- *********************************************************************/
-template<int ROWS, int COLS,int PLANES, int DEPTH_SRC, int DEPTH_DST, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,bool USE_URAM>
-void xFSobelFilter(hls::stream<XF_SNAME(WORDWIDTH_SRC)> &   _src,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _gradx,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _grady,
-		int _filter_width,
-		int _border_type,short int height,short int width)
-{
 
 
-#pragma HLS inline
-
-	width = width >> XF_BITSHIFT(NPC);
-
-	assert(((_filter_width == XF_FILTER_3X3) || (_filter_width == XF_FILTER_5X5) ||
-			(_filter_width == XF_FILTER_7X7)) && " Filter width must be XF_FILTER_3X3, XF_FILTER_5X5 or XF_FILTER_7X7 ");
-
-	//	assert((DEPTH_SRC == XF_8UP) && " Input image must be of type XF_8UP ");
-
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8) || (NPC == XF_NPPC16))
-			&& "NPC must be XF_NPPC1, XF_NPPC8 or XF_NPPC16 ");
-
-	assert((_border_type == XF_BORDER_CONSTANT) && "Border type must be XF_BORDER_CONSTANT ");
-
-	assert(((height <= ROWS ) && (width <= COLS)) && "ROWS and COLS should be greater than input image");
-
-	//assert(((_ddepth == -1 ) && (_ddepth == XF_16UP)) && "DDepth value can only be -1 or XF_16UP");
-
-
-	if(_filter_width == XF_FILTER_3X3)
-	{
-		xFSobelFilter3x3<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
-		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC)),USE_URAM>(_src, _gradx, _grady,height,width);
-	}
-
-	else if(_filter_width == XF_FILTER_5X5)
-	{
-		xFSobelFilter5x5<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
-		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC)),USE_URAM>(_src, _gradx, _grady,height,width);
-	}
-
-	else if(_filter_width == XF_FILTER_7X7)
-	{
-		xFSobelFilter7x7<ROWS, COLS,PLANES, DEPTH_SRC, DEPTH_DST, NPC,
-		WORDWIDTH_SRC, WORDWIDTH_DST,(COLS >> XF_BITSHIFT(NPC)),USE_URAM>(_src, _gradx, _grady,height,width);
-	}
-
-}
-
-#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst_matx.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst_maty.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL, "_dst_matx.data":SEQUENTIAL,"_dst_maty.data":SEQUENTIAL)
-//#pragma SDS data data_mover("_src_mat.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_matx.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("_dst_maty.data":AXIDMA_SIMPLE)
 #pragma SDS data copy("_src_mat.data"[0:"_src_mat.size"], "_dst_matx.data"[0:"_dst_matx.size"],"_dst_maty.data"[0:"_dst_maty.size"])
 
-template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC=1,bool USE_URAM = false>
+
+template<int BORDER_TYPE,int FILTER_TYPE, int SRC_T,int DST_T, int ROWS, int COLS,int NPC=1,bool USE_URAM=false>
 void Sobel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_matx,xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_maty)
 {
-
-
-	hls::stream< XF_TNAME(SRC_T,NPC)> _src;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dstx;
-	hls::stream< XF_TNAME(DST_T,NPC)> _dsty;
+	
 #pragma HLS INLINE OFF
-#pragma HLS DATAFLOW
 
-	for(int i=0; i<_src_mat.rows;i++)
+
+	uint16_t width = _src_mat.cols >> XF_BITSHIFT(NPC);
+	uint16_t height = _src_mat.rows;
+
+	assert(((FILTER_TYPE == XF_FILTER_3X3) || (FILTER_TYPE == XF_FILTER_5X5) ||
+			(FILTER_TYPE == XF_FILTER_7X7)) && " Filter width must be XF_FILTER_3X3, XF_FILTER_5X5 or XF_FILTER_7X7 ");
+
+	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8))
+			&& "NPC must be XF_NPPC1 or XF_NPPC8");
+
+	assert((BORDER_TYPE == XF_BORDER_CONSTANT) && "Border type must be XF_BORDER_CONSTANT ");
+
+	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+
+
+
+	if(FILTER_TYPE == XF_FILTER_3X3)
 	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_src_mat.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS PIPELINE
-			_src.write( *(_src_mat.data + i*(_src_mat.cols>>(XF_BITSHIFT(NPC))) +j) );
-		}
+		xFSobelFilter3x3<SRC_T, DST_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS >> XF_BITSHIFT(NPC)),USE_URAM>
+		(_src_mat, _dst_matx, _dst_maty, height, width);
 	}
 
-
-
-	xFSobelFilter<ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),USE_URAM>(_src,_dstx,_dsty,FILTER_TYPE, BORDER_TYPE,_src_mat.rows,_src_mat.cols);
-
-
-	for(int i=0; i<_dst_matx.rows;i++)
+	else if(FILTER_TYPE == XF_FILTER_5X5)
 	{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=ROWS
-		for(int j=0; j<(_dst_matx.cols)>>(XF_BITSHIFT(NPC));j++)
-		{
-#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
-#pragma HLS PIPELINE
-#pragma HLS LOOP_FLATTEN off
-			*(_dst_matx.data + i*(_dst_matx.cols>>(XF_BITSHIFT(NPC))) +j) = _dstx.read();
-			*(_dst_maty.data + i*(_dst_maty.cols>>(XF_BITSHIFT(NPC))) +j) = _dsty.read();
-		}
+		xFSobelFilter5x5<SRC_T, DST_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS >> XF_BITSHIFT(NPC)),USE_URAM>
+		(_src_mat, _dst_matx, _dst_maty, height, width);
 	}
+
+	else if(FILTER_TYPE == XF_FILTER_7X7)
+	{
+		xFSobelFilter7x7<SRC_T, DST_T, ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC),XF_DEPTH(DST_T,NPC),NPC,XF_WORDWIDTH(SRC_T,NPC),XF_WORDWIDTH(DST_T,NPC),(COLS >> XF_BITSHIFT(NPC)),USE_URAM>
+		(_src_mat, _dst_matx, _dst_maty, height, width);
+	}
+
 
 }
 }

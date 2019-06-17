@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -114,7 +114,7 @@ void xFMinMaxLocKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,
 #pragma HLS pipeline
 
 			// reading the data from the stream
-			val_in = _src.data[i*width+j];
+			val_in = _src.read(i*width+j);
 			XF_PTNAME(DEPTH) pixel_buf[(1<<XF_BITSHIFT(NPC))+1];
 #pragma HLS ARRAY_PARTITION variable=pixel_buf complete dim=1
 
@@ -229,7 +229,7 @@ void xFMinMaxLocKernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src,
 }
 
 
-//#pragma SDS data data_mover("_src.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover("_src.data":FASTDMA)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"])
 template<int SRC_T,int ROWS,int COLS,int NPC=0>

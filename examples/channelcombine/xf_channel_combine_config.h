@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -41,17 +41,32 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define HEIGHT 2160
 #define WIDTH  3840
 
-#if NO
-#define IN_TYPE  ap_uint<8>
-#define OUT_TYPE ap_uint<32>
+#if FOUR_INPUT
+#define IN_TYPE  XF_8UC1
+#define OUT_TYPE XF_8UC4
+#define CV_TYPE CV_8UC4
 #endif
 
-#if RO
-#define IN_TYPE  ap_uint<64>
-#define OUT_TYPE ap_uint<64>
+#if THREE_INPUT
+#define IN_TYPE  XF_8UC1
+#define OUT_TYPE XF_8UC3
+#define CV_TYPE CV_8UC3
 #endif
 
-void channel_combine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3,xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput);
+#if TWO_INPUT
+#define IN_TYPE  XF_8UC1
+#define OUT_TYPE XF_8UC2
+#endif
+
+#if TWO_INPUT
+
+void channel_combine_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput2, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput);
+#elif THREE_INPUT
+void channel_combine_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput2,xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput3, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput);
+#else
+void channel_combine_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput2,xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput3,xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput4, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput);
+#endif
 
 
 #endif//_XF_CHANNEL_COMBINE_CONFIG_H_
+

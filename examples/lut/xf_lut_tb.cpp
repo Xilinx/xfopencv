@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -47,7 +47,11 @@ int main(int argc, char** argv)
 	cv::Mat in_img, in_gray, out_img, ocv_ref, diff, lut_mat;
 
 	/*  reading in the color image  */
+#if GRAY
 	in_img = cv::imread(argv[1],0);
+#else
+	in_img = cv::imread(argv[1],1);
+#endif
 
 	if (in_img.data == NULL)
 	{
@@ -55,7 +59,7 @@ int main(int argc, char** argv)
 		return 0;
 	}
 #if __SDSCC__
-	uchar_t*lut_ptr=(uchar_t*)sds_alloc_non_cacheable(256*sizeof(uchar_t));
+	uchar_t*lut_ptr=(uchar_t*)sds_alloc_non_cacheable(256 * sizeof(uchar_t));
 #else
 	uchar_t*lut_ptr=(uchar_t*)malloc(256*sizeof(uchar_t));
 #endif
@@ -65,9 +69,30 @@ int main(int argc, char** argv)
 		lut_ptr[i]=lut[i];
 	}
 
-	out_img.create(in_img.rows,in_img.cols,in_img.depth());
-	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
-	diff.create(in_img.rows,in_img.cols,in_img.depth());
+#if GRAY
+	out_img.create(in_img.rows,in_img.cols,CV_8UC1);
+	ocv_ref.create(in_img.rows,in_img.cols,CV_8UC1);
+	diff.create(in_img.rows,in_img.cols,CV_8UC1);
+#else
+	out_img.create(in_img.rows,in_img.cols,CV_8UC3);
+	ocv_ref.create(in_img.rows,in_img.cols,CV_8UC3);
+	diff.create(in_img.rows,in_img.cols,CV_8UC3);
+#endif
+
+	///////////// OpenCV reference  /////////////
+	lut_mat = cv::Mat(1,256,CV_8UC1,lut);
+
+	#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+
+	cv::LUT(in_img,lut_mat,ocv_ref);
+
+	#if __SDSCC__
+		hw_ctr1.stop();
+	 uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+	#endif
 
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput(in_img.rows,in_img.cols);
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_img.rows,in_img.cols);
@@ -81,18 +106,15 @@ int main(int argc, char** argv)
 	lut_accel(imgInput,imgOutput,lut_ptr);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+		hw_ctr.stop();
+		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
 
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
 
 
-	///////////// OpenCV reference  /////////////
-	lut_mat = cv::Mat(1,256,CV_8UC1,lut);
-	cv::LUT(in_img,lut_mat,ocv_ref);
-
+	
 
 	imwrite("ref_img.jpg",ocv_ref);     // save the reference image
 	//////////////// Comparison /////////////

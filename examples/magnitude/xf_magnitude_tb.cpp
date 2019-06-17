@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -93,6 +93,38 @@ int main(int argc, char** argv)
 	ocv_ref1.create(in_img.rows,in_img.cols,CV_16S);
 	out_img.create(in_img.rows,in_img.cols,CV_16S);
 	diff.create(in_img.rows,in_img.cols,CV_16S);
+	
+	
+	/////////////////    OpenCV reference  /////////////////
+#if L1NORM
+	#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+
+	ComputeMagnitude(c_grad_x, c_grad_y, ocv_ref1);
+
+	#if __SDSCC__
+		hw_ctr1.stop();
+	 uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+	#endif
+#elif L2NORM
+	cv::Sobel( in_img, c_grad_x1, CV_32FC1, 1, 0, filter_size,scale, delta, cv::BORDER_CONSTANT );
+	Sobel( in_img, c_grad_y1, CV_32FC1, 0, 1, filter_size,scale, delta, cv::BORDER_CONSTANT );
+
+	#if __SDSCC__
+		perf_counter hw_ctr2;
+	hw_ctr2.start();
+	#endif
+
+	magnitude(c_grad_x1, c_grad_y1, ocv_ref2);
+
+	#if __SDSCC__
+		hw_ctr2.stop();
+		uint64_t hw_cycles2 = hw_ctr2.avg_cpu_cycles();
+	#endif
+#endif
+
 
 	uint16_t width = in_img.cols;
 	uint16_t height = in_img.rows;
@@ -114,30 +146,23 @@ int main(int argc, char** argv)
 	hw_ctr.start();
 	#endif
 	
-	//xFmagnitude<NORM_TYPE,XF_16SC1,XF_16SC1,HEIGHT, WIDTH,NPC1>(imgInputx, imgInputy,imgOutput);
+
 	magnitude_accel(imgInputx, imgInputy,imgOutput);
 	
 	#if __SDSCC__
 	hw_ctr.stop();
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	#endif
-	//out_img.data = (unsigned char *)imgOutput.copyFrom();
 
+
+	out_img.data=imgOutput.copyFrom();
 
 	// Write output image
 	xf::imwrite("hls_out.jpg",imgOutput);
 
-	/////////////////    OpenCV reference  /////////////////
-#if L1NORM
-	ComputeMagnitude(c_grad_x, c_grad_y, ocv_ref1);
-#elif L2NORM
-	cv::Sobel( in_img, c_grad_x1, CV_32FC1, 1, 0, filter_size,scale, delta, cv::BORDER_CONSTANT );
-	Sobel( in_img, c_grad_y1, CV_32FC1, 0, 1, filter_size,scale, delta, cv::BORDER_CONSTANT );
-	magnitude(c_grad_x1, c_grad_y1, ocv_ref2);
-#endif
+	
 
 
-	//imwrite("out_img.jpg", out_img);  // save the output image
 
 
 #if L1NORM
@@ -147,7 +172,7 @@ int main(int argc, char** argv)
 #elif L2NORM
 	ocv_ref2.convertTo(ocv_res,CV_16S);  //  convert from 32F type to 16S type for finding the AbsDiff
 	imwrite("ref_img.jpg",ocv_res);          // save the reference image
-	xf::absDiff(ocv_res,imgOutput,diff);    // Compute absolute difference image
+	absdiff(ocv_res,out_img,diff);    // Compute absolute difference image
 	imwrite("diff_img.jpg",diff);            // Save the difference image for debugging purpose
 #endif
 
@@ -159,7 +184,7 @@ int main(int argc, char** argv)
 	{
 		for(int j = 0; j < in_img.cols; j++)
 		{
-			uchar v = diff.at<uchar>(i,j);
+			uchar v = diff.at<short int>(i,j);
 
 			if (v > 1)
 				cnt++;

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -184,7 +184,7 @@ void Convolution_Process(xf::Mat<SRC_T, ROWS, COLS, NPC>& _src,xf::Mat<DST_T, RO
 
 		if(row < image_height)
 		{
-			buf[row_ind][col] = _src.data[rd_ind];
+			buf[row_ind][col] = _src.read(rd_ind);
 			rd_ind++;
 		}
 		else
@@ -253,7 +253,7 @@ void Convolution_Process(xf::Mat<SRC_T, ROWS, COLS, NPC>& _src,xf::Mat<DST_T, RO
 			}
 
 			// writing the temporary result into the stream
-			_dst.data[wr_ind] = P0;
+			_dst.write(wr_ind,P0);
 			wr_ind++;
 
 			ap_uint<13> ind = filter_width_factor;
@@ -366,7 +366,7 @@ void xFCustomConvolutionKernel(
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_COUNT max=COLS_COUNT
 #pragma HLS PIPELINE
-			buf[row_ind][j] = _src.data[rd_ind];
+			buf[row_ind][j] = _src.read(rd_ind);
 			rd_ind++;
 		}
 		row_ind++;
@@ -449,7 +449,7 @@ void xFCustomConvolutionKernel(
 		}
 
 		// writing the temporary result into the stream
-		_dst.data[wr_ind] = P0;
+		_dst.write(wr_ind,P0);
 		wr_ind++;
 
 		colFactorLoopBorder:
@@ -465,7 +465,7 @@ void xFCustomConvolutionKernel(
 						(max_range_step)) = col_border_mask[l];
 				max_range_step += step;
 			}
-			_dst.data[wr_ind] = P0;
+			_dst.write(wr_ind,P0);
 			wr_ind++;
 		}
 
@@ -651,7 +651,7 @@ static void xFFilter2Dkernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<
 						}
 					}
 					XF_SNAME(WORDWIDTH_SRC) temp=0;
-					temp = (_src_mat.data[rd_ind]);
+					temp = (_src_mat.read(rd_ind));
 					rd_ind++;
 
 					k_buf[0][x]=temp;
@@ -697,7 +697,7 @@ static void xFFilter2Dkernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<
 				XF_PTNAME(DEPTH_DST) temp;
 				xFApplyFilter2D<DEPTH_SRC,DEPTH_DST,K_HEIGHT,K_WIDTH,PLANES>(src_kernel_win,_filter_kernel,temp,shift);
 				XF_SNAME(WORDWIDTH_DST) temp1 = temp;
-				(_dst_mat.data[wr_ind]) = temp1;
+				_dst_mat.write(wr_ind,temp1);
 				wr_ind++;
 
 			}
@@ -706,7 +706,7 @@ static void xFFilter2Dkernel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<
 }
 
 
-
+#pragma SDS data data_mover("_src_mat.data":FASTDMA,"_dst_mat.data":FASTDMA)
 #pragma SDS data mem_attribute("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data mem_attribute("_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL,filter:RANDOM,"_dst_mat.data":SEQUENTIAL)

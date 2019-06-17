@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -41,9 +41,14 @@ int main(int argc, char** argv)
 	}
 
 	cv::Mat in_img, in_img1, out_img;
-	cv::Mat in_gray, in_gray1, diff;
+	cv::Mat in_gray, in_gray1;
+#if GRAY
 	in_gray  = cv::imread(argv[1], 0); // read image
 	in_gray1 = cv::imread(argv[2], 0); // read image
+#else
+	in_gray  = cv::imread(argv[1], 1); // read image
+	in_gray1 = cv::imread(argv[2], 1); // read image
+#endif
 	if (in_gray.data == NULL)
 	{
 		fprintf(stderr, "Cannot open image %s\n", argv[1]);
@@ -55,76 +60,65 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat inout_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
-	cv::Mat   out_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
-	cv::Mat inout_gray1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
+#if GRAY
 
-	cv::Mat ocv_ref(in_gray.rows, in_gray.cols, CV_16U, 1);
-	cv::Mat ocv_ref_in1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
-	cv::Mat ocv_ref_in2(in_gray.rows, in_gray.cols, CV_32FC1, 1);
+	cv::Mat ocv_in(in_gray.rows, in_gray.cols, CV_32FC1, 1);
+	cv::Mat ocv_inout(in_gray.rows, in_gray.cols, CV_32FC1, 1);
+	cv::Mat ocv_out_16bit(in_gray.rows, in_gray.cols, CV_16UC1, 1);
+	cv::Mat diff(in_gray.rows, in_gray.cols, CV_16UC1, 1);
 
-	in_gray.convertTo(ocv_ref_in1, CV_32FC1);
-	in_gray1.convertTo(ocv_ref_in2, CV_32FC1);
+	in_gray.convertTo(ocv_in, CV_32FC1);
+	in_gray1.convertTo(ocv_inout, CV_32FC1);
+#else
+
+	cv::Mat ocv_in(in_gray.rows, in_gray.cols, CV_32FC3);
+	cv::Mat ocv_inout(in_gray.rows, in_gray.cols, CV_32FC3);
+	cv::Mat ocv_out_16bit(in_gray.rows, in_gray.cols, CV_16UC3);
+	cv::Mat diff(in_gray.rows, in_gray.cols, CV_16UC3, 1);
+	in_gray.convertTo(ocv_in, CV_32FC3);
+	in_gray1.convertTo(ocv_inout, CV_32FC3);
+#endif
 	// Weight ( 0 to 1 )
 	float alpha = 0.76;	
 
 	// OpenCV function
-	cv::accumulateWeighted(ocv_ref_in1, ocv_ref_in2, alpha, cv::noArray());
-
-	ocv_ref_in2.convertTo(ocv_ref, CV_16U);
+	cv::accumulateWeighted(ocv_in, ocv_inout, alpha, cv::noArray());
+#if GRAY
+	ocv_inout.convertTo(ocv_out_16bit, CV_16UC1);
+#else
+	ocv_inout.convertTo(ocv_out_16bit, CV_16UC3);
+#endif
 	// Write OpenCV reference image
-	imwrite("out_ocv.jpg", ocv_ref);
+	cv::imwrite("out_ocv.jpg", ocv_out_16bit);
 
-//	in_gray1.convertTo(inout_gray, CV_8U);
 
-	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
-	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
+	xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput2(in_gray.rows,in_gray.cols);
+	xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray.rows,in_gray.cols);
 
 	imgInput1.copyTo(in_gray.data);
 	imgInput2.copyTo(in_gray1.data);
 
 #if __SDSCC__
-perf_counter hw_ctr;
-hw_ctr.start();
+	perf_counter hw_ctr;
+	hw_ctr.start();
 #endif
 	accumulate_weighted_accel(imgInput1,imgInput2,imgOutput,alpha);
 #if __SDSCC__
-hw_ctr.stop();
-uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
+	xf::imwrite("out_hls.jpg", imgOutput);
 
-	out_gray.data = imgOutput.copyFrom();
+	xf::absDiff(ocv_out_16bit, imgOutput, diff);
+	// Save the difference image
+	cv::imwrite("diff.jpg", diff);
+	int err_thresh;float err_per;
+	xf::analyzeDiff(diff, err_thresh, err_per);
 
-
-	imwrite("out_hls.jpg", out_gray);
-	out_gray.convertTo(inout_gray1, CV_32FC1);
-	// Compute absolute difference image
-	absdiff(ocv_ref_in2, inout_gray1, diff);
-	// Save the difference image 
-	imwrite("diff.png", diff); 
-
-	// Find minimum and maximum differences
-	double minval = 256, maxval = 0;
-	int cnt = 0;
-	for (int i=0; i < in_gray.rows; i++)
-	{
-		for(int j = 0; j<in_gray.cols; j++)
-		{
-			float v = diff.at<float>(i,j);
-			if (v > 1) cnt++;
-			if (minval > v ) minval = v;
-			if (maxval < v)  maxval = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_gray.rows * in_gray.cols);
-
-	fprintf(stderr,"Minimum error in intensity = %f\n"
-			"Maximum error in intensity = %f\n"
-			"Percentage of pixels above error threshold = %f\n",
-			minval,maxval,err_per);
 	if(err_per > 0.0f)
-		return (int)-1;
+		return -1;
 	return 0;
 }
+

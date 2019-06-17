@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -108,7 +108,6 @@ int main(int argc, char** argv)
 	}
 
 	printf("starting the kernel...\n");
-
 #ifdef __SDSCC__
 	perf_counter hw_ctr;
 	hw_ctr.start();
@@ -116,22 +115,15 @@ int main(int argc, char** argv)
 	stereopipeline_accel(leftMat,rightMat,dispMat,mapxLMat,mapyLMat,mapxRMat,mapyRMat,leftRemappedMat,rightRemappedMat,bm_state,cameraMA_l_fix,cameraMA_r_fix,distC_l_fix, distC_r_fix, irA_l_fix, irA_r_fix,9,5);
 #ifdef __SDSCC__
 	hw_ctr.stop();
-	printf("end of kernel...\n");
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
+	printf("end of kernel...\n");
 
 	cv::Mat out_disp_16(rows,cols,CV_16UC1);
 	cv::Mat out_disp_img(rows,cols,CV_8UC1);
 
 	out_disp_16.data = dispMat.copyFrom();
 
-/*	for (int i=0; i<rows; i++)
-	{
-		for (int j=0; j<cols; j++)
-		{
-			out_disp_16.at<unsigned short>(i,j) = (unsigned short)dispMat.data[i*cols+j];
-		}
-	}*/
 	out_disp_16.convertTo(out_disp_img, CV_8U, (256.0/NO_OF_DISPARITIES)/(16.));
 	imwrite("hls_output.png",out_disp_img);
 	printf ("run complete !\n\n");

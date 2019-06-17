@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -43,7 +43,7 @@ void dilate_function_apply(XF_PTUNAME(DEPTH) *OutputValue, XF_PTUNAME(DEPTH) src
 #pragma HLS INLINE
 
 
-	XF_PTUNAME(DEPTH) packed_val=0, depth=XF_DTPIXELDEPTH(DEPTH,XF_NPPC1)/PLANES;
+	XF_PTUNAME(DEPTH) packed_val=0, depth=XF_PIXELWIDTH(DEPTH,XF_NPPC1)/PLANES;
 
 	Apply_dilate_Loop:
 	for(ap_uint<5> c=0,k=0; c < PLANES; c++,k+=depth)
@@ -116,7 +116,7 @@ void Process_function_d(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, unsigned char
 		{
 			if(row<img_height)
 			{
-				buf[row_ind[K_ROWS-1]][col] = _src_mat.data[rd_ind]; // Read data
+				buf[row_ind[K_ROWS-1]][col] = _src_mat.read(rd_ind); // Read data
 				rd_ind++;
 			}
 			else
@@ -188,7 +188,7 @@ void Process_function_d(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, unsigned char
 			{
 
 				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC), XF_DEPTH(TYPE,NPC)>(&OutputValues[0], P0, 0, (K_COLS>>1), shift_x);
-				_out_mat.data[wr_ind] = P0;
+				_out_mat.write(wr_ind, P0);
 				shift_x = 0;P0 = 0;
 				xfPackPixels<NPC, XF_WORDWIDTH(TYPE,NPC),  XF_DEPTH(TYPE,NPC)>(&OutputValues[0], P0, (K_COLS>>1), (npc-(K_COLS>>1)), shift_x);
 
@@ -199,7 +199,7 @@ void Process_function_d(xf::Mat<TYPE, ROWS, COLS, NPC> & _src_mat, unsigned char
 		if(NPC==XF_NPPC1)
 		{
 			if(col >= start_write){
-				_out_mat.data[wr_ind] = OutputValue;
+				_out_mat.write(wr_ind, OutputValue);
 				wr_ind++;
 			}
 
@@ -269,7 +269,7 @@ void xfdilate(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, N
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC/NPC
 #pragma HLS pipeline
 #pragma HLS LOOP_FLATTEN OFF
-			buf[i_row][i_col] = _src.data[rd_ind];//reading the rows of image
+			buf[i_row][i_col] = _src.read(rd_ind);//reading the rows of image
 			rd_ind++;
 		}
 	}
@@ -310,8 +310,8 @@ void xfdilate(xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, N
 }
 
 
-#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
-#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_src.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute("_dst.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 #pragma SDS data access_pattern("_src.data":SEQUENTIAL, "_dst.data":SEQUENTIAL)
 #pragma SDS data copy("_src.data"[0:"_src.size"], "_dst.data"[0:"_dst.size"])
 template<int BORDER_TYPE, int TYPE, int ROWS, int COLS,int K_SHAPE,int K_ROWS,int K_COLS, int ITERATIONS, int NPC=1>
@@ -321,9 +321,24 @@ void dilate (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NP
 
 	unsigned short imgheight = _src.rows;
 	unsigned short imgwidth = _src.cols;
-	assert(BORDER_TYPE == XF_BORDER_REPLICATE && "Only XF_BORDER_REPLICATE is supported");
+	assert(BORDER_TYPE == XF_BORDER_CONSTANT && "Only XF_BORDER_CONSTANT is supported");
 	assert(((imgheight <= ROWS ) && (imgwidth <= COLS)) && "ROWS and COLS should be greater than input image");
 
+
+
+//    FILE *fpx = fopen("xf_in.txt","w");
+//
+//           for(int i=0; i< 128;++i){
+//                          for(int j=0; j< (128>>3);++j){
+//                                         for(int m=0; m< XF_NPPC8; ++m){
+//                                                        for(int k=0; k< 1; ++k){
+//                                                                       fprintf(fpx,"%d\n",(unsigned char) _src.data[i*(128>>3)+j].chnl[m][k]);
+//                                                        }
+//                                         }
+//                          }
+//           }
+//
+//           fclose(fpx);
 
 
 
@@ -358,6 +373,22 @@ void dilate (xf::Mat<TYPE, ROWS, COLS, NPC> & _src, xf::Mat<TYPE, ROWS, COLS, NP
 		}
 		xfdilate<ROWS, COLS, XF_CHANNELS(TYPE,NPC), TYPE, NPC, 0, (COLS>>XF_BITSHIFT(NPC))+(K_COLS>>1), K_ROWS, K_COLS>(_src, _dst, imgheight, imgwidth,kernel);
 	}
+
+
+//         FILE *fp1 = fopen("xf_out.txt","w");
+//
+//               for(int i=0; i< 128;++i){
+//                              for(int j=0; j< (128>>3);++j){
+//                                             for(int m=0; m< XF_NPPC8; ++m){
+//                                                            for(int k=0; k< 1; ++k){
+//                                                                           fprintf(fp1, "%d\n",(unsigned char) _dst.data[i*(128>>3)+j].chnl[m][k]);
+//                                                                           //printf("%d ", imgInput.data[i*in_rgba.cols+j].chnl[m][k]);
+//                                                            }
+//                                             }
+//                              }
+//               }
+//
+//               fclose(fp1);
 
 	return;
 }//dilate

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -64,7 +64,7 @@ void xFDHOGKernel( hls::stream<XF_SNAME(WORDWIDTH)> _in_stream[NOC],
 {
 	// streams for dataflow between various processes
 	hls::stream<XF_SNAME(MAT_WW)>  grad_x_stream, grad_y_stream;
-	hls::stream<XF_SNAME(XF_16UW)> phase_stream, mag_stream;
+	hls::stream<XF_SNAME(XF_16UW)> phase_stream("phase_stream"), mag_stream("mag_stream");
 
 #pragma HLS DATAFLOW
 

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -32,45 +32,58 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_headers.h"
 #include "xf_mean_stddev_config.h"
 
-
+template<int CHNLS>
 float* xmean(cv::Mat& img)
 {
-	unsigned long Sum = 0,b_sum=0,g_sum=0,r_sum=0;
-	int i, j,c;
-	float* val=(float*)malloc(1*sizeof(float));
+	unsigned long Sum[CHNLS] ={0};
+	int i, j,c, k;
+	float* val=(float*)malloc(CHNLS*sizeof(float));
 
 	/* Sum of All Pixels */
 	for(i = 0; i < img.rows; ++i)
 	{
 		for(j = 0; j < img.cols; ++j)
 		{
+			for(k=0; k< CHNLS;++k){
+if(CHNLS==1)
+				Sum[k] += img.at<uchar>(i,j); //imag.data[i]}
+else
+				Sum[k] += img.at< cv::Vec3b >(i,j)[k]; //imag.data[i]}
 
 
-			Sum += img.at<uchar>(i,j); //imag.data[i]}
-
+			}
 		}
 	}
-	val[0]=(float)Sum /(float)(img.rows * img.cols);
+	for(int ch = 0; ch<CHNLS;++ch){
+		val[ch]=(float)Sum[ch] /(float)(img.rows * img.cols);
+	}
 	return val;
-
-
 }
-
+template <int CHNLS>
 void variance(cv::Mat& Img, float* mean, double *var)
 {
-	double sum = 0.0,b_sum=0.0,g_sum=0.0,r_sum=0.0;
+	double sum[CHNLS] ,b_sum=0.0,g_sum=0.0,r_sum=0.0;
+	int k;
+	double x[CHNLS];
 	for(int i = 0; i < Img.rows; i++)
 	{
 		for(int j = 0; j < Img.cols; j++)
 		{
+			for(k=0; k< CHNLS;++k){
 
-				double x = (double)mean[0] - ((double)Img.at<uint8_t>(i,j)) ;
-				sum = sum + pow(x, (double)2.0);
+				if(CHNLS==1)
+					x[k] = (double)mean[k] - ((double)Img.at<uint8_t>(i,j));
+				else
+					x[k] = (double)mean[k] - ((double)Img.at<cv::Vec3b>(i,j)[k]);
+
+				sum[k] = sum[k] + pow(x[k], (double)2.0);
+			}
 
 		}
 	}
-
-	var[0] = (sum / (double)(Img.rows * Img.cols));
+	for(int ch=0; ch< CHNLS;++ch){
+		var[ch] = (sum[ch] / (double)(Img.rows * Img.cols));
+	}
 }
 
 
@@ -95,23 +108,45 @@ int main(int argc, char** argv)
 	}
 
 
-
+#if GRAY
 	cvtColor(in_img, in_img, CV_BGR2GRAY);
+#endif
 
 	int channels=in_img.channels();
+	printf("Channels - %d\n", channels);
+	const int xfcv_channels = XF_CHANNELS(TYPE, _NPPC);
 
+		//////////////// 	Opencv  Reference  ////////////////////////
+	float *mean_c=(float*)malloc(channels*sizeof(float));
+	float *stddev_c=(float*)malloc(channels*sizeof(float));
+	double *var_c=(double*)malloc(channels*sizeof(double));
+	float mean_hls[channels],stddev_hls[channels];
+	float diff_mean[channels],diff_stddev[channels];
+	
+	
+#if __SDSCC__
+perf_counter hw_ctr1;
+hw_ctr1.start();
+#endif
+	mean_c = xmean<xfcv_channels>(in_img);
+	variance<xfcv_channels>(in_img, mean_c, var_c);
+#if __SDSCC__
+hw_ctr1.stop();uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+	
+	
 #if __SDSCC__
 	unsigned short *mean=(unsigned short*)sds_alloc_non_cacheable(channels*sizeof(unsigned short));
 	unsigned short *stddev=(unsigned short*)sds_alloc_non_cacheable(channels*sizeof(unsigned short));
 #else
-	unsigned short *mean=(unsigned short*)malloc(channels*sizeof(unsigned short));
+	unsigned short *mean=(unsigned short*)malloc( channels* sizeof ( unsigned short));
 	unsigned short *stddev=(unsigned short*)malloc(channels*sizeof(unsigned short));
 #endif
-	static xf::Mat<TYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
+	xf::Mat<TYPE, HEIGHT, WIDTH, _NPPC> imgInput(in_img.rows,in_img.cols);
 
 	imgInput.copyTo(in_img.data);
 
-
+	///HLS function call
 #if __SDSCC__
 perf_counter hw_ctr;
 hw_ctr.start();
@@ -121,16 +156,6 @@ hw_ctr.start();
 hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 	
-	//////////////// 	Opencv  Reference  ////////////////////////
-	float *mean_c=(float*)malloc(channels*sizeof(float));
-	float *stddev_c=(float*)malloc(channels*sizeof(float));
-	double *var_c=(double*)malloc(channels*sizeof(double));
-	float mean_hls[channels],stddev_hls[channels];
-	float diff_mean[channels],diff_stddev[channels];
-	/* Two Pass Mean and Variance */
-	mean_c = xmean(in_img);
-	variance(in_img, mean_c, var_c);
-
 	for(int c=0;c<channels;c++)
 	{
 		stddev_c[c] = sqrt(var_c[c]);
@@ -142,7 +167,7 @@ hw_ctr.stop();uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 	fprintf(stderr,"Ref. Std.Dev. = %f\t Result = %f\tERROR = %f \n",stddev_c[c], stddev_hls[c], diff_stddev[c]);
 
 
-	if(diff_mean[c] > 0.1f | diff_stddev[c] > 0.1f){
+	if(abs(diff_mean[c]) > 1 | abs(diff_stddev[c]) > 1){
 		printf("\nTest Failed\n");
 		return -1;
 	}

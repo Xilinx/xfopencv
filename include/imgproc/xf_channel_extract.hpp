@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -51,13 +51,16 @@ void xfChannelExtractKernel(
 		xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
 		uint16_t _channel, uint16_t height,uint16_t width)
 {
-#define XF_STEP 8
+//#define XF_STEP 8
+const int noofbits = XF_DTPIXELDEPTH(SRC_T, NPC);
 
 	ap_uint<13> i,j,k;
 	XF_TNAME(SRC_T, NPC) in_pix;
 	XF_TNAME(DST_T, NPC) out_pix;
 	ap_uint<XF_PIXELDEPTH(DST_T)> result;
 	int shift = 0;
+	int bitdepth_src = XF_DTPIXELDEPTH(SRC_T, NPC) / XF_CHANNELS(SRC_T, NPC);
+	int bitdepth_dst = XF_DTPIXELDEPTH(DST_T, NPC) / XF_CHANNELS(DST_T, NPC);
 
 	if(_channel==XF_EXTRACT_CH_0 | _channel==XF_EXTRACT_CH_R | _channel==XF_EXTRACT_CH_Y)
 	{
@@ -65,15 +68,15 @@ void xfChannelExtractKernel(
 	}
 	else if(_channel==XF_EXTRACT_CH_1 | _channel==XF_EXTRACT_CH_G | _channel==XF_EXTRACT_CH_U)
 	{
-		shift = 8;
+		shift = noofbits;
 	}
 	else if(_channel==XF_EXTRACT_CH_2 | _channel==XF_EXTRACT_CH_B | _channel==XF_EXTRACT_CH_V)
 	{
-		shift = 16;
+		shift = noofbits*2;
 	}
 	else if(_channel==XF_EXTRACT_CH_3 | _channel==XF_EXTRACT_CH_A)
 	{
-		shift = 24;
+		shift = noofbits*3;
 	}
 
 	RowLoop:
@@ -87,18 +90,18 @@ void xfChannelExtractKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 			int y;
-			in_pix = (XF_TNAME(SRC_T, NPC))(_src_mat.data[i*width+j]);
+			in_pix = _src_mat.read(i*width+j);
 
 			ProcLoop:
-			for( k = 0; k < (8<<XF_BITSHIFT(NPC)); k += XF_STEP)
+			for( k = 0; k < (noofbits<<XF_BITSHIFT(NPC)); k += noofbits)
 			{
 #pragma HLS unroll
-				y = k << 2;
-				result = in_pix.range(y+shift+7, y+shift);
-				out_pix.range(k+(XF_STEP-1), k) = result;
+				y = k * (XF_CHANNELS(SRC_T, NPC));
+				result = in_pix.range(y+shift+noofbits-1, y+shift);
+				out_pix.range(k+(noofbits-1), k) = result;
 			}
 
-			_dst_mat.data[i*width+j] = (XF_TNAME(DST_T, NPC))out_pix;
+			_dst_mat.write(i*width+j, out_pix);
 		}//ColLoop
 	}//RowLoop
 }
@@ -119,8 +122,8 @@ void extractChannel(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat, xf::Mat<DST_T, R
 		    (_channel == XF_EXTRACT_CH_U) || (_channel == XF_EXTRACT_CH_V)) && "Invalid Channel Value. See xf_channel_extract_e enumerated type");
 	assert(((_src_mat.rows <= ROWS ) && (_src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 	assert(((_dst_mat.rows <= ROWS ) && (_dst_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
-	assert((SRC_T == XF_8UC4) && (DST_T == XF_8UC1) && "Source image should be of 4 channels and destination image of 1 channel");
-	assert(((NPC == XF_NPPC1)) && "NPC must be XF_NPPC1");
+	assert((SRC_T == XF_8UC4 || SRC_T == XF_8UC3) && (DST_T == XF_8UC1) && "Source image should be of 4 channels and destination image of 1 channel");
+//	assert(((NPC == XF_NPPC1)) && "NPC must be XF_NPPC1");
 
 	short width=_src_mat.cols>>XF_BITSHIFT(NPC);
 

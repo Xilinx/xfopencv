@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -26,7 +26,7 @@ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABI
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
+ ***************************************************************************/
 #include "xf_headers.h"
 #include "xf_median_blur_config.h"
 
@@ -39,81 +39,77 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	cv::Mat in_gray, out_img, ocv_ref, diff;
+	cv::Mat in_img, out_img, ocv_ref, diff;
 
 	unsigned short in_width,in_height;
 
-	/*  reading in the color image  */
-	in_gray = cv::imread(argv[1],0);
+	/*  reading the gray/color image  */
+#if GRAY
+	in_img = cv::imread(argv[1],0);
+	ocv_ref.create(in_img.rows,in_img.cols,CV_8UC1);
+	out_img.create(in_img.rows,in_img.cols,CV_8UC1);
+	diff.create(in_img.rows,in_img.cols,CV_8UC1);
+#else
+	in_img = cv::imread(argv[1],1);
+	ocv_ref.create(in_img.rows,in_img.cols,CV_8UC3);
+	out_img.create(in_img.rows,in_img.cols,CV_8UC3);
+	diff.create(in_img.rows,in_img.cols,CV_8UC3);
+#endif
 
-	if (in_gray.data == NULL)
+	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
 		return 0;
 	}
 
-	ocv_ref.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	out_img.create(in_gray.rows,in_gray.cols,in_gray.depth());
-	diff.create(in_gray.rows,in_gray.cols,in_gray.depth());
 	/////////////////    OpenCV reference  /////////////////
-	cv::medianBlur(in_gray,ocv_ref,WINDOW_SIZE);
 
-	in_width = in_gray.cols;
-	in_height = in_gray.rows;
+#if __SDSCC__
+	perf_counter hw_ctr; hw_ctr.start();
+#endif
+
+	cv::medianBlur(in_img,ocv_ref,WINDOW_SIZE);
+
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
+
+	in_width = in_img.cols;
+	in_height = in_img.rows;
 
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> imgInput(in_height,in_width);
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> imgOutput(in_height,in_width);
 
-	
-	imgInput = xf::imread<TYPE, HEIGHT, WIDTH, NPxPC>(argv[1], 0);
+	imgInput.copyTo(in_img.data);
 
-	#if __SDSCC__
-	perf_counter hw_ctr;		
-	hw_ctr.start();
-	#endif
-	
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+
 	median_blur_accel(imgInput, imgOutput);
-	
-	#if __SDSCC__
-		hw_ctr.stop();
-		uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
 
-		// Write output image
-		xf::imwrite("hls_out.jpg",imgOutput);
 
-		cv::imwrite("ref_img.jpg", ocv_ref);  // reference image
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
-		xf::absDiff(ocv_ref, imgOutput, diff);
+	// Write output image
+	xf::imwrite("hls_out.jpg",imgOutput);
+	cv::imwrite("ref_img.jpg", ocv_ref);
+	xf::absDiff(ocv_ref, imgOutput, diff);
 
-	// Find minimum and maximum differences.
-	double minval = 255, maxval = 0;
-	int cnt = 0;
-	for (int i = 0; i < in_gray.rows; i++)
-	{
-		for(int j = 0; j < in_gray.cols; j++)
-		{
-			uchar v = diff.at<uchar>(i,j);
-			if(diff.at<uchar>(i,j) <= 0)
-				diff.at<uchar>(i,j) = 0;
-			else
-				diff.at<uchar>(i,j) = 255;
-			if (v>0)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-		}
-	}
-	cv::imwrite("diff_img.jpg",diff); // Save the difference image for debugging purpose
-	float err_per = 100.0*(float)cnt/(in_gray.rows*in_gray.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+	float err_per;
+	xf::analyzeDiff(diff,0,err_per);
+	cv::imwrite("diff_img.jpg",diff);
 
-	in_gray.~Mat();
+	in_img.~Mat();
 	out_img.~Mat();
 	ocv_ref.~Mat();
-	in_gray.~Mat();
+	in_img.~Mat();
 	diff.~Mat();
 
 	if(err_per > 0.0f)

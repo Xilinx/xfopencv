@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -66,7 +66,15 @@ int main(int argc, char** argv)
 	in_gray1.convertTo(ocv_ref_in2, CV_32FC1);
 
 	// OpenCV function
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
 	cv::addWeighted(ocv_ref_in1, alpha, ocv_ref_in2, beta, gama, ocv_ref);
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	// Write OpenCV reference image
 	imwrite("out_ocv.jpg", ocv_ref);
@@ -80,13 +88,13 @@ int main(int argc, char** argv)
 	imgInput2.copyTo(in_gray1.data);
 
 #if __SDSCC__
-perf_counter hw_ctr;
-hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 	add_weighted_accel(imgInput1,alpha,imgInput2,beta,gama,imgOutput);
 #if __SDSCC__
-hw_ctr.stop();
-uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
 
 

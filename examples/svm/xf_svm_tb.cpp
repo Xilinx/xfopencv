@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -71,8 +71,8 @@ int main()
 	ap_int<16> infix_1[IN_ARRAY_SIZE_1], infix_2[IN_ARRAY_SIZE_2];
 	for(int i=0; i<TOTAL_ARRAY_ELEMENTS; i++)
 	{
-		Input1.data[i] = in_1[i] * pow(2,IN_FRAC_BITS_1);
-		Input2.data[i] = in_2[i] * pow(2,IN_FRAC_BITS_2);
+		Input1.write(i, in_1[i] * pow(2,IN_FRAC_BITS_1));
+		Input2.write(i, in_2[i] * pow(2,IN_FRAC_BITS_2));
 	}
 
 	ap_int<32> resultFIX;

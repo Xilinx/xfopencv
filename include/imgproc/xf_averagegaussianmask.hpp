@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -82,15 +82,14 @@ void xFAverageGaussian3x3(XF_PTNAME(DEPTH_SRC) *Maskvalues,
 	}
 }
 
-template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
-void ProcessAverageGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH) > & _out_mat,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH, int TC>
+void ProcessAverageGaussian3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat,
 		XF_SNAME(WORDWIDTH) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(DEPTH) src_buf1[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH) src_buf2[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(DEPTH) src_buf3[XF_NPIXPERCYCLE(NPC)+2],
 		XF_PTNAME(DEPTH) OutputValues[XF_NPIXPERCYCLE(NPC)],
-		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row)
+		XF_SNAME(WORDWIDTH) &P0, uint16_t img_width,  uint16_t img_height, uint16_t &shift_x,  ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, ap_uint<13> row,int &read_index,int &write_index)
 {
-#pragma HLS INLINE
+#pragma HLS INLINE 
 
 	XF_SNAME(WORDWIDTH) buf0, buf1, buf2;
 	ap_uint<5> npc = XF_NPIXPERCYCLE(NPC);
@@ -102,7 +101,7 @@ void ProcessAverageGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(row < img_height)
-			buf[bottom][col] = _src_mat.read(); // Read data
+			buf[bottom][col] = _src_mat.read(read_index++); // Read data
 		else
 			buf[bottom][col] = 0;
 
@@ -130,7 +129,7 @@ void ProcessAverageGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
 			xfPackPixels<NPC, WORDWIDTH, DEPTH>(&OutputValues[0], P0, 0, 1, shift_x);
 
 
-			_out_mat.write(P0);
+			_out_mat.write(write_index++,P0);
 
 			shift_x = 0;
 			P0 = 0;
@@ -154,17 +153,19 @@ void ProcessAverageGaussian3x3(hls::stream< XF_SNAME(WORDWIDTH) > & _src_mat,
  * _src_mat		: Input image
  * _dst_mat	    : Result
  */
-template<int ROWS, int COLS, int DEPTH_SRC, int NPC, int WORDWIDTH_SRC,int TC>
-void xFAverageGaussianMask3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC) >& _src_mat,
-		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _out_mat,
+template<int SRC_T,int DST_T,int ROWS, int COLS, int DEPTH_SRC, int NPC, int WORDWIDTH_SRC,int TC>
+void xFAverageGaussianMask3x3(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,xf::Mat<DST_T, ROWS, COLS, NPC> & _out_mat,
 		uint16_t img_height,uint16_t img_width)
 {
 	img_width = img_width>>XF_BITSHIFT(NPC);
+
 	ap_uint<13> row_ind;
 	ap_uint<2> tp, mid, bottom;
 	ap_uint<5> buf_size = XF_NPIXPERCYCLE(NPC) + 2;
 	uint16_t shift_x = 0;
 	ap_uint<13> row, col;
+
+	int in_index_new = 0, out_index = 0;
 
 	XF_PTNAME(DEPTH_SRC) OutputValues[XF_NPIXPERCYCLE(NPC)];
 
@@ -183,13 +184,15 @@ void xFAverageGaussianMask3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC) >& _src_mat,
 #pragma HLS ARRAY_PARTITION variable=buf complete dim=1
 	row_ind = 1;
 
+
 	Clear_Row_Loop:
 	for(col = 0; col < img_width; col++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
+
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(in_index_new++);
 	}
 	row_ind++;
 
@@ -216,8 +219,8 @@ void xFAverageGaussianMask3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC) >& _src_mat,
 
 
 		P0 = 0;
-		ProcessAverageGaussian3x3<ROWS, COLS, DEPTH_SRC, NPC, WORDWIDTH_SRC, TC>
-		(_src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row);
+		ProcessAverageGaussian3x3<SRC_T,DST_T,ROWS, COLS, DEPTH_SRC, NPC, WORDWIDTH_SRC, TC>
+		(_src_mat, _out_mat, buf, src_buf1, src_buf2, src_buf3,OutputValues, P0, img_width, img_height, shift_x, tp, mid, bottom, row,in_index_new,out_index);
 
 
 		if ((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
@@ -243,7 +246,7 @@ void xFAverageGaussianMask3x3(hls::stream<XF_SNAME(WORDWIDTH_SRC) >& _src_mat,
 		xfPackPixels<NPC, WORDWIDTH_SRC, DEPTH_SRC>(&OutputValues[0], P0, 0, 1, shift_x);
 
 
-		_out_mat.write(P0);
+		_out_mat.write(out_index++,P0);
 
 
 		shift_x = 0;

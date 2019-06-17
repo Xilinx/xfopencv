@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -27,8 +27,8 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _XF_MEDIAN_BLUR_CONFIG_
-#define _XF_MEDIAN_BLUR_CONFIG_
+#ifndef _AU_MEDIAN_BLUR_CONFIG_
+#define _AU_MEDIAN_BLUR_CONFIG_
 
 #include "hls_stream.h"
 #include "ap_int.h"
@@ -42,9 +42,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NPxPC XF_NPPC8
 #endif
 
-
+#if GRAY
 #define TYPE XF_8UC1
 #define CHANNELS 1
+#else
+#define TYPE XF_8UC3
+#define CHANNELS 3
+#endif
 
 void median_blur_accel(xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> &_src, xf::Mat<TYPE, HEIGHT, WIDTH, NPxPC> &_dst);
 	

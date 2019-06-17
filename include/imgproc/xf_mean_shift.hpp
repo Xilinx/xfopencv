@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -69,7 +69,7 @@ void MeanShift(xf::Mat<SRC_T, ROWS, COLS, NPC> &_in_mat, uint16_t* x1, uint16_t*
 		track_status[i] = status[i];
 	}
 
-	xFMeanShiftKernel<OBJ_ROWS,OBJ_COLS,MAXOBJ,MAXITERS,NPC,XF_32UW>((unsigned int*)_in_mat.data,_in_mat.rows,_in_mat.cols,tlx,tly,_obj_height,
+	xFMeanShiftKernel<OBJ_ROWS,OBJ_COLS,SRC_T,ROWS,COLS,MAXOBJ,MAXITERS,NPC>(_in_mat,tlx,tly,_obj_height,
 			_obj_width,dispx,dispy,track_status,frame_status,no_objects,no_iters);
 
 	for (int i=0; i<no_objects; i++)

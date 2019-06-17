@@ -2,9 +2,8 @@
     "example" : "cvtcolor - File I/O",
     "overview" : "cvtcolor",
     "board" : [
-        "zcu102_es2_rv_ss",
-        "zcu102_rv_ss",
-        "zcu104_rv_ss"
+        "zcu102",
+        "zcu104"
     ],
     "os" : [
         "Linux"
@@ -14,7 +13,7 @@
     },
     "accelerators" : [
         {
-            "name" : "iyuv2nv12",
+            "name" : "bgr2gray",
             "location" : "<LIBRARY>/include/imgproc/xf_cvt_color.hpp",
             "clkid" : "2"
         }

@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -29,6 +29,8 @@
  ***************************************************************************/
 #include "xf_headers.h"
 #include "xf_corner_tracker_config.h"
+
+#define VIDEO_INPUT 0
 
 #if __SDSCC__
 #define MEMORYALLOC(x) sds_alloc_non_cacheable(x)
@@ -158,10 +160,11 @@ float write_result_to_image_remap_seq (cv::Mat imgNext, cv::Mat imgref, cv::Mat 
 int main (int argc, char **argv) {
 
 	if (argc!=5) {
-		std::cout << "Usage incorrect! Correct usage: ./exe\n<input video>\n<no. of frames>\n<Harris Threshold>\n<No. of frames after which Harris Corners are Reset>" << std::endl;
+		std::cout << "Usage incorrect! Correct usage: ./exe\n<input video or path to input images>\n<no. of frames>\n<Harris Threshold>\n<No. of frames after which Harris Corners are Reset>" << std::endl;
 		return -1;
 	}
-
+	char *path = argv[1];
+#if VIDEO_INPUT
 	cv::VideoCapture cap;
 
 	std::stringstream imfile;
@@ -181,7 +184,16 @@ int main (int argc, char **argv) {
 
 	unsigned int imageWidth = (cap.get(CV_CAP_PROP_FRAME_WIDTH));
 	unsigned int imageHeight = (cap.get(CV_CAP_PROP_FRAME_HEIGHT));
-
+#else	
+	cv::Mat frame;
+	char img_name[1000],out_img_name[50];
+	sprintf(img_name,"%s/im%d.png",path,0);
+	fprintf(stderr,"path is %s",img_name);
+	frame = cv::imread(img_name,1);
+	unsigned int imageWidth = frame.cols;
+	unsigned int imageHeight = frame.rows;
+	
+#endif
 	unsigned int harrisThresh = atoi(argv[3]);
 
 	//allocating memory spaces for all the hardware operations
@@ -219,6 +231,8 @@ int main (int argc, char **argv) {
 	std::cout << "num of test cases: " << atoi(argv[2]) << "\n";
 	cv::Mat im0 = cv::Mat(imageHeight, imageWidth, CV_8UC1, imagepyr1[0].data);
 	cv::Mat im1 = cv::Mat(imageHeight, imageWidth, CV_8UC1, imagepyr2[0].data);
+	
+#if VIDEO_INPUT	
 	cv::Mat readVideoImage;
 	for(int readn = 0; readn<1; readn++){
 		cap >> readVideoImage;
@@ -230,10 +244,16 @@ int main (int argc, char **argv) {
 	cv::cvtColor(readVideoImage, im1, cv::COLOR_BGR2GRAY);
 
 	cv::VideoWriter video("trackedCorners.avi",CV_FOURCC('M','J','P','G'),5, cv::Size(imageWidth,imageHeight),true);
+#else
+cv::cvtColor(frame, im1, cv::COLOR_BGR2GRAY);
+
+#endif	
+	
 
 	for (int i=0;i<atoi(argv[2]);i++) {
 
 		im1.copyTo(im0);
+#if VIDEO_INPUT
 		cap >> readVideoImage;
 		if( readVideoImage.empty() ){
 			std::cout << "im1 is empty" << std::endl;
@@ -243,7 +263,15 @@ int main (int argc, char **argv) {
 		{
 			std::cout << "Read frame no. " << i+1 << std::endl;
 		}
+
 		cv::cvtColor(readVideoImage, im1, cv::COLOR_BGR2GRAY);
+#else
+
+	sprintf(img_name,"%s/im%d.png",path,i+1);
+	frame = cv::imread(img_name,1);
+	cv::cvtColor(frame, im1, cv::COLOR_BGR2GRAY);
+	
+#endif
 
 		std::cout << "***************************************************" << std::endl;
 		std::cout << "Test Case no: " << i+1 << std::endl;
@@ -294,7 +322,12 @@ int main (int argc, char **argv) {
 				cv::circle( outputimage, rmappoint, 2, cv::Scalar(0,0,255), -1, 8);
 			}
 		}
+		#if VIDEO_INPUT
 		video.write(outputimage);
+		#else
+		sprintf(out_img_name,"out_img%d.png",i);
+		cv::imwrite(out_img_name,outputimage);	
+		#endif
 		std::cout << "***************************************************"<<std::endl;
 		if((i+1)%atoi(argv[4])==0)
 		{
@@ -313,8 +346,10 @@ int main (int argc, char **argv) {
 	}
 	im0.data = NULL;
 	im1.data = NULL;
+	#if VIDEO_INPUT
 	cap.release();
 	video.release();
+	#endif
 	im0.release();
 	im1.release();
 	MEMORYFREE(list);

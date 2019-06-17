@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -55,9 +55,13 @@ typedef unsigned uint32_t;
 #define NPC1 XF_NPPC8
 #endif
 
+#if GRAY
 #define IN_TYPE XF_8UC1
 #define OUT_TYPE  XF_8UC1 //XF_16SC1 //
-
+#else
+#define IN_TYPE XF_8UC3
+#define OUT_TYPE  XF_8UC3 //XF_16SC1 //
+#endif
 
 void scharr_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &_src,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgx,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &_dstgy);
 

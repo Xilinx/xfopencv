@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -51,8 +51,8 @@ int AccumulateWeightedKernel(
 	ap_uint<24> temp  = (alpha * ((1<<23)-1));
 	ap_uint<24> temp1 = ((1<<23)-1) - temp + 1;
 
-	XF_SNAME(WORDWIDTH_DST) pxl_pack_out;
-	XF_SNAME(WORDWIDTH_SRC)  pxl_pack1, pxl_pack2;
+	XF_TNAME(DST_T,NPC) pxl_pack_out;
+	XF_TNAME(SRC_T,NPC)  pxl_pack1, pxl_pack2;
 	RowLoop:
 	for( i = 0; i < height; i++)
 	{
@@ -64,38 +64,37 @@ int AccumulateWeightedKernel(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			pxl_pack1 = (XF_SNAME(WORDWIDTH_SRC))(src1.data[i*width+j]);
-			pxl_pack2 = (XF_SNAME(WORDWIDTH_SRC))(src2.data[i*width+j]);
+			pxl_pack1 = (XF_TNAME(SRC_T,NPC))src1.read(i*width+j);
+			pxl_pack2 = (XF_TNAME(SRC_T,NPC))src2.read(i*width+j);
 			ProcLoop:
 			for( k = 0, l = 0; k < ((8<<XF_BITSHIFT(NPC))*PLANES); k+=XF_IN_STEP, l+=XF_OUT_STEP)
 			{
-				XF_PTNAME(DEPTH_SRC) pxl1 = pxl_pack1.range(k+7, k);
-				XF_PTNAME(DEPTH_SRC) pxl2 = pxl_pack2.range(k+7, k);
+				XF_CTUNAME(SRC_T,NPC) pxl1 = pxl_pack1.range(k+7, k);
+				XF_CTUNAME(SRC_T,NPC) pxl2 = pxl_pack2.range(k+7, k);
 
 				ap_uint<40> firstcmp  = pxl1 * temp;
 				ap_uint<40> secondcmp = pxl2 * temp1;
 
-				XF_PTNAME(DEPTH_DST) t = (firstcmp + secondcmp) >> 23;
+				XF_CTUNAME(DST_T,NPC) t = (firstcmp + secondcmp) >> 23;
 
 				pxl_pack_out.range(l+XF_OUT_STEP-1, l) = t;
 			}
 
-			dst.data[i*width+j] = (XF_SNAME(WORDWIDTH_DST))pxl_pack_out;
+			dst.write(i*width+j, (XF_TNAME(DST_T,NPC))pxl_pack_out);
 		}
 	}
 	return 0;
 }
 
-
-//#pragma SDS data data_mover("src1.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("src2.data":AXIDMA_SIMPLE)
-//#pragma SDS data data_mover("dst.data":AXIDMA_SIMPLE)
+#pragma SDS data data_mover ("src1.data":FASTDMA,"src2.data":FASTDMA, "dst.data":FASTDMA)
 #pragma SDS data access_pattern("src1.data":SEQUENTIAL)
 #pragma SDS data access_pattern("src2.data":SEQUENTIAL)
 #pragma SDS data copy("src1.data"[0:"src1.size"])
 #pragma SDS data copy("src2.data"[0:"src2.size"])
 #pragma SDS data access_pattern("dst.data":SEQUENTIAL)
 #pragma SDS data copy("dst.data"[0:"dst.size"])
+
+
 template< int SRC_T,int DST_T, int ROWS, int COLS, int NPC = 1>
 void accumulateWeighted(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & src2, xf::Mat<DST_T, ROWS, COLS, NPC> & dst,float alpha)
 {

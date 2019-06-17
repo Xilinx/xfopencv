@@ -1,33 +1,33 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
-All rights reserved.
+ Copyright (c) 2019, Xilinx, Inc.
+ All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, 
-are permitted provided that the following conditions are met:
+ Redistribution and use in source and binary forms, with or without modification,
+ are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, 
-this list of conditions and the following disclaimer.
+ 1. Redistributions of source code must retain the above copyright notice,
+ this list of conditions and the following disclaimer.
 
-2. Redistributions in binary form must reproduce the above copyright notice, 
-this list of conditions and the following disclaimer in the documentation 
-and/or other materials provided with the distribution.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+ this list of conditions and the following disclaimer in the documentation
+ and/or other materials provided with the distribution.
 
-3. Neither the name of the copyright holder nor the names of its contributors 
-may be used to endorse or promote products derived from this software 
-without specific prior written permission.
+ 3. Neither the name of the copyright holder nor the names of its contributors
+ may be used to endorse or promote products derived from this software
+ without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
-THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
-IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
-PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-***************************************************************************/
-
+ ***************************************************************************/
+ 
 #include "xf_headers.h"
 #include "xf_colordetect_config.h"
 
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
 
 	out_img1.create(height,width,CV_8U);
 
-	cv::cvtColor(in_img, img_rgba, CV_BGR2RGBA);
+	//cv::cvtColor(in_img, img_rgba, CV_BGR2RGBA);
 	
 	cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
 
@@ -139,10 +139,31 @@ int main(int argc, char **argv)
 	high_thresh[8] = 255;
 
 	printf("thresholds loaded");
+	
+	
+	// Define the low and high thresholds
+	// Want to grab 3 colors (Yellow, Green, Red) for teh input image
+	unsigned char nLowThresh[3][3] = { { 22, 150, 60 }, // Lower boundary for Yellow
+			{ 38, 150, 60 }, // Lower boundary for Green
+			{ 160, 150, 60 } }; // Lower boundary for Red
+	unsigned char nHighThresh[3][3] = { { 38, 255, 255 }, // Upper boundary for Yellow
+			{ 75, 255, 255 }, // Upper boundary for Green
+			{ 179, 255, 255 } }; // Upper boundary for Red
 
-	static xf::Mat<XF_8UC4,HEIGHT,WIDTH,NPIX> imgInput(in_img.rows,in_img.cols);
 
-	static xf::Mat<XF_8UC4,HEIGHT,WIDTH,NPIX> hsvimage(in_img.rows,in_img.cols);
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
+	colordetect(in_img, out_img1, nLowThresh, nHighThresh);
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+
+	static xf::Mat<XF_8UC3,HEIGHT,WIDTH,NPIX> imgInput(in_img.rows,in_img.cols);
+
+	static xf::Mat<XF_8UC3,HEIGHT,WIDTH,NPIX> hsvimage(in_img.rows,in_img.cols);
 	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPIX> imgrange(in_img.rows,in_img.cols);
 
 	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPIX> imgerode1(in_img.rows,in_img.cols);
@@ -150,7 +171,7 @@ int main(int argc, char **argv)
 	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPIX> imgdilate2(in_img.rows,in_img.cols);
 	static xf::Mat<XF_8UC1,HEIGHT,WIDTH,NPIX> imgOutput(in_img.rows,in_img.cols);
 
-	imgInput.copyTo(img_rgba.data);
+	imgInput.copyTo(in_img.data);
 
 
 	printf("image loaded");
@@ -170,17 +191,8 @@ int main(int argc, char **argv)
 
 	out_img.data = imgOutput.copyFrom();
 
-	// Define the low and high thresholds
-	// Want to grab 3 colors (Yellow, Green, Red) for teh input image
-	unsigned char nLowThresh[3][3] = { { 22, 150, 60 }, // Lower boundary for Yellow
-			{ 38, 150, 60 }, // Lower boundary for Green
-			{ 160, 150, 60 } }; // Lower boundary for Red
-	unsigned char nHighThresh[3][3] = { { 38, 255, 255 }, // Upper boundary for Yellow
-			{ 75, 255, 255 }, // Upper boundary for Green
-			{ 179, 255, 255 } }; // Upper boundary for Red
+	
 
-
-	colordetect(in_img, out_img1, nLowThresh, nHighThresh);
 
 	imwrite("outputref.png", out_img1);
 	imwrite("output.png", out_img); 

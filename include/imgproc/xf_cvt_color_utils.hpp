@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -74,60 +74,62 @@
 #define V2B		0       //0
 
 #define F_05	16384   // 0.5 in Q1.15 format
+/********************************************************************************
+ * 	Parameters reqd. for RGB to GRAY conversion
+ *	   -- Q1.15 format
+ *	   -- A2X  A's contribution in calculation of X
+ *	   -- Only fractional part is taken for weigths greater
+ *	      than 1 and interger part is added as offset
+ *
+ *
+ ********************************************************************************/
+#define _CVT_WEIGHT1		9798	//0.299
+#define _CVT_WEIGHT2		19235	//0.587
+#define _CVT_WEIGHT3		3736	//0.114
+/********************************************************************************
+ * 	Parameters reqd. for RGB to XYZ conversion
+ *	   -- Q1.15 format
+ *	   -- A2X  A's contribution in calculation of X
+ *	   -- Only fractional part is taken for weigths greater
+ *	      than 1 and interger part is added as offset
+ *
+ *
+ ********************************************************************************/
+#define _CVT_X1		13515	//0.412453
+#define _CVT_X2		11717	//0.357580
+#define _CVT_X3		5915	//0.180523
 
-//template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int SIZE>
-//void auPushIntoMat(XF_SNAME(WORDWIDTH_SRC)* _src, auviz::Mat<ROWS,COLS,DEPTH,NPC,WORDWIDTH_DST>& _dst, int scale)
-//{
-//	int max_loop = _dst.cols >> scale;
-//	if(NPC==AU_NPPC1)
-//	{
-//		WR_STRM1:
-//		for(int j = 0; j < max_loop; j+=2)
-//		{
-//#pragma HLS pipeline
-//#pragma HLS LOOP_TRIPCOUNT min=SIZE max=SIZE
-//			_dst.write(_src[j] | ((XF_SNAME(WORDWIDTH_DST))_src[j+1]) << AU_WORDDEPTH(WORDWIDTH_SRC));
-//		}
-//	}
-//	else
-//	{
-//		WR_STRM:
-//		for(int j = 0; j < max_loop; ++j)
-//		{
-//#pragma HLS pipeline
-//#pragma HLS LOOP_TRIPCOUNT min=SIZE max=SIZE
-//			_dst.write(_src[j]);
-//		}
-//	}
-//}
-//
-//template<int ROWS, int COLS, int DEPTH, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int SIZE>
-//void auPullFromMat(auviz::Mat<ROWS, COLS, DEPTH, NPC, WORDWIDTH_SRC>& _src, XF_SNAME(WORDWIDTH_DST)* _dst)
-//{
-//	if(NPC==AU_NPPC1)
-//	{
-//		RD_STRM1:
-//		for(int j = 0; j < _src.cols; j+=2)
-//		{
-//#pragma HLS pipeline
-//#pragma HLS LOOP_TRIPCOUNT min=SIZE max=SIZE
-//			XF_SNAME(WORDWIDTH_SRC) x = _src.read();
-//			_dst[j] = x.range(AU_WORDDEPTH(WORDWIDTH_DST)-1,0);
-//			_dst[j+1] = x.range(AU_WORDDEPTH(WORDWIDTH_SRC)-1,AU_WORDDEPTH(WORDWIDTH_DST));
-//		}
-//	}
-//	else
-//	{
-//		RD_STRM:
-//		for(int j = 0; j < _src.cols; ++j)
-//		{
-//#pragma HLS pipeline
-//#pragma HLS LOOP_TRIPCOUNT min=SIZE max=SIZE
-//			_dst[j] = _src.read();
-//		}
-//	}
-//}
+#define _CVT_Y1		6969	//0.212671
+#define _CVT_Y2		23434	//0.715160
+#define _CVT_Y3		2364	//0.072169
 
+#define _CVT_Z1		636		//0.019334
+#define _CVT_Z2		3906	//0.119193
+#define _CVT_Z3		31137	//0.950227
+/********************************************************************************
+ * 	Parameters reqd. for RGB to XYZ conversion
+ *	   -- Q1.15 format
+ *	   -- A2X  A's contribution in calculation of X
+ *	   -- Only fractional part is taken for weigths greater
+ *	      than 1 and interger part is added as offset
+ *
+ *
+ ********************************************************************************/
+#define _CVT_R1		26546	//3.240479
+#define _CVT_R2		52944	//-1.53715
+#define _CVT_R3		61452	//-0.498535
+
+#define _CVT_G1		57596	//-0.969256
+#define _CVT_G2		15368	//1.875991
+#define _CVT_G3		340		//0.041556
+
+#define _CVT_B1		456		//0.055648
+#define _CVT_B2		63864	//-0.204043
+#define _CVT_B3		8662	//1.057311
+
+
+#define CR_WEIGHT	23364	//0.713
+#define CB_WEIGHT	18481	//0.564
 /**************************************************************************
  * Pack Chroma values into a single variable
  *************************************************************************/
@@ -753,7 +755,19 @@ static uint8_t saturate_cast(int32_t Value, int32_t offset) {
 
 	return Value_uchar;
 }
+static uint8_t saturate_cast(int32_t Value, int32_t offset,int fbits) {
+	// Right shifting Value 15 times to get the integer part
+	int Value_int = (Value >> fbits) + offset;
+	unsigned char Value_uchar = 0;
+	if (Value_int > 255)
+		Value_uchar = 255;
+	else if (Value_int < 0)
+		Value_uchar = 0;
+	else
+		Value_uchar = (uint8_t) Value_int;
 
+	return Value_uchar;
+}
 /****************************************************************************
  * 	CalculateY - calculates the Y(luma) component using R,G,B values
  * 	Y = (0.257 * R) + (0.504 * G) + (0.098 * B) + 16
@@ -827,4 +841,154 @@ static uint8_t CalculateB(uint8_t Y, int32_t U2Btemp, int8_t U) {
 	return (Bvalue);
 }
 
+/***********************************************************************
+ * CalculateGRAY - calculates the GRAY pixel value using R, G  & B values
+ * GRAY = 0.299*R + 0.587*G + 0.114*B
+ **********************************************************************/
+static uint8_t CalculateGRAY(uint8_t R, uint8_t G, uint8_t B) {
+#pragma HLS INLINE
+	int32_t GRAY = (R*(short int)_CVT_WEIGHT1) + (G*(short int)_CVT_WEIGHT2) + (B*(short int)_CVT_WEIGHT3);
+	uint8_t sat_GRAY = saturate_cast(GRAY, 0);
+
+	return (sat_GRAY);
+}
+
+/***********************************************************************
+ * CalculateGRAY - calculates the XYZ pixel value using R, G  & B values
+ *	x	0.412453	0.357580	0.180423	R
+ *
+ *	y	0.212671	0.715160	0.072169	G
+ *
+ *	z	0.019334	0.119193	0.950257	B
+ **********************************************************************/
+static uint8_t Calculate_X(uint8_t R, uint8_t G, uint8_t B) {
+#pragma HLS INLINE
+	int32_t X = (R*(short int)_CVT_X1) + (G*(short int)_CVT_X2) + (B*(short int)_CVT_X3);
+	uint8_t sat_X = saturate_cast(X, 0);
+
+
+	return (sat_X);
+}
+static uint8_t Calculate_Y(uint8_t R, uint8_t G, uint8_t B) {
+#pragma HLS INLINE
+	int32_t Y = (R*(short int)_CVT_Y1) + (G*(short int)_CVT_Y2) + (B*(short int)_CVT_Y3);
+	uint8_t sat_Y = saturate_cast(Y, 0);
+
+	return (sat_Y);
+}
+static uint8_t Calculate_Z(uint8_t R, uint8_t G, uint8_t B) {
+#pragma HLS INLINE
+	int32_t Z = (R*(short int)_CVT_Z1) + (G*(short int)_CVT_Z2) + (B*(short int)_CVT_Z3);
+	uint8_t sat_Z = saturate_cast(Z, 0);
+
+	return (sat_Z);
+}
+/***********************************************************************
+ * CalculateRGB - calculates the RGB pixel value using X, Y, Z values
+ *	R	3.240479	-1.53715	-0.498535	X
+ *
+ *	G	-0.969256	1.875991	0.041556	Y
+ *
+ *	B	0.055648	-0.204043	1.057311	Z
+ **********************************************************************/
+static uint8_t Calculate_R(uint8_t X, uint8_t Y, uint8_t Z) {
+#pragma HLS INLINE
+	int32_t R = (X*(short int)_CVT_R1) + (Y*(short int)_CVT_R2) + (Z*(short int)_CVT_R3);
+
+	uint8_t sat_R = saturate_cast(R, 0,13);
+
+	return (sat_R);
+}
+static uint8_t Calculate_G(uint8_t X, uint8_t Y, uint8_t Z) {
+#pragma HLS INLINE
+	int32_t G = (X*(short int)_CVT_G1) + (Y*(short int)_CVT_G2) + (Z*(short int)_CVT_G3);
+	uint8_t sat_G = saturate_cast(G, 0,13);
+
+	return (sat_G);
+}
+static uint8_t Calculate_B(uint8_t X, uint8_t Y, uint8_t Z) {
+#pragma HLS INLINE
+	int32_t B = (X*(short int)_CVT_B1) + (Y*(short int)_CVT_B2) + (Z*(short int)_CVT_B3);
+	uint8_t sat_B = saturate_cast(B, 0,13);
+
+	return (sat_B);
+}
+/***********************************************************************
+ * calculates the CRCB pixel value using R,G,B,Y values
+ *
+ *	Cr <---	(R-Y)*0.713+delta
+ *	Cb <---	(R-Y)*0.564+delta
+ *
+ *
+ **********************************************************************/
+static uint8_t Calculate_CR(uint8_t R, uint8_t Y) {
+#pragma HLS INLINE
+	int32_t CR = ((R-Y)*(short int)CR_WEIGHT) ;
+
+	uint8_t sat_CR = saturate_cast(CR, 128);
+
+	return (sat_CR);
+}
+static uint8_t Calculate_CB(uint8_t B, uint8_t Y) {
+#pragma HLS INLINE
+	int32_t CB = ((B-Y)*(short int)CB_WEIGHT) ;
+
+	uint8_t sat_CB = saturate_cast(CB, 128);
+
+	return (sat_CB);
+}
+/***********************************************************************
+ *  calculates the R,G,B pixels value using Cr,Cb,Y values
+ *
+ *	R <---	Y+1.403*(Cr-delta)
+ *	G <---	Y-0.714*Cr-delta-0.334*Cb-delta
+ *	B <---	Y+1.773*(Cb-delta)
+ *
+ **********************************************************************/
+#define Ycrcb2R		45974 //1.403
+#define Ycrcb2G		23396 //0.714
+#define W1			11272 //0.344
+#define Ycrcb2B		58098 //1.773
+
+static uint8_t Calculate_Ycrcb2R(uint8_t Y, uint8_t cr) {
+#pragma HLS INLINE
+	int32_t R = Ycrcb2R*(cr-128);
+	uint8_t sat_R = saturate_cast(R, Y);
+	return (sat_R);
+}
+static uint8_t Calculate_Ycrcb2G(uint8_t Y, uint8_t cr,uint8_t cb) {
+#pragma HLS INLINE
+
+	int32_t H_G1 = (Ycrcb2G*(cr-128));
+	int32_t H_G2 = (W1*(cb-128)) ;
+
+	int16_t sat_G1 = ((H_G1)>>15);
+	int16_t sat_G2 = ((H_G2)>>15);
+
+	uint16_t	res=((Y-sat_G1)-sat_G2);
+	if(res >255)
+	{
+		res=255;
+	}
+	else if(res <0)
+	{
+		res=0;
+	}
+	return (res);
+}
+static uint8_t Calculate_Ycrcb2B(uint8_t Y, uint8_t cb) {
+#pragma HLS INLINE
+	int32_t B = Ycrcb2B*(cb-128) ;
+	uint8_t sat_R = saturate_cast(B, Y);
+
+	return (sat_R);
+}
+
+//static uint8_t min(uint8_t R, uint8_t G,uint8_t B) {
+//#pragma HLS INLINE
+//	int min=0;
+//
+//
+//	return (min);
+//}
 #endif // _XF_CVT_COLOR_UTILS_H_

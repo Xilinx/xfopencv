@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2016, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -36,10 +36,11 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //Number of fractional bits used for interpolation
 #define INTER_BITS 5
+#define MAX_BITS(x, y)   (((x)  > (y))? (x)  : (y))
 #define INTER_TAB_SIZE (1 << INTER_BITS)
 #define INTER_SCALE 1.f / INTER_TAB_SIZE
 
-#define AB_BITS std::max(10,INTER_BITS)
+#define AB_BITS MAX_BITS(10,INTER_BITS)
 #define AB_SCALE (1 << AB_BITS)
 //Number of bits used to linearly interpolate
 #define INTER_REMAP_COEF_BITS 15
@@ -83,7 +84,7 @@ void store_EvOd_image1(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j
 	}
 };
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+template<int COLS, int PLANES,int STORE_LINES, int DEPTH, int NPC>
 XF_TNAME(DEPTH,NPC) retrieve_EvOd_image1(int i,int j, XF_TNAME(DEPTH,NPC) store1_pt_2EvR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2EvR_OdC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_OdC[(STORE_LINES>>2)][COLS])
 {
 #pragma HLS INLINE
@@ -126,7 +127,7 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image1(int i,int j, XF_TNAME(DEPTH,NPC) store1
 	return return_val;
 };
 //function to store the image in 4 memories of a combined size of (0:STORE_LINES-1,0:COLS-1)
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
+template<int COLS, int PLANES,int STORE_LINES, int DEPTH, int NPC>
 XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int D, XF_TNAME(DEPTH,NPC) store1_pt_2EvR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_EvC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2EvR_OdC[(STORE_LINES>>2)][COLS], XF_TNAME(DEPTH,NPC) store1_pt_2OdR_OdC[(STORE_LINES>>2)][COLS])
 {
 #pragma HLS INLINE
@@ -136,7 +137,8 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int 
 	//finding the LSB of i and j to find even/odd conditions for memory reads
 
 	//output value computed in fixed point (17,15)
-	int op_val = 0;
+	ap_uint<32> op_val = 0;
+	int op_val1 = 0;
 	//temporary variables to compute the indices for 4 memories for linear interpolation
 	//computing i/2 (i+1)/2 j/2 and (j+1)/2 to access the 4 memories
 	int I,J,I1,J1,temp1,temp2,Ja,Ja1;
@@ -254,119 +256,149 @@ XF_TNAME(DEPTH,NPC) retrieve_EvOd_image4x1(int i,int j,int A, int B, int C, int 
 		    px10 = pop_bram_EvR_OdC;
 		    px11 = pop_bram_EvR_EvC;
         }		
-    }        	    
-		op_val  = (A*px00);
-		op_val += (B*px01);
-		op_val += (C*px10);
-		op_val += (D*px11);
+    }
+	for(ap_uint<10> c=0,k=0;c<PLANES;c++,k+=8)
+	{
+#pragma HLS UNROLL        	    
+		op_val1  = (A*px00.range(k+7,k));
+		op_val1 += (B*px01.range(k+7,k));
+		op_val1 += (C*px10.range(k+7,k));
+		op_val1 += (D*px11.range(k+7,k));
+		op_val.range(k+7,k)=((op_val1+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
+	}
 //returning the computed interpolated output after rounding off the op_val by adding 0.5
 //and shifting to right by INTER_REMAP_COEF_BITS
-	return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
+	return XF_TNAME(DEPTH,NPC)(op_val);
 };
 
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
-void store_in_UramNN(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, ap_uint<64> bufUram[STORE_LINES][(COLS+7)/8])
+template<int COLS, int PLANES, int STORE_LINES, int DEPTH, int NPC>
+void store_in_UramNN(XF_TNAME(DEPTH,NPC) in_pixel, ap_uint<16> i,ap_uint<16> j, ap_uint<64> bufUram[PLANES][STORE_LINES][(COLS+7)/8])
 {
 #pragma HLS INLINE
 
     static XF_TNAME(DEPTH,NPC) sx8[8];
 #pragma HLS ARRAY_PARTITION variable=sx8 complete dim=1
     sx8[j%8] = in_pixel;
-    for (int k=0; k<8; k++) bufUram[i][j/8](k*8+7,k*8) = sx8[k];
+	for(int pl=0,bit=0;pl<PLANES;pl++,bit+=8)
+    for (int k=0; k<8; k++) bufUram[pl][i][j/8](k*8+7,k*8) = sx8[k](bit+7,bit);
 };
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
-void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16> i,ap_uint<16> j, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2], short img_cols,bool store_row,bool store_col,	ap_uint<16> *temppix, ap_uint<24> *pixval, ap_uint<48> *pixval_2, ap_uint<24> *prev_pixval)
+template<int COLS, int PLANES, int STORE_LINES, int DEPTH, int NPC>
+void store_in_UramBL(hls::stream< XF_TNAME(DEPTH,NPC)>& input_image, ap_uint<16> i,ap_uint<16> j, ap_uint<72> bufUram[PLANES][(STORE_LINES+1)/2][(COLS+1)/2], short img_cols,bool store_row,bool store_col,	ap_uint<16> temppix[PLANES], ap_uint<24> pixval[PLANES], ap_uint<48> pixval_2[PLANES], ap_uint<24> prev_pixval[PLANES])
 {
 #pragma HLS INLINE
 
-	ap_uint<16> temppix_t     = *temppix;
-	ap_uint<24> pixval_t      = *pixval;
-	ap_uint<48> pixval_2_t    = *pixval_2;
-	ap_uint<24> prev_pixval_t = *prev_pixval;
+	/*ap_uint<16> temppix_t[PLANES];//     = *temppix;
+	ap_uint<24> pixval_t[PLANES];//      = *pixval;
+	ap_uint<48> pixval_2_t[PLANES];//    = *pixval_2;
+	ap_uint<24> prev_pixval_t[PLANES];// = *prev_pixval;
+	
+	for(int pl=0;pl<PLANES;pl++)
+	{
+		#pragma HLS UNROLL
+		
+	temppix_t[pl]= temppix[pl];
+	pixval_t[pl]= pixval[pl];
+	pixval_2_t[pl]= pixval_2[pl];
+	prev_pixval_t[pl]= prev_pixval[pl];
+	}*/
 
-		ap_uint<24> lineBuf[(COLS+1)/2];
+		ap_uint<24> lineBuf[PLANES][(COLS+1)/2];
 #pragma HLS resource variable=lineBuf core=RAM_S2P_BRAM latency=1
+#pragma HLS ARRAY_PARTITION variable=lineBuf dim=1
 	    ap_int<16> i_hlf_mns1 = i/2-1;
 	    i_hlf_mns1 = i_hlf_mns1 + (i_hlf_mns1 < 0 ? (STORE_LINES+1)/2 : 0);
 
 
 	    static XF_TNAME(DEPTH,NPC) in_pixel;
 	    if (j<img_cols) in_pixel = input_image.read();
-
+	for(int pl=0,bit=0;pl<PLANES;pl++,bit+=8)
+	{
+		#pragma HLS UNROLL
 			if (store_col && (j!=0)) {
-				pixval_t.range(15, 0) = temppix_t;
-				pixval_t.range(23,16) = in_pixel;
+				pixval[pl].range(15, 0) = temppix[pl];
+				pixval[pl].range(23,16) = in_pixel.range(bit+7,bit);
 
 				if (store_row) {
 					// Store every 3rd row in a buffer
-					lineBuf[(j/2)-1] = pixval_t;
+					lineBuf[pl][(j/2)-1] = pixval[pl];
 				} else {
 					// Read the stored row and fill in
-					prev_pixval_t = lineBuf[(j/2)-1];
+					prev_pixval[pl] = lineBuf[pl][(j/2)-1];
 				}
 
 				if (i!=0) {
 					if (store_row) {
-						bufUram[/*i_hlf_mns1*/((i-1)/2)%(STORE_LINES/2)][(j/2)-1].range(71, 48) = pixval_t;
+						bufUram[pl][/*i_hlf_mns1*/((i-1)/2)%(STORE_LINES/2)][(j/2)-1].range(71, 48) = pixval[pl];
 					} else {
-						pixval_2_t.range(23,  0) = prev_pixval_t;
-						pixval_2_t.range(47, 24) = pixval_t;
-						bufUram[/*i_hlf_mns1*/((i-1)/2)%(STORE_LINES/2)][(j/2)-1].range(47, 0) = pixval_2_t;
+						pixval_2[pl].range(23,  0) = prev_pixval[pl];
+						pixval_2[pl].range(47, 24) = pixval[pl];
+						bufUram[pl][/*i_hlf_mns1*/((i-1)/2)%(STORE_LINES/2)][(j/2)-1].range(47, 0) = pixval_2[pl];
 					}
 				}
 			}
 
 			if (store_col) {
-				temppix_t.range( 7, 0) = in_pixel;
+				temppix[pl].range( 7, 0) = in_pixel.range(bit+7,bit);
 			} else {
-				temppix_t.range(15, 8) = in_pixel;
+				temppix[pl].range(15, 8) = in_pixel.range(bit+7,bit);
 			}
 
-			 *temppix = temppix_t;
-			*pixval =  pixval_t;
-			 *pixval_2 = pixval_2_t;
-			*prev_pixval  = prev_pixval_t;
+			/* temppix[pl] = temppix_t[pl];
+			pixval[pl] =  pixval_t[pl];
+			 pixval_2[pl] = pixval_2_t[pl];
+			prev_pixval[pl]  = prev_pixval_t[pl];*/
 
-
+	}
 
 };
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
-XF_TNAME(DEPTH,NPC) retrieve_UramNN(int i,int j, ap_uint<64> bufUram[STORE_LINES][(COLS+7)/8])
+template<int COLS, int PLANES, int STORE_LINES, int DEPTH, int NPC>
+XF_TNAME(DEPTH,NPC) retrieve_UramNN(int i,int j, ap_uint<64> bufUram[PLANES][STORE_LINES][(COLS+7)/8])
 {
 #pragma HLS INLINE
 
 	i = i > (STORE_LINES - 1)? (i - STORE_LINES) : ((i < 0)? (i + STORE_LINES) : i);
     XF_TNAME(DEPTH,NPC) dx8[8];
 #pragma HLS ARRAY_PARTITION variable=dx8 complete dim=1
-    for (int k=0; k<8; k++) dx8[k] = bufUram[i][j/8](k*8+7,k*8);
+	for(int pl=0,bit=0;pl<PLANES;pl++,bit+=8)
+    for (int k=0; k<8; k++) dx8[k](bit+7,bit) = bufUram[pl][i][j/8](k*8+7,k*8);
     return dx8[j%8];
 };
 
-template<int COLS, int STORE_LINES, int DEPTH, int NPC>
-XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_uint<72> bufUram[(STORE_LINES+1)/2][(COLS+1)/2])
+template<int COLS, int PLANES, int STORE_LINES, int DEPTH, int NPC>
+XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_uint<72> bufUram[PLANES][(STORE_LINES+1)/2][(COLS+1)/2])
 {
 #pragma HLS INLINE
 
 	i = (i > (STORE_LINES - 1))? (i - STORE_LINES) : ((i < 0)? (i + STORE_LINES) : i);
 
     XF_TNAME(DEPTH,NPC) d3x3[9];
-#pragma HLS ARRAY_PARTITION variable=d3x3 complete dim=1
-    for (int k=0; k<9; k++) d3x3[k] = bufUram[i/2][j/2](k*8+7,k*8);
+	XF_TNAME(DEPTH,NPC) op_val;
+#pragma HLS ARRAY_PARTITION variable=d3x3 complete dim=0
+
+for(int pl=0,k=0;pl<PLANES;pl++,k+=8)
+{
+    for (int k=0; k<9; k++) d3x3[k] = bufUram[pl][i/2][j/2](k*8+7,k*8);
     XF_TNAME(DEPTH,NPC) const px00 = d3x3[(i%2  )*3 + j%2  ];
     XF_TNAME(DEPTH,NPC) const px01 = d3x3[(i%2  )*3 + j%2+1];
     XF_TNAME(DEPTH,NPC) const px10 = d3x3[(i%2+1)*3 + j%2  ];
     XF_TNAME(DEPTH,NPC) const px11 = d3x3[(i%2+1)*3 + j%2+1];
 
-    int const op_val = (A*px00)
+    int const op_val1 = (A*px00)
                      + (B*px01)
                      + (C*px10)
                      + (D*px11);
+					 
+					 
+	op_val.range(k+7,k)=((op_val1+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
     //returning the computed interpolated output after rounding off the op_val by adding 0.5
     //and shifting to right by INTER_REMAP_COEF_BITS
-    return XF_TNAME(DEPTH,NPC)((op_val+(1<<(INTER_REMAP_COEF_BITS-1)))>>INTER_REMAP_COEF_BITS);
+    
+	
+}
+return XF_TNAME(DEPTH,NPC)(op_val);
 };
 
 //AK(ZoTech): rounding function to substitute one from math.h, consuming 2 BRAMs per call; not used as it is not bitexact with the math.h.
@@ -385,7 +417,7 @@ XF_TNAME(DEPTH,NPC) retrieve_UramBL(int i,int j,int A, int B, int C, int D, ap_u
 //     return (x - (x>=T(0) ? T(0) : T(1)-std::numeric_limits<T>::epsilon() ));
 // };
 
-template <int NPC, int ROWS, int COLS, int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, bool USE_URAM>
+template <int NPC, int ROWS, int COLS, int PLANES,int DEPTH, int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, bool USE_URAM>
 int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::stream< XF_TNAME(DEPTH,NPC) > &output_image, float P_matrix[9], short img_rows, short img_cols)
 {
 #pragma HLS INLINE
@@ -425,13 +457,15 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 
 
     //URAM based storages
-	ap_uint<64> bufUramNN[STORE_LINES][(COLS+7)/8];
+	ap_uint<64> bufUramNN[PLANES][STORE_LINES][(COLS+7)/8];
 #pragma HLS RESOURCE   variable=bufUramNN core= RAM_T2P_URAM latency=2
 #pragma HLS dependence variable=bufUramNN inter false
+#pragma HLS ARRAY_PARTITION variable=bufUramNN complete dim=1
     //URAM storage garnularity for BL inerpolation is 3x3-pel block in 2x2-pel picture grid, it fits to one URAM word
-    ap_uint<72> bufUramBL[(STORE_LINES+1)/2][(COLS+1)/2];
+    ap_uint<72> bufUramBL[PLANES][(STORE_LINES+1)/2][(COLS+1)/2];
 #pragma HLS RESOURCE   variable=bufUramBL core=RAM_T2P_URAM latency=2
 #pragma HLS dependence variable=bufUramBL inter false
+#pragma HLS ARRAY_PARTITION variable=bufUramBL complete dim=1
     //additional separation of URAM buffer to single URAMs to exclude their built-in cascading and thus limited timing
     //due to inability of VHLS to schedule built-in cascade register (OREG_CAS) 
     
@@ -480,10 +514,23 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 	bool store_col = 1;
 	bool store_row = 1;
 
-	ap_uint<16> temppix     = 0;
+	/*ap_uint<16> temppix     = 0;
 	ap_uint<24> pixval      = 0;
 	ap_uint<48> pixval_2    = 0;
-	ap_uint<24> prev_pixval = 0;
+	ap_uint<24> prev_pixval = 0;*/
+	
+	ap_uint<16> temppix[PLANES];
+	ap_uint<24> pixval[PLANES];
+	ap_uint<48> pixval_2[PLANES];
+	ap_uint<24> prev_pixval[PLANES];
+	
+	for(int pl=0;pl<PLANES;pl++){
+#pragma HLS UNROLL
+	temppix[pl]=0;
+	pixval[pl]=0;
+	pixval_2[pl]=0;
+	prev_pixval[pl]=0;
+	}
 
 	//main loop
 	MAIN_ROWS:for (i=0;i<(img_rows + START_ROW);i++)
@@ -513,8 +560,8 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 				//a buffer of size STORE_LINES rows
 				//computing i-l to snap the writes to STORE_LINES size buffer
 				if (USE_URAM)
-				  if (INTERPOLATION_TYPE) store_in_UramBL<COLS,STORE_LINES,DEPTH,NPC>(input_image        ,i-l,j, bufUramBL, img_cols,store_row,store_col,&temppix,&pixval,&pixval_2, &prev_pixval);
-				  else {if (j<img_cols)   store_in_UramNN<COLS,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramNN);}
+				  if (INTERPOLATION_TYPE) store_in_UramBL<COLS,PLANES,STORE_LINES,DEPTH,NPC>(input_image        ,i-l,j, bufUramBL, img_cols,store_row,store_col,temppix,pixval,pixval_2, prev_pixval);
+				  else {if (j<img_cols)   store_in_UramNN<COLS,PLANES,STORE_LINES,DEPTH,NPC>(input_image.read() ,i-l,j, bufUramNN);}
                 else    if (j<img_cols)
 				store_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>( input_image.read() ,i-l,j, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 				store_col = !(store_col);
@@ -624,17 +671,17 @@ int xFwarpTransformKernel(hls::stream< XF_TNAME(DEPTH,NPC) > &input_image, hls::
 					if(INTERPOLATION_TYPE==0)
 					{
                       if (USE_URAM)
-						op_val = retrieve_UramNN     <COLS,STORE_LINES,DEPTH,NPC>(I1,J, bufUramNN);
+						op_val = retrieve_UramNN     <COLS,PLANES,STORE_LINES,DEPTH,NPC>(I1,J, bufUramNN);
 					  else
-						op_val = retrieve_EvOd_image1<COLS,STORE_LINES,DEPTH,NPC>(I1,J, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
+						op_val = retrieve_EvOd_image1<COLS,PLANES,STORE_LINES,DEPTH,NPC>(I1,J, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 					else
 					{
 						//calling the read function with interpolation
                       if (USE_URAM)
-						op_val = retrieve_UramBL       <COLS,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, bufUramBL);
+						op_val = retrieve_UramBL       <COLS, PLANES, STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, bufUramBL);
 					  else
-						op_val = retrieve_EvOd_image4x1<COLS,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
+						op_val = retrieve_EvOd_image4x1<COLS,PLANES,STORE_LINES,DEPTH,NPC>(I1,J,A,B,C,D, store1_pt_2EvR_EvC, store1_pt_2EvR_OdC, store1_pt_2OdR_EvC, store1_pt_2OdR_OdC);
 					}
 				}
 				else
@@ -658,7 +705,7 @@ return 0;
 //#pragma SDS data data_mover("_dst_mat.data":AXIDMA_SIMPLE)
 #pragma SDS data access_pattern("_src_mat.data":SEQUENTIAL)
 #pragma SDS data access_pattern("_dst_mat.data":SEQUENTIAL)
-#pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+//#pragma SDS data mem_attribute ("_src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS, "_dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
 template <int STORE_LINES, int START_ROW, int TRANSFORM, bool INTERPOLATION_TYPE, int TYPE, int ROWS, int COLS, int NPC, bool USE_URAM = false>
 void warpTransform(xf::Mat<TYPE,ROWS,COLS,NPC> & _src_mat, xf::Mat<TYPE,ROWS,COLS,NPC> & _dst_mat, float P_matrix[9])
 {
@@ -674,11 +721,12 @@ hls::stream< XF_TNAME(TYPE,NPC) > out_stream;
 		{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
-			in_stream.write( *(_src_mat.data + i*(_src_mat.cols>>XF_BITSHIFT(NPC)) +j) );
+			//in_stream.write( *(_src_mat.data + i*(_src_mat.cols>>XF_BITSHIFT(NPC)) +j) );
+			in_stream.write( _src_mat.read(i*(_src_mat.cols>>XF_BITSHIFT(NPC)) +j) );
 		}
 	}
 
-xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE, USE_URAM>(in_stream, out_stream, P_matrix, _src_mat.rows, _src_mat.cols);
+xFwarpTransformKernel<NPC, ROWS, COLS,XF_CHANNELS(TYPE,NPC), TYPE, STORE_LINES, START_ROW, TRANSFORM, INTERPOLATION_TYPE, USE_URAM>(in_stream, out_stream, P_matrix, _src_mat.rows, _src_mat.cols);
 
 	for(int i=0; i<_dst_mat.rows;i++)
 	{
@@ -687,7 +735,9 @@ xFwarpTransformKernel<NPC, ROWS, COLS, TYPE, STORE_LINES, START_ROW, TRANSFORM, 
 		{
 	#pragma HLS LOOP_TRIPCOUNT min=1 max=COLS/NPC
 			#pragma HLS PIPELINE
-			*(_dst_mat.data + i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j) = out_stream.read();
+			//*(_dst_mat.data + i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j) = out_stream.read();
+			_dst_mat.write(i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j,out_stream.read());
+			//_dst_mat.write(i*(_dst_mat.cols>>XF_BITSHIFT(NPC)) +j,in_stream.read());
 		}
 	}
 }

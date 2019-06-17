@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -47,18 +47,16 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*  define the input and output types  */
 #if NO
 #define NPC_T XF_NPPC1
-#endif
-
-#if RO
+#else // RO
 #define NPC_T XF_NPPC8
 #endif
 
-#if RGB
-#define TYPE XF_8UC3
-#define CH_TYPE XF_RGB
-#else  //GRAY
+#if GRAY
 #define TYPE XF_8UC1
 #define CH_TYPE XF_GRAY
+#else // RGB
+#define TYPE XF_8UC3
+#define CH_TYPE XF_RGB
 #endif
 
 #endif // _XF_DILATION_CONFIG_H_

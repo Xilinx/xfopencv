@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -22,13 +22,13 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, 
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ***************************************************************************/
-#ifndef _XF_ACCUMULATE_CONFIG_H_
-#define _XF_ACCUMULATE_CONFIG_H_
+#ifndef _XF_ACCUMULATE_WEIGHTED_CONFIG_H_
+#define _XF_ACCUMULATE_WEIGHTED_CONFIG_H_
 #include "hls_stream.h"
 #include <ap_int.h>
 #include "xf_config_params.h"
@@ -46,10 +46,13 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if RO
 #define NPC1 XF_NPPC8
 #endif
-
+#if GRAY
 #define IN_TYPE XF_8UC1
 #define OUT_TYPE XF_16UC1
-
+#else
+#define IN_TYPE XF_8UC3
+#define OUT_TYPE XF_16UC3
+#endif
 void accumulate_weighted_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &imgInput1,xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> &imgInput2,xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> &imgOutput, float alpha);
 
 #endif//_XF_ACCUMULATE_CONFIG_H_

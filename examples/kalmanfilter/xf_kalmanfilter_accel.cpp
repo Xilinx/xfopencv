@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -17,7 +17,7 @@ THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE A
 IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
 INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
 PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
 EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ***************************************************************************/
@@ -26,7 +26,9 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void kalmanfilter_accel(
 		xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	&A_mat,
+#if KF_C!=0
 		xf::Mat<KF_TYPE, KF_N, KF_C, KF_NPC> 	&B_mat,
+#endif
 		xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	&Uq_mat,
 		xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		&Dq_mat,
 		xf::Mat<KF_TYPE, KF_M, KF_N, KF_NPC> 	&H_mat,
@@ -34,7 +36,9 @@ void kalmanfilter_accel(
 		xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	&U0_mat,
 		xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		&D0_mat,
 		xf::Mat<KF_TYPE, KF_M, 1, KF_NPC> 		&R_mat,
+#if KF_C!=0
 		xf::Mat<KF_TYPE, KF_C, 1, KF_NPC> 		&u_mat,
+#endif		
 		xf::Mat<KF_TYPE, KF_M, 1, KF_NPC> 		&y_mat,
 		xf::Mat<KF_TYPE, KF_N, 1, KF_NPC> 		&Xout_mat,
 		xf::Mat<KF_TYPE, KF_N, KF_N, KF_NPC> 	&Uout_mat,
@@ -42,7 +46,15 @@ void kalmanfilter_accel(
 		unsigned char flag)
 
 {
-	xf::KalmanFilter<KF_N, KF_M, KF_C, KF_MTU, KF_MMU, XF_USE_URAM, KF_TYPE, KF_NPC>
-	(A_mat, B_mat, Uq_mat, Dq_mat,  H_mat,X0_mat, U0_mat, D0_mat, R_mat, u_mat, y_mat, Xout_mat, Uout_mat, Dout_mat, flag);
+	xf::KalmanFilter<KF_N, KF_M, KF_C, KF_MTU, KF_MMU, XF_USE_URAM, KF_EKF, KF_TYPE, KF_NPC>
+	(A_mat, 
+#if KF_C!=0	
+	B_mat, 
+#endif
+	Uq_mat, Dq_mat,  H_mat,X0_mat, U0_mat, D0_mat, R_mat, 
+#if KF_C!=0	
+	u_mat, 
+#endif	
+	y_mat, Xout_mat, Uout_mat, Dout_mat, flag);
 }
 

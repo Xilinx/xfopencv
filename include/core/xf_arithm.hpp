@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -257,8 +257,9 @@ int STEP= XF_PIXELDEPTH(DEPTH)/PLANES;
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*image_width+j]); // reading the data from the first stream
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*image_width+j]);// reading the data from the second stream
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*image_width+j)); // reading the data from the first stream
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*image_width+j));// reading the data from the second stream
+
 
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
@@ -270,7 +271,7 @@ int STEP= XF_PIXELDEPTH(DEPTH)/PLANES;
 				result = __ABS(p - q);// performing absolute difference for the input pixels
 				val_dst.range(k + (STEP-1), k) = result;// Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);    // writing data to the output stream
+			_dst.write(i*image_width+j,(val_dst));    // writing data to the output stream
 		}
 	}
 }
@@ -302,8 +303,8 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*image_width+j]); // reading the data from the first stream
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*image_width+j]);// reading the data from the second stream
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*image_width+j));//(_src1.data[i*image_width+j]); // reading the data from the first stream
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*image_width+j));// reading the data from the second stream
 
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
@@ -315,7 +316,7 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 				result = p & q;// performing the bitwiseAND operation
 				val_dst.range(k + (STEP-1), k) = result;// Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);		// writing data to the stream
+			_dst.write(i*image_width+j, (val_dst));		// writing data to the stream
 		}
 	}
 }
@@ -347,8 +348,8 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*image_width+j]);// reading the data from the first stream
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*image_width+j]);// reading the data from the second stream
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*image_width+j));//(_src1.data[i*image_width+j]);// reading the data from the first stream
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*image_width+j));//(_src2.data[i*image_width+j]);// reading the data from the second stream
 
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));k += STEP)
@@ -359,7 +360,7 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 				result = p | q;// performing the bitwiseOR operation
 				val_dst.range(k + (STEP-1), k) = result;// Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);  		// write data to the stream
+			_dst.write(i*image_width+j,(val_dst));  		// write data to the stream
 		}
 	}
 }
@@ -390,7 +391,7 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
-			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src.data[i*image_width+j]); // reading the data from the stream
+			val_src = (XF_SNAME(WORDWIDTH_SRC)) (_src.read(i*image_width+j)); // reading the data from the stream
 
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
@@ -401,7 +402,7 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 				result = ~p;// performing the bitwiseNOT operation
 				val_dst.range(k + (STEP-1), k) = result;// Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);			// write data to the stream
+			_dst.write(i*image_width+j, (val_dst));			// write data to the stream
 		}
 	}
 }
@@ -432,8 +433,8 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*image_width+j]);// reading the data from the first stream
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*image_width+j]);// reading the data from the second stream
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*image_width+j));// reading the data from the first stream
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*image_width+j));// reading the data from the second stream
 
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
@@ -445,7 +446,7 @@ int STEP=XF_PIXELDEPTH(DEPTH)/PLANES;
 				result = p ^ q;// performing the bitwise XOR operation
 				val_dst.range(k + (STEP-1), k) = result;// Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);  	  	// write data to the stream
+			_dst.write((i*image_width+j),(val_dst));  	  	// write data to the stream
 		}
 	}
 }
@@ -478,7 +479,7 @@ int _policytype, float _scale_val,uint16_t image_height,uint16_t image_width)
 	{
 		scale_value_16 = (_scale_val * ( (1 << 24) -1 )); // floating point value taken in fixed point format (Q1.24)
 	}
-
+unsigned long long int idx=0;
 	rowLoop:
 	for( i = 0; i < image_height; i++)
 	{
@@ -491,9 +492,8 @@ int _policytype, float _scale_val,uint16_t image_height,uint16_t image_width)
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
 
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (src1.data[i*image_width+j]); // reading the data from the first stream
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (src2.data[i*image_width+j]);// reading the data from the second stream
-
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (src1.read(i*image_width+j)); // reading the data from the first stream
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (src2.read(i*image_width+j));// reading the data from the second stream
 			procLoop:
 			for( k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));
 			k += STEP)
@@ -531,7 +531,7 @@ int _policytype, float _scale_val,uint16_t image_height,uint16_t image_width)
 				}
 				val_dst.range(k + (STEP - 1), k) = result; // Set bits in a range of positions.
 			}
-			dst.data[i*image_width+j] = (val_dst);		// write data to the stream
+			dst.write(i*image_width+j, val_dst);		// write data to the stream
 		}
 	}
 }
@@ -549,11 +549,11 @@ void absdiff(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,xf::Mat<SRC_T, ROWS, COLS, 
 
 	uint16_t image_width = _src1.cols >> XF_BITSHIFT(NPC);
 
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) ) &&
-			"TYPE must be XF_8UC1 ");
-	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+//	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+//			"NPC must be XF_NPPC1 or XF_NPPC8 ");
+//	assert(((SRC_T == XF_8UC1) ) &&
+//			"TYPE must be XF_8UC1 ");
+//	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	xFAbsDiffKernel<SRC_T,ROWS,COLS,XF_CHANNELS(SRC_T,NPC),XF_DEPTH(SRC_T,NPC), NPC, XF_WORDWIDTH(SRC_T,NPC), XF_WORDWIDTH(SRC_T,NPC), (COLS>>XF_BITSHIFT(NPC))>
 	(_src1,_src2,_dst,_src1.rows,image_width);
@@ -578,11 +578,11 @@ void bitwise_and(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1, xf::Mat<SRC_T, ROWS, C
 
 #pragma HLS inline off
 
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) ) &&
-			"Image type must be XF_8UC1 ");
-	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+//	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+//			"NPC must be XF_NPPC1 or XF_NPPC8 ");
+//	assert(((SRC_T == XF_8UC1) ) &&
+//			"Image type must be XF_8UC1 ");
+//	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	uint16_t image_width = _src1.cols >> XF_BITSHIFT(NPC);
 
@@ -600,11 +600,11 @@ template<int SRC_T, int ROWS, int COLS, int NPC = 1>
 void bitwise_or(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1, xf::Mat<SRC_T, ROWS, COLS, NPC> & _src2, xf::Mat<SRC_T, ROWS, COLS, NPC> & _dst)
 {
 #pragma HLS INLINE OFF
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) ) &&
-			"Image type must be XF_8UC1 ");
-	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
+//	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+//			"NPC must be XF_NPPC1 or XF_NPPC8 ");
+//	assert(((SRC_T == XF_8UC1) ) &&
+//			"Image type must be XF_8UC1 ");
+//	assert(((_src1.rows <= ROWS ) && (_src1.cols <= COLS) && (_src2.rows <= ROWS ) && (_src2.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 
 	uint16_t image_width = _src1.cols >> XF_BITSHIFT(NPC);
 
@@ -621,11 +621,11 @@ template<int SRC_T, int ROWS, int COLS, int NPC = 1>
 void bitwise_not(xf::Mat<SRC_T, ROWS, COLS, NPC> & src, xf::Mat<SRC_T, ROWS, COLS, NPC> & dst)
 {
 
-	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
-			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) ) &&
-			"Image type must be XF_8UC1 ");
-	assert(((src.rows <= ROWS ) && (src.cols <= COLS) ) && "ROWS and COLS should be greater than input image");
+//	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
+//			"NPC must be XF_NPPC1 or XF_NPPC8 ");
+//	assert(((SRC_T == XF_8UC1) ) &&
+//			"Image type must be XF_8UC1 ");
+//	assert(((src.rows <= ROWS ) && (src.cols <= COLS) ) && "ROWS and COLS should be greater than input image");
 
 	uint16_t image_width = src.cols >> XF_BITSHIFT(NPC);
 #pragma HLS inline off
@@ -675,7 +675,7 @@ void multiply(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS,
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
 			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1) ) &&
+	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1) || (SRC_T == XF_8UC3) || (SRC_T == XF_16SC3) || (SRC_T == XF_8UC4) || (SRC_T == XF_16UC4) ) &&
 			"TYPE must be XF_8UC1 or XF_16SC1 ");
 	assert((POLICY_TYPE == XF_CONVERT_POLICY_SATURATE ||
 			POLICY_TYPE == XF_CONVERT_POLICY_TRUNCATE)
@@ -690,7 +690,6 @@ void multiply(xf::Mat<SRC_T, ROWS, COLS, NPC> & src1, xf::Mat<SRC_T, ROWS, COLS,
 	(src1,src2,dst,POLICY_TYPE,scale,src1.rows,image_width);
 
 }
-
 
 
 /**
@@ -724,9 +723,9 @@ int _policytype,uint16_t image_height,uint16_t image_width)
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TRIP max=COLS_TRIP
 #pragma HLS pipeline
-			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.data[i*image_width+j]); // reading the data from the first stream
+			val_src1 = (XF_SNAME(WORDWIDTH_SRC)) (_src1.read(i*image_width+j)); // reading the data from the first stream
 			if (USE_SRC2) {
-			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.data[i*image_width+j]);
+			val_src2 = (XF_SNAME(WORDWIDTH_SRC)) (_src2.read(i*image_width+j));
 			}
 			procLoop:
 			for(k = 0; k < (XF_WORDDEPTH(WORDWIDTH_SRC));k += STEP)
@@ -743,7 +742,7 @@ int _policytype,uint16_t image_height,uint16_t image_width)
 
 				val_dst.range(k + (STEP - 1), k) = result; // Set bits in a range of positions.
 			}
-			_dst.data[i*image_width+j] = (val_dst);			// writing data to the output stream
+			_dst.write(i*image_width+j, val_dst);			// writing data to the output stream
 		}
 	}
 }
@@ -763,7 +762,7 @@ void add(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1, xf::Mat<SRC_T, ROWS, COLS, NPC
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
 			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1) ) &&
+	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1) || (SRC_T == XF_8UC3) || (SRC_T == XF_8UC4) ) &&
 			"TYPE must be XF_8UC1 or XF_16SC1");
 	assert((POLICY_TYPE == XF_CONVERT_POLICY_SATURATE ||
 			POLICY_TYPE == XF_CONVERT_POLICY_TRUNCATE)
@@ -886,7 +885,7 @@ void subtract(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1, xf::Mat<SRC_T, ROWS, COLS
 
 	assert(((NPC == XF_NPPC1) || (NPC == XF_NPPC8)) &&
 			"NPC must be XF_NPPC1 or XF_NPPC8 ");
-	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1)) &&
+	assert(((SRC_T == XF_8UC1) || (SRC_T == XF_16SC1) || (SRC_T == XF_8UC3) || (SRC_T == XF_16SC3) || (SRC_T == XF_8UC4) || (SRC_T == XF_16UC4)) &&
 			"TYPE must be XF_8UC1 or 16SC1 ");
 	assert((POLICY_TYPE == XF_CONVERT_POLICY_SATURATE ||
 			POLICY_TYPE == XF_CONVERT_POLICY_TRUNCATE)

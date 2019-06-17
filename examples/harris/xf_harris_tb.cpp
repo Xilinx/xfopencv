@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -107,13 +107,13 @@ int main(int argc,char **argv)
 	//imgInput.copyTo(img_gray.data);
 	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, XF_NPPC8>(argv[1], 0);
 #ifdef __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 #endif
 	harris_accel(imgInput,imgOutput, Thresh, k);
 #ifdef __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 #endif
 
 #endif
@@ -137,7 +137,7 @@ int main(int argc,char **argv)
 		for( int i = 0; i < (imgOutput.cols>>XF_BITSHIFT(NPIX)); i++ ){
 
 			if(NPIX==XF_NPPC8){
-				ap_uint<64> value = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i];//.at<unsigned char>(j,i);
+				ap_uint<64> value = imgOutput.read(j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i);//.at<unsigned char>(j,i);
 				for(int k=0; k<64;k+=8,l++){
 					uchar pix = value.range(k+7,k);
 					if(pix != 0)
@@ -157,7 +157,7 @@ int main(int argc,char **argv)
 				}
 			}
 			if(NPIX==XF_NPPC1){
-				unsigned char pix = imgOutput.data[j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i];
+				unsigned char pix = imgOutput.read(j*(imgOutput.cols>>XF_BITSHIFT(NPIX))+i);
 				if(pix != 0)
 				{
 					cv::Point tmp;

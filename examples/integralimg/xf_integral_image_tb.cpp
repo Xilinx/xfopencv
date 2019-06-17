@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -54,8 +54,16 @@ int main(int argc, char** argv)
 	// create memory for output images
 	ocv_ref.create(in_img.rows,in_img.cols,CV_32S);
 	ocv_ref1.create(in_img.rows,in_img.cols,CV_32S);
-
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 	cv::integral(in_img, ocv_ref, -1);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
+
 
 	for(int i = 0; i < in_img.rows; i++)
 	{
@@ -83,17 +91,15 @@ int main(int argc, char** argv)
 	
 
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
-	#endif
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	integral_accel(imgInput, imgOutput);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	
-
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	 uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 	// Write output image
@@ -105,29 +111,33 @@ int main(int argc, char** argv)
 	// Save the difference image 
 	imwrite("diff.png", diff); 
 
-	// Find minimum and maximum differences.
-	double minval = 256, maxval = 0;
+	float err_per;
+		double minval=256,maxval=0;
 	int cnt = 0;
 	for (int i = 0; i < in_img.rows; i++)
 	{
 		for(int j = 0; j < in_img.cols; j++)
 		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v>1)
+			unsigned int v = diff.at<unsigned int>(i,j);
+
+			if (v > 0)
 				cnt++;
 			if (minval > v )
 				minval = v;
 			if (maxval < v)
 				maxval = v;
 		}
+
 	}
 
-	float err_per = 100.0*(float)cnt/(in_img.rows * in_img.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\n"
-			"Maximum error in intensity = %f\n"
-			"Percentage of pixels above error threshold = %f\n",
-			minval, maxval, err_per);
-	if(err_per > 1.0f)
+	err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
+	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+
+	if(err_per > 0.0f)
+	{
 		return 1;
+	}
+
 	return 0;
+
 }

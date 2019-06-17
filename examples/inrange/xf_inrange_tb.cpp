@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -43,10 +43,13 @@ int main(int argc, char** argv)
 	cv::Mat in_img, out_img, ocv_ref, in_gray, diff;
 
 	unsigned short in_width,in_height;
-
+#if GRAY
 	/*  reading in the color image  */
 	in_img = cv::imread(argv[1],0);
-
+#else
+	/*  reading in the color image  */
+	in_img = cv::imread(argv[1],1);
+#endif
 	if (in_img.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image at %s\n",argv[1]);
@@ -55,42 +58,71 @@ int main(int argc, char** argv)
 
 	in_width = in_img.cols;
 	in_height = in_img.rows;
-
+#if GRAY
 	ocv_ref.create(in_img.rows,in_img.cols,in_img.depth());
 	out_img.create(in_img.rows,in_img.cols,in_img.depth());
 	diff.create(in_img.rows,in_img.cols,in_img.depth());
-
+#else
+	ocv_ref.create(in_img.rows,in_img.cols,CV_8UC1);
+	out_img.create(in_img.rows,in_img.cols,CV_8UC3);
+	diff.create(in_img.rows,in_img.cols,CV_8UC3);
+#endif
 
 
 
 
 	////////////////  reference code  ////////////////
-
-	 short int lower_thresh=50;
-	 short int upper_thresh=100;
-
-
-
-	cv::inRange(in_img,lower_thresh,upper_thresh, ocv_ref);
+#if __SDSCC___
+	unsigned char *lower_thresh=(unsigned char *)sds_alloc_non_cacheable(XF_CHANNELS(IN_TYPE,NPIX)*sizeof(unsigned char));
+	unsigned char *upper_thresh=(unsigned char *)sds_alloc_non_cacheable(XF_CHANNELS(IN_TYPE,NPIX)*sizeof(unsigned char));
+#else
+	unsigned char *lower_thresh=(unsigned char *)malloc(XF_CHANNELS(IN_TYPE,NPIX)*sizeof(unsigned char));
+	unsigned char *upper_thresh=(unsigned char *)malloc(XF_CHANNELS(IN_TYPE,NPIX)*sizeof(unsigned char));
+#endif
+#if GRAY
+	 lower_thresh[0]=50;
+	 upper_thresh[0]=100;
+#else
+	 lower_thresh[0]=50;
+	 upper_thresh[0]=100;
+	 lower_thresh[1]=0;
+	 upper_thresh[1]=150;
+	 lower_thresh[2]=50;
+	 upper_thresh[2]=150;
+#endif
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
+#if GRAY
+	cv::inRange(in_img,lower_thresh[0],upper_thresh[0], ocv_ref);
+#else
+	cv::inRange(in_img,cv::Scalar(lower_thresh[0],lower_thresh[1],lower_thresh[2]),cv::Scalar( upper_thresh[0], upper_thresh[1], upper_thresh[2]), ocv_ref);
+#endif
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
    //////////////////  end opencv reference code//////////
 
 	////////////////////// HLS TOP function call ////////////////////////////
 
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
-	static xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPIX> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPIX> imgOutput(in_img.rows,in_img.cols);
+	
 	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
-	#endif
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	inrange_accel(imgInput,lower_thresh,upper_thresh, imgOutput);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
+	hw_ctr1.stop();
+	 uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
 
 

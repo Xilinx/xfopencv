@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -72,11 +72,11 @@ void xFSuppressionRad1(DST_T *Maxarray, XF_PTNAME(IN_DEPTH)* l00_buf,
 	}
 }
 
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void ProcessMax1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
-				 hls::stream< XF_SNAME(OUT_WW)> &_dst_mat,XF_SNAME(IN_WW) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(IN_DEPTH) l00_buf[XF_NPIXPERCYCLE(NPC)+2],
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void ProcessMax1(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+				 xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,XF_SNAME(IN_WW) buf[3][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(IN_DEPTH) l00_buf[XF_NPIXPERCYCLE(NPC)+2],
 				 XF_PTNAME(IN_DEPTH) l10_buf[XF_NPIXPERCYCLE(NPC)+2], XF_PTNAME(IN_DEPTH) l20_buf[XF_NPIXPERCYCLE(NPC)+2],
-				 XF_PTNAME(OUT_DEPTH) Array[XF_NPIXPERCYCLE(NPC)], XF_SNAME(OUT_WW) &P0, uint16_t img_width, ap_uint<13> row_ind, uint16_t &shift, ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, bool flag)
+				 XF_PTNAME(OUT_DEPTH) Array[XF_NPIXPERCYCLE(NPC)], XF_SNAME(OUT_WW) &P0, uint16_t img_width, ap_uint<13> row_ind, uint16_t &shift, ap_uint<2> tp, ap_uint<2> mid, ap_uint<2> bottom, bool flag, int &read_index, int &write_index)
 {
 #pragma HLS INLINE off
 	ap_uint<5> nms_bufsize = ((1<<XF_BITSHIFT(NPC))+2);
@@ -89,7 +89,7 @@ void ProcessMax1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(flag)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(read_index++);
 		buf0 = buf[tp][col];
 		buf1 = buf[mid][col];
 		buf2 = buf[bottom][col];
@@ -109,7 +109,7 @@ void ProcessMax1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 		else
 		{
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], P0, 0, 1, shift);
-			_dst_mat.write(P0);
+			_dst_mat.write(write_index++,(P0));
 
 			shift = 0;
 			P0 = 0;
@@ -131,12 +131,11 @@ void ProcessMax1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
  * _src_mat : input image
  * _dst_mat : output image
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
-						  hls::stream< XF_SNAME(OUT_WW)> &_dst_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void xFMaxSuppressionRad1(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+						  xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat,
 						  uint16_t img_height, uint16_t img_width)
 {
-
 	ap_uint<13> row_ind, row, col;
 	ap_uint<2> tp, mid, bottom;
 	uint16_t shift = 0;
@@ -144,6 +143,7 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS ARRAY_PARTITION variable=Array complete dim=1
 
 	ap_uint<5> nms_bufsize = ((1<<XF_BITSHIFT(NPC))+2);
+	int read_index = 0, write_index = 0;
 
 	// Temporary buffers to hold image data from three rows.
 	XF_PTNAME(IN_DEPTH) l00_buf[(1<<XF_BITSHIFT(NPC))+2], l10_buf[(1<<XF_BITSHIFT(NPC))+2], l20_buf[(1<<XF_BITSHIFT(NPC))+2];
@@ -164,7 +164,7 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		buf[0][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_index++);
 	}
 
 	row_ind++;
@@ -190,12 +190,12 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 		l10_buf[0] = l10_buf[1] = 0;
 		l20_buf[0] = l20_buf[1] = 0;
 		P0 = 0;
-		ProcessMax1<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>(_src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, Array, P0, img_width, row_ind, shift, tp, mid, bottom,true);
+		ProcessMax1<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>(_src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, Array, P0, img_width, row_ind, shift, tp, mid, bottom,true, read_index, write_index);
 
 		if(row)
 		{
 			XF_PTNAME(IN_DEPTH) val = (XF_PTNAME(IN_DEPTH))0;
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if((NPC == XF_NPPC8))
 			{
 
 				bool Max = xFFindMaxRad1(
@@ -216,7 +216,7 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 			}
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], P0, 0, 1, shift);
 			//P0.range(((8 << XF_BITSHIFT(NPC))-1), ((8 << XF_BITSHIFT(NPC))-8)) = Array[0];				// Get bits from certain range of positions.
-			_dst_mat.write(P0);
+			_dst_mat.write(write_index++, (P0));
 			shift = 0;
 			P0 = 0;
 		}
@@ -255,10 +255,11 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS pipeline
 		buf[bottom][col] = 0;
 	}
-	ProcessMax1<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>(_src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, Array, P0, img_width, row_ind, shift, tp, mid, bottom,false);
+	ProcessMax1<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>
+	(_src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, Array, P0, img_width, row_ind, shift, tp, mid, bottom,false, read_index, write_index);
 
 	XF_PTNAME(IN_DEPTH) val = 0;
-	if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+	if((NPC == XF_NPPC8))
 	{
 		bool Max = xFFindMaxRad1(
 				l00_buf[nms_bufsize-2], l00_buf[nms_bufsize-1], val,
@@ -277,7 +278,7 @@ void xFMaxSuppressionRad1(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 		Array[0] = Max ? 255 : 0;
 	}
 	xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], P0, 0, 1, shift);
-	_dst_mat.write(P0);
+	_dst_mat.write(write_index++,(P0));
 	shift = 0;
 	P0 = 0;
 }
@@ -328,13 +329,13 @@ void xFSuppressionRad2(DST_T *Maxarray, XF_PTNAME(IN_DEPTH)* l00_buf, XF_PTNAME(
 // xFSuppressionRad2
 
 
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void ProcessRad2(hls::stream< XF_SNAME(IN_WW) > & _src_mat,
-				 hls::stream< XF_SNAME(OUT_WW) > & _dst_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void ProcessRad2(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat,
+				xf::Mat<DST_T, ROWS, COLS, NPC> & _dst_mat,
 				 XF_SNAME(IN_WW) buf[5][(COLS >> XF_BITSHIFT(NPC))], XF_PTNAME(IN_DEPTH) l00_buf[XF_NPIXPERCYCLE(NPC)+4],
 				 XF_PTNAME(IN_DEPTH) l10_buf[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(IN_DEPTH) l20_buf[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(IN_DEPTH) l30_buf[XF_NPIXPERCYCLE(NPC)+4], XF_PTNAME(IN_DEPTH) l40_buf[XF_NPIXPERCYCLE(NPC)+4],
 				 XF_PTNAME(OUT_DEPTH) Array[XF_NPIXPERCYCLE(NPC)], XF_SNAME(OUT_WW) &inter_valx, uint16_t img_width, ap_uint<13> row_ind, uint16_t &shift,
-				 ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, bool flag)
+				 ap_uint<4> tp1, ap_uint<4> tp2, ap_uint<4> mid, ap_uint<4> bottom1, ap_uint<4> bottom2, bool flag, int &read_pointer, int &write_pointer)
 {
 #pragma HLS INLINE off
 	ap_uint<8> nms_bufsize = (1 << XF_BITSHIFT(NPC))+4;
@@ -347,7 +348,7 @@ void ProcessRad2(hls::stream< XF_SNAME(IN_WW) > & _src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 		if(flag)
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(read_pointer++);
 		buf0 = buf[tp1][col];
 		buf1 = buf[tp2][col];
 		buf2 = buf[mid][col];
@@ -381,10 +382,10 @@ void ProcessRad2(hls::stream< XF_SNAME(IN_WW) > & _src_mat,
 		}
 		else
 		{
-			if((NPC == XF_NPPC8) || (NPC == XF_NPPC16))
+			if(NPC == XF_NPPC8)
 			{
 				xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], inter_valx, 0, 2, shift);
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,inter_valx);
 				shift = 0;
 				inter_valx = 0;
 				xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], inter_valx, 2, (npc-2), shift);
@@ -394,7 +395,7 @@ void ProcessRad2(hls::stream< XF_SNAME(IN_WW) > & _src_mat,
 				if(col >=2 )
 				{
 					inter_valx(7, 0) = Array[0];
-					_dst_mat.write(inter_valx);
+					_dst_mat.write(write_pointer++,(inter_valx));
 				}
 			}
 		}
@@ -407,13 +408,14 @@ void ProcessRad2(hls::stream< XF_SNAME(IN_WW) > & _src_mat,
  * _src_mat	: Input image
  * _dst_mat	: Output image
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
-						  hls::stream< XF_SNAME(OUT_WW) > &_dst_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void xFMaxSuppressionRad2(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+						  xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat, uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row_ind, row, col;
 	ap_uint<8> tp1, tp2, mid, bottom1, bottom2;
 	ap_uint<8> nms_bufsize = (1 << XF_BITSHIFT(NPC))+4;
+	int read_pointer = 0, write_pointer = 0;
 
 	XF_PTNAME(OUT_DEPTH) Array[(1 << XF_BITSHIFT(NPC))];
 #pragma HLS ARRAY_PARTITION variable=Array complete dim=1
@@ -445,7 +447,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS pipeline
 		buf[0][col] = 0;
 		buf[1][col] = 0;
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_pointer++);
 	}
 	row_ind++;
 
@@ -454,7 +456,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_pointer++);
 	}
 	row_ind++;
 
@@ -491,8 +493,8 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 		l40_buf[0] = l40_buf[1] = l40_buf[2] = l40_buf[3] = 0;
 		inter_valx = 0;
 
-		ProcessRad2<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>( _src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, l30_buf, l40_buf, Array,
-						inter_valx, img_width, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, true);
+		ProcessRad2<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>( _src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, l30_buf, l40_buf, Array,
+						inter_valx, img_width, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, true, read_pointer, write_pointer);
 
 		if(row >= 2)
 		{
@@ -520,7 +522,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 						l40_buf[3]);
 
 				xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], inter_valx, 0, 2, shift);
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,(inter_valx));
 				shift = 0;
 				inter_valx = 0;
 			}else if(NPC == XF_NPPC1){
@@ -536,7 +538,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 										 l30_buf[1], l30_buf[2], l30_buf[3], l40_buf[2]);
 				ap_uint<16> step = XF_PIXELDEPTH(OUT_DEPTH);
 				inter_valx(((step << XF_BITSHIFT(NPC))-1), ((step << XF_BITSHIFT(NPC))-step)) = Array[0];
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,(inter_valx));
 
 				lbufLoop3:
 				for(i = 0; i < 4; i++)
@@ -562,7 +564,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 						l40_buf[2]);
 
 				inter_valx(((step << XF_BITSHIFT(NPC))-1), ((step << XF_BITSHIFT(NPC))-step)) = Array[0];
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,(inter_valx));
 			}
 		}
 		row_ind++;
@@ -613,8 +615,8 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 		l30_buf[0] = l30_buf[1] = l30_buf[2] = l30_buf[3] = 0;
 		l40_buf[0] = l40_buf[1] = l40_buf[2] = l40_buf[3] = 0;
 
-		ProcessRad2<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>( _src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, l30_buf, l40_buf, Array,
-								inter_valx, img_width, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, false);
+		ProcessRad2<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC, IN_WW, OUT_WW, TC>( _src_mat, _dst_mat, buf, l00_buf, l10_buf, l20_buf, l30_buf, l40_buf, Array,
+								inter_valx, img_width, row_ind, shift, tp1, tp2, mid, bottom1, bottom2, false, read_pointer, write_pointer);
 
 		if(NPC == XF_NPPC8 || NPC == XF_NPPC16){
 			Array[0] = xFFindMaxRad2(l20_buf[2], l00_buf[2], l10_buf[1], l10_buf[2],
@@ -628,7 +630,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 					l40_buf[3]);
 
 			xfPackPixels<NPC, OUT_WW, OUT_DEPTH>(&Array[0], inter_valx, 0, 2, shift);
-			_dst_mat.write(inter_valx);
+			_dst_mat.write(write_pointer++,(inter_valx));
 			shift = 0;
 			inter_valx = 0;
 		}
@@ -646,8 +648,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 					l40_buf[2]);
 			ap_uint<8> step = XF_PIXELDEPTH(OUT_DEPTH);
 			inter_valx(((step << XF_BITSHIFT(NPC))-1), ((step << XF_BITSHIFT(NPC))-step)) = Array[0];
-			_dst_mat.write(inter_valx);
-
+			_dst_mat.write(write_pointer++,(inter_valx));
 			lbufLoop33:
 			for(i = 0; i < 4; i++)
 			{
@@ -672,7 +673,7 @@ void xFMaxSuppressionRad2(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 					l40_buf[2]);
 
 			inter_valx(((step << XF_BITSHIFT(NPC))-1), ((step << XF_BITSHIFT(NPC))-step)) = Array[0];
-			_dst_mat.write(inter_valx);
+			_dst_mat.write(write_pointer++,(inter_valx));
 		}
 	}
 }
@@ -732,13 +733,14 @@ void xFSuppressionRad3(SRC_T *Maxarray, DST_T* l00_buf, DST_T* l10_buf,
  * _src_mat	: Input image
  * _dst_mat	: Output image
  */
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
-void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
-						  hls::stream< XF_SNAME(OUT_WW) > &_dst_mat, uint16_t img_height, uint16_t img_width)
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW, int TC>
+void xFMaxSuppressionRad3(xf::Mat<SRC_T, ROWS, COLS, NPC> &_src_mat,
+		xf::Mat<DST_T, ROWS, COLS, NPC> &_dst_mat, uint16_t img_height, uint16_t img_width)
 {
 	ap_uint<13> row, col, row_ind;
 	ap_uint<8> tp1,tp2, tp3, mid, bottom1, bottom2, bottom3;
 	ap_uint<8> nms_bufsize = (1 << XF_BITSHIFT(NPC))+6;
+	int read_pointer = 0, write_pointer = 0;
 
 	XF_PTNAME(OUT_DEPTH) Array[(1 << XF_BITSHIFT(NPC))];
 #pragma HLS ARRAY_PARTITION variable=Array complete dim=1
@@ -781,7 +783,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_pointer++);
 	}
 	row_ind++;
 
@@ -790,7 +792,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_pointer++);
 	}
 	row_ind++;
 
@@ -799,7 +801,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
-		buf[row_ind][col] = _src_mat.read();
+		buf[row_ind][col] = _src_mat.read(read_pointer++);
 	}
 	row_ind++;
 
@@ -855,7 +857,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			buf[row_ind][col] = _src_mat.read();
+			buf[row_ind][col] = _src_mat.read(read_pointer++);
 
 			buf0 = buf[tp1][col];
 			buf1 = buf[tp2][col];
@@ -904,7 +906,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 					shift = ((1 << XF_BITSHIFT(NPC))-3 + k) << 3;
 					inter_valx(shift+7, shift) = Array[k];
 				}
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,(inter_valx));
 				for(k = 3; k < (1 << XF_BITSHIFT(NPC)); k++)
 				{
 #pragma HLS unroll
@@ -944,7 +946,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 				shift = ((1 << XF_BITSHIFT(NPC)) - 3 + k) << 3;
 				inter_valx(shift+7,shift) = Array[k];
 			}
-			_dst_mat.write(inter_valx);
+			_dst_mat.write(write_pointer++,(inter_valx));
 		}
 		row_ind++;
 		if(row_ind == 7)
@@ -1057,7 +1059,7 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 					shift = ((1 << XF_BITSHIFT(NPC))-3 + k) << 3;
 					inter_valx(shift+7, shift) = Array[k];
 				}
-				_dst_mat.write(inter_valx);
+				_dst_mat.write(write_pointer++,(inter_valx));
 				for(k = 3; k < (1 << XF_BITSHIFT(NPC)); k++)
 				{
 #pragma HLS unroll
@@ -1082,38 +1084,39 @@ void xFMaxSuppressionRad3(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
 			shift = ((1 << XF_BITSHIFT(NPC))-3+k) << 3;
 			inter_valx(shift+7,shift) = Array[k];
 		}
-		_dst_mat.write(inter_valx);
+		_dst_mat.write(write_pointer++,(inter_valx));
 	} // Border_Row_Loop
 }
 
 /*********************************************************************
  * xFMaxSuppression : Calls the Main Function depend on Requirements
  *********************************************************************/
-template<int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW>
-void xFMaxSuppression(hls::stream< XF_SNAME(IN_WW) > &_src_mat,
-					  hls::stream< XF_SNAME(OUT_WW) > &_dst_mat,
+template<int SRC_T, int DST_T, int ROWS, int COLS, int IN_DEPTH, int OUT_DEPTH, int NPC, int IN_WW, int OUT_WW>
+void xFMaxSuppression(xf::Mat<SRC_T, ROWS, COLS, NPC>  &_src_mat,
+					  xf::Mat<DST_T, ROWS, COLS, NPC>  &_dst_mat,
 					  uint8_t _nms_radius, uint16_t img_height, uint16_t img_width)
 {
-	img_width = img_width >> XF_BITSHIFT(NPC);
-
+//#pragma HLS STREAM variable=_dst_mat.data depth=1
 	assert(((_nms_radius == XF_NMS_RADIUS_1) || (_nms_radius == XF_NMS_RADIUS_2) ||
 			(_nms_radius == XF_NMS_RADIUS_3)) && "radius size must be 1, 2 or 3");
 
 	assert(((img_height <= ROWS ) && (img_width <= COLS)) && "ROWS and COLS should be greater than input image");
 	
+	img_width = img_width >> XF_BITSHIFT(NPC);
+
 	if(_nms_radius == XF_NMS_RADIUS_1)
 	{
-		xFMaxSuppressionRad1<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
+		xFMaxSuppressionRad1<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
 		IN_WW, OUT_WW, (COLS >> XF_BITSHIFT(NPC))>(_src_mat, _dst_mat, img_height, img_width);
 	}
 	else if(_nms_radius == XF_NMS_RADIUS_2)
 	{
-		xFMaxSuppressionRad2<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
+		xFMaxSuppressionRad2<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
 		IN_WW, OUT_WW, (COLS >> XF_BITSHIFT(NPC))>(_src_mat, _dst_mat, img_height, img_width);
 	}
 	else
 	{
-		xFMaxSuppressionRad3<ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
+		xFMaxSuppressionRad3<SRC_T, DST_T, ROWS, COLS, IN_DEPTH, OUT_DEPTH, NPC,
 		IN_WW, OUT_WW, (COLS >> XF_BITSHIFT(NPC))>(_src_mat, _dst_mat, img_height, img_width);
 	}
 

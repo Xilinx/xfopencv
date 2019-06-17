@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -492,26 +492,11 @@ int main(int argc, char** argv)
 
 	cv::Mat diff;
 	diff.create(height,width,CV_8UC1);
-	int cnt = 0;
-	for (int i=0; i<height; i++)
-	{
-		for (int j=0; j<width; j++)
-		{
-			int d_val = (unsigned char)imgOutput.data[i*width+j] - disp_mat.at<unsigned char>(i,j);
+	xf::absDiff(disp_mat, imgOutput, diff);
 
-			if (d_val > 0)
-			{
-				diff.at<unsigned char>(i,j) = 255;
-				cnt++;
-			}
-			else
-				diff.at<unsigned char>(i,j) = 0;
-		}
-	}
-
-	cv::imwrite("diff.png",diff);
-	std::cout<<"Number of erroneous pixels:"<<cnt<<std::endl;
-	std::cout<<"run success!"<<std::endl;
+	float err_per;
+	xf::analyzeDiff(diff,0,err_per);
+	cv::imwrite("diff_img.jpg",diff);
 
 	return 0;
 }

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -65,6 +65,7 @@ int main(int argc, char** argv)
 	out_img.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
 	ocv_ref.create(in_gray2.rows,in_gray1.cols,in_gray1.depth());
 	diff.create(in_gray1.rows,in_gray1.cols,in_gray1.depth());
+	
 
 #if ARRAY
 	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
@@ -74,6 +75,30 @@ int main(int argc, char** argv)
 	imgInput1.copyTo(in_gray1.data);
 	imgInput2.copyTo(in_gray2.data);
 
+			///////////// OpenCV reference  /////////////
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif	
+	cv::CV_FUNCT_NAME(in_gray1,in_gray2,ocv_ref
+#ifdef CV_EXTRA_ARG
+	, CV_EXTRA_ARG
+#endif
+);
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
+	//	cv::absdiff		(in_gray1,in_gray2,ocv_ref);
+	//	cv::add			(in_gray1,in_gray2,ocv_ref);
+	//	cv::subtract	(in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_and (in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_or  (in_gray1,in_gray2,ocv_ref);
+	//	cv::bitwise_xor (in_gray1,in_gray2,ocv_ref);
+	//	cv::multiply	(in_gray1,in_gray2,ocv_ref,0.05);
+//		cv::compare (in_gray1,in_gray2,ocv_ref,CV_CMP_NE);
+	//	cv::bitwise_not (in_gray1,ocv_ref);
+	//	ocv_ref=cv::Mat::zeros(in_gray1.rows,in_gray1.cols,in_gray1.type());
 
 #if __SDSCC__
 	perf_counter hw_ctr;
@@ -87,64 +112,37 @@ int main(int argc, char** argv)
 	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
 #endif
 
-
-	///////////// OpenCV reference  /////////////
-	cv::CV_FUNCT_NAME(in_gray1,in_gray2,ocv_ref
-#ifdef CV_EXTRA_ARG
-	, CV_EXTRA_ARG
 #endif
-);
-	//	cv::absdiff		(in_gray1,in_gray2,ocv_ref);
-	//	cv::add			(in_gray1,in_gray2,ocv_ref);
-	//	cv::subtract	(in_gray1,in_gray2,ocv_ref);
-	//	cv::bitwise_and (in_gray1,in_gray2,ocv_ref);
-	//	cv::bitwise_or  (in_gray1,in_gray2,ocv_ref);
-	//	cv::bitwise_xor (in_gray1,in_gray2,ocv_ref);
-	//	cv::multiply	(in_gray1,in_gray2,ocv_ref,0.05);
-//		cv::compare (in_gray1,in_gray2,ocv_ref,CV_CMP_NE);
-	//	cv::bitwise_not (in_gray1,ocv_ref);
-	//	ocv_ref=cv::Mat::zeros(in_gray1.rows,in_gray1.cols,in_gray1.type());
 
 
-#endif
 #if SCALAR
-	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+
 #ifdef __SDSCC__
 	unsigned char *val=(unsigned char *)sds_alloc_non_cacheable(XF_CHANNELS(TYPE,NPC1)*sizeof(unsigned char));
 #else
 	unsigned char *val=(unsigned char *)malloc(XF_CHANNELS(TYPE,NPC1)*sizeof(unsigned char));	
 #endif
+
 	for(int i=0; i< XF_CHANNELS(TYPE,NPC1); i++)
 	{
 		val[i]=150;
 	}
-	
-	imgInput1.copyTo(in_gray1.data);
-	
-
-	#if __SDSCC__
-	perf_counter hw_ctr;
-	 hw_ctr.start();
-	#endif
-
- 	arithm_accel(imgInput1,val,imgOutput);
-
-	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-
-
 
 	///////////// OpenCV reference  /////////////
 
-
+#if __SDSCC__
+	perf_counter hw_ctr3;
+	hw_ctr3.start();
+#endif
 	cv::CV_FUNCT_NAME(in_gray1,val[0],ocv_ref
 #ifdef CV_EXTRA_ARG
 	, CV_EXTRA_ARG
 #endif
 );
+#if __SDSCC__
+	hw_ctr3.stop();
+	uint64_t hw_cycles3 = hw_ctr3.avg_cpu_cycles();
+#endif
 
 //	cv::add		(in_gray1,val,ocv_ref);
 //	cv::subtract(in_gray1,val,ocv_ref);	//subs
@@ -154,6 +152,26 @@ int main(int argc, char** argv)
 
 //	cv::subtract(val,in_gray1,ocv_ref);	//subRS
 //	ocv_ref.setTo(val);
+
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
+	static xf::Mat<TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
+
+	imgInput1.copyTo(in_gray1.data);
+	
+
+	#if __SDSCC__
+	perf_counter hw_ctr2;
+	hw_ctr2.start();
+	#endif
+
+ 	arithm_accel(imgInput1,val,imgOutput);
+
+	#if __SDSCC__
+	hw_ctr2.stop();
+	uint64_t hw_cycles2 = hw_ctr2.avg_cpu_cycles();
+	#endif
+
+
 #endif
 
 

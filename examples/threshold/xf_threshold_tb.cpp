@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -71,7 +71,19 @@ int main(int argc, char** argv)
 
 
 
+
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
+
 	cv::threshold(in_img,ocv_ref,thresh,maxval,THRESH_TYPE);
+
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
+
    //////////////////  end opencv reference code//////////
 
 	////////////////////// HLS TOP function call ////////////////////////////
@@ -81,15 +93,15 @@ int main(int argc, char** argv)
 	imgInput.copyTo(in_img.data);
 
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+		perf_counter hw_ctr1;
+hw_ctr1.start();
 	#endif
 
 	threshold_accel(imgInput, imgOutput, thresh, maxval);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+		hw_ctr1.stop();
+uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 
@@ -102,25 +114,8 @@ int main(int argc, char** argv)
 	xf::absDiff(ocv_ref, imgOutput, diff);
 	imwrite("diff_img.jpg",diff); // Save the difference image for debugging purpose
 
-	// Find minimum and maximum differences.
-	double minval = 256, maxval1 = 0;
-	int cnt = 0;
-	for (int i = 0; i < in_img.rows; i++)
-	{
-		for(int j = 0; j < in_img.cols;j++)
-		{
-			uchar v = diff.at<uchar>(i,j);
-			if (v > 1)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval1 < v)
-				maxval1 = v;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
-	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval1,err_per);
-
+	float err_per;
+	xf::analyzeDiff(diff, 0, err_per);
 
 	if(err_per > 0.0f)
 	{

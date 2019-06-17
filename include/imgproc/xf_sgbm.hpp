@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -819,8 +819,8 @@ void SemiGlobalBM(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat_l, xf::Mat<SRC_T, R
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
-			_src_l.write( *(_src_mat_l.data + i*width + j) );
-			_src_r.write( *(_src_mat_r.data + i*width + j) );
+			_src_l.write(_src_mat_l.read(i*width+j));
+			_src_r.write(_src_mat_r.read(i*width+j));
 		}
 	}
 
@@ -855,7 +855,7 @@ void SemiGlobalBM(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src_mat_l, xf::Mat<SRC_T, R
 #pragma HLS LOOP_TRIPCOUNT min=1 max=COLS
 #pragma HLS LOOP_FLATTEN off
 #pragma HLS PIPELINE
-			*(_dst_mat.data + i*_dst_mat.cols +j) = (_dst.read());
+			_dst_mat.write(i*_dst_mat.cols+j,_dst.read());
 		}
 	}
 }

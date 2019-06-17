@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -115,8 +115,8 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xf::
 	{
 		for(int j=0; j<pyr_w[0]; j++)
 		{
-			mat_imagepyr1[0].data[i*pyr_w[0] + j] = im0.data[i*pyr_w[0] + j];
-			mat_imagepyr2[0].data[i*pyr_w[0] + j] = im1.data[i*pyr_w[0] + j];
+			mat_imagepyr1[0].write(i*pyr_w[0] + j,im0.data[i*pyr_w[0] + j]);
+			mat_imagepyr2[0].write(i*pyr_w[0] + j,im1.data[i*pyr_w[0] + j]);
 		}	
 	}
 	//creating image pyramid
@@ -181,11 +181,13 @@ void pyrof_hw(cv::Mat im0, cv::Mat im1, cv::Mat flowUmat, cv::Mat flowVmat, xf::
 			unsigned int tempcopy = 0;
 			if(flag_flowin)
 			{
-				tempcopy = *(flow_iter.data + i*pyr_w[0] + j);
+				//tempcopy = *(flow_iter.data + i*pyr_w[0] + j);
+				tempcopy = flow_iter.read(i*pyr_w[0] + j);
 			}
 			else
 			{
-				tempcopy = *(flow.data + i*pyr_w[0] + j);
+				//tempcopy = *(flow.data + i*pyr_w[0] + j);
+				tempcopy = flow.read(i*pyr_w[0] + j);
 			}
 					
 			short splittemp1 = (tempcopy>>16);

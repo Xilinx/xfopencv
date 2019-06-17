@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -48,8 +48,7 @@ template<int SRC_T, int ROWS, int COLS, int NPC>
 void write(xf::Mat<SRC_T, ROWS, COLS, NPC> &img,xf::Scalar<XF_CHANNELS(SRC_T,NPC), XF_TNAME(SRC_T,NPC)> s,int ind) {
 #pragma HLS inline
 
-
-       img.data[ind] =s.val[0];
+	img.write(ind,s.val[0]);
 
 
 }
@@ -59,7 +58,7 @@ template<int SRC_T, int ROWS, int COLS, int NPC>
 void fetchingmatdata(xf::Mat<SRC_T, ROWS, COLS, NPC> &img,xf::Scalar<XF_CHANNELS(SRC_T,NPC), XF_TNAME(SRC_T,NPC)> s,int val)
 {
 	#pragma HLS inline
-	    write(img,s,val);
+	write(img,s,val);
 }
 template<int SRC_T, int ROWS, int COLS, int NPC>
 xf::Scalar<XF_CHANNELS(SRC_T,NPC), XF_TNAME(SRC_T,NPC)>read(xf::Mat<SRC_T, ROWS, COLS, NPC> &img,int index)
@@ -68,13 +67,9 @@ xf::Scalar<XF_CHANNELS(SRC_T,NPC), XF_TNAME(SRC_T,NPC)>read(xf::Mat<SRC_T, ROWS,
 	#pragma HLS inline
 
 	xf::Scalar<XF_CHANNELS(SRC_T,NPC), XF_TNAME(SRC_T,NPC) >scl;
+	scl.val[0]=img.read(index);
 
-
-
-
-					scl.val[0]=img.data[index];
-
-			return scl;
+	return scl;
 
 
 }

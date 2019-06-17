@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -22,7 +22,7 @@
  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- HOWEVER CXFSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
@@ -32,6 +32,7 @@
 
 #include "xf_common.h"
 #include <iostream>
+#include <cmath>
 
 #if __SDSCC__
 #include "sds_lib.h"
@@ -84,81 +85,145 @@ namespace xf{
 
 		assert((cv_img.rows == xf_img.rows) && (cv_img.cols == xf_img.cols) && "Sizes of cv and xf images should be same");
 		assert((xf_img.rows == diff_img.rows) && (xf_img.cols == diff_img.cols) && "Sizes of xf and diff images should be same");
-		assert(((_NPC == XF_NPPC8) || (_NPC == XF_NPPC4) || (_NPC == XF_NPPC1)) && "Only XF_NPPC1, XF_NPPC4, XF_NPPC8 are supported");
-		//assert(((_PTYPE == XF_8UC3) ) && (_NPC == XF_NPPC8) && "Multi-pixel parallelism not supported for multi-channel images");
+		assert(((_NPC == XF_NPPC8) || (_NPC == XF_NPPC4) || (_NPC == XF_NPPC2) || (_NPC == XF_NPPC1)) && "Only XF_NPPC1, XF_NPPC2, XF_NPPC4, XF_NPPC8 are supported");
 		assert((cv_img.channels() == XF_CHANNELS(_PTYPE, _NPC)) && "Number of channels of cv and xf images does not match");
 
-		int STEP = XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC));
+		int cv_bitdepth = 8;
+		int num_chnls   = cv_img.channels();
+		int cv_nbytes   = 1;
 
-		for(int i=0; i<cv_img.rows;++i){
-			XF_TNAME(_PTYPE,_NPC) diff_pix = 0;
-			XF_TNAME(_PTYPE,_NPC) xf_pix = 0;
-			for(int j=0,l=0,byteindex1=0,byteindex2=0,shift=0; j<cv_img.cols;++j){
+		if(cv_img.depth()==CV_8U){
+			cv_bitdepth = 8;
+		}
+		else if(cv_img.depth()==CV_16S || cv_img.depth()==CV_16U){
+			cv_bitdepth = 16;
+		}
+		else if(cv_img.depth()==CV_32S || cv_img.depth()==CV_32F){
+			cv_bitdepth = 32;
+		}
+		else{
+			printf("OpenCV image's depth not supported");
+			return;
+		}
 
-				if(_NPC == XF_NPPC8 ){	//If 8PPC
-					if( j%8==0){		//then read only once for 8 pixels
-						xf_pix = xf_img.data[(i*(xf_img.cols>>(XF_BITSHIFT(_NPC))))+l]; //reading 8 pixels at a time
-						l++;			//j loops till 1920, hence using variable l as we need  only 240 iterations in 8PPC mode
-						shift=0;
+		int cv_pixdepth = cv_bitdepth*num_chnls;
+		cv_nbytes       = cv_bitdepth/8;
+
+		int ch 	       = 0;
+		int xf_npc_idx = 0;
+		int diff_ptr   = 0;
+		int xf_ptr     = 0;
+		int cv_ptr     = 0;
+		XF_CTUNAME(_PTYPE, _NPC) cv_val = 0, xf_val = 0, diff_val = 0;
+		XF_TNAME(_PTYPE, _NPC) xf_val_total = 0;
+
+		for(int r=0, xf_ptr=0; r<cv_img.rows;++r){
+			for(int c=0; c<cv_img.cols >> XF_BITSHIFT(_NPC);++c){
+#ifdef __SDSVHLS__
+				xf_val_total = xf_img.data[xf_ptr++];
+
+				for(int b=0; b < _NPC; ++b){
+					for(int c=0; c < num_chnls; ++c){
+						for (int l=0; l < cv_nbytes; ++l,++xf_npc_idx) {
+							cv_val.range(((l+1)*8)-1, l*8)  = cv_img.data[cv_ptr++];
+							xf_val.range(((l+1)*8)-1, l*8)  = xf_val_total.range(((xf_npc_idx+1)*8)-1, xf_npc_idx*8);
+						}
+						diff_val = __ABS((int)cv_val - (int)xf_val);
+						for (int l=0; l < cv_nbytes; ++l) {
+							diff_img.data[diff_ptr++] = diff_val.range(((l+1)*8)-1, l*8);
+						}
 					}
-					int cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
-					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = std::abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
-					shift = shift+STEP;
 				}
+				xf_npc_idx = 0;
 
-				else if(_NPC == XF_NPPC4 ){	//If 4PPC
-					if( j%4==0){		//then read only once for 4 pixels
-						xf_pix = xf_img.data[(i*(xf_img.cols>>(XF_BITSHIFT(_NPC))))+l]; //reading 4 pixels at a time
-						l++;			//j loops till 1920, hence using variable l as we need  only 480 iterations in 4PPC mode
-						shift=0;
+#else
+				for(int xf_npc_idx = 0; xf_npc_idx < _NPC; ++xf_npc_idx){
+					for (int ch = 0; ch < num_chnls; ++ch) {
+
+						xf_val = xf_img.data[xf_ptr].chnl[xf_npc_idx][ch];
+
+						for (int b=0; b < cv_nbytes; ++b) {
+							cv_val.range(((b+1)*8)-1, b*8) = cv_img.data[cv_ptr++];
+						}
+						diff_val = __ABS((int)cv_val- (int)xf_val);
+						for (int b=0; b < cv_nbytes; ++b) {
+							diff_img.data[diff_ptr++] = diff_val.range(((b+1)*8)-1, b*8);
+						}
 					}
-					ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> cv_pix = cv_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j);
-					diff_img.at< ap_uint<XF_PIXELDEPTH(XF_DEPTH(_PTYPE, _NPC))> >(i,j) = std::abs(cv_pix - xf_pix.range(shift+STEP-1, shift));
-					shift = shift+STEP;
 				}
-
-				else if(_NPC == XF_NPPC1){
-									xf_pix = xf_img.data[i*xf_img.cols+j];
-									XF_TNAME(_PTYPE,_NPC) cv_pix = 0;
-									int mul_val=0, nbytes =0;
-
-									if(cv_img.depth()==CV_8U){
-										mul_val = 8;
-										nbytes = 1;
-									}
-									else if(cv_img.depth()==CV_16S || cv_img.depth()==CV_16U){
-										mul_val = 16;
-										nbytes = 2;
-									}
-									else if(cv_img.depth()==CV_32S || cv_img.depth()==CV_32F){
-										mul_val = 32;
-										nbytes = 4;
-									}
-									else{
-										printf("OpenCV image's depth not supported");
-										return;
-									}
-
-									for(int k=0; k< XF_CHANNELS(_PTYPE, _NPC)*mul_val; ++byteindex1,k+=8){
-
-										unsigned char pix_temp = cv_img.data[i*cv_img.cols*XF_CHANNELS(_PTYPE, _NPC)*nbytes+byteindex1];
-										 cv_pix.range(k+7,k) = pix_temp;
-										 pix_temp = 0;
-									}
-
-									diff_pix = std::abs(cv_pix - xf_pix);
-
-									for(int k=0; k< XF_CHANNELS(_PTYPE, _NPC)*mul_val; ++byteindex2,k+=8){
-										diff_img.data[i*cv_img.cols*XF_CHANNELS(_PTYPE, _NPC)*nbytes+byteindex2] = diff_pix.range(k+7,k);
-									}
-
-								}
-
+				++xf_ptr;
+#endif
 			}
 		}
 	}
 
+void analyzeDiff(cv::Mat &diff_img, int err_thresh, float &err_per)
+{
+	int cv_bitdepth;
+	if(diff_img.depth()==CV_8U){
+		cv_bitdepth = 8;
+	}
+	else if(diff_img.depth()==CV_16U || diff_img.depth()==CV_16S){
+		cv_bitdepth = 16;
+	}
+	else if(diff_img.depth()==CV_32S || diff_img.depth()==CV_32F){
+		cv_bitdepth = 32;
+	}else{
+		printf("OpenCV image's depth not supported for this function");
+		return;
+	}
 
+	int cnt = 0;
+	double minval=std::pow(2.0,cv_bitdepth),maxval=0;
+	int max_fix = (int) (std::pow(2.0,cv_bitdepth) - 1.0);
+	for (int i=0; i<diff_img.rows; i++) {
+		for(int j=0; j<diff_img.cols; j++) {
+			int v = 0;
+			for (int k=0; k<diff_img.channels(); k++) {
+				int v_tmp;float v_tmp1;
+				if (diff_img.channels() == 1) {
+					if (cv_bitdepth == 8)
+						v_tmp = (int)diff_img.at<unsigned char>(i,j);
+					else if(cv_bitdepth == 16 && diff_img.depth()==CV_16U)  // 16 bitdepth
+						v_tmp = (int)diff_img.at<unsigned short>(i,j);
+					else if(cv_bitdepth == 16 && diff_img.depth()==CV_16S)  // 16 bitdepth
+						v_tmp = (int)diff_img.at<short>(i,j);
+					else if(cv_bitdepth == 32 && diff_img.depth()==CV_32S)
+						v_tmp = (int)diff_img.at<int>(i,j);
+					else
+						v_tmp1 = (float)diff_img.at<float>(i,j);
+				}
+				else // 3 channels
+					v_tmp = (int)diff_img.at<cv::Vec3b>(i,j)[k];
+
+				if (v_tmp > v)
+					v = v_tmp;
+			}
+			if (v>err_thresh)
+			{
+				cnt++;
+				if(diff_img.depth()==CV_8U)
+					diff_img.at<unsigned char>(i,j) = max_fix;
+				else if (diff_img.depth()==CV_16U)
+					diff_img.at<unsigned short>(i,j) = max_fix;
+				else if (diff_img.depth()==CV_16S)
+					diff_img.at<short>(i,j) = max_fix;
+				else if (diff_img.depth()==CV_32S)
+					diff_img.at<int>(i,j) = max_fix;
+				else
+					diff_img.at<float>(i,j) = (float)max_fix;
+			}
+			if (minval > v )
+				minval = v;
+			if (maxval < v)
+				maxval = v;
+
+		}
+	}
+	err_per = 100.0*(float)cnt/(diff_img.rows*diff_img.cols);
+	fprintf(stderr,"Minimum error in intensity = %f\nMaximum error in intensity = %f\nPercentage of pixels above error threshold = %f\n",minval,maxval,err_per);
+}
 }
 
 #endif
+

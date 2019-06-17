@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -82,11 +82,12 @@ const unsigned char xFTrackmulSqrtLut[100] = {0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3
  * y1     		--> Top left corner y-coordinate
  * buf_size		--> number of elements to be read in one row
  */
-template <int ROWS, int IN_TC, int COLS, int NPC, int WORDWIDTH>
-void xFTrackmulBlkReadIn (XF_SNAME(WORDWIDTH) ptr[1], unsigned int* in, int rows, int cols,
-		int i, hls::stream<XF_SNAME(WORDWIDTH)>& input1, int x1, int y1, unsigned short buf_size)
+template <int ROWS, int IN_TC, int COLS, int SRC_T, int ROWS_IMG, int COLS_IMG, int NPC>
+void xFTrackmulBlkReadIn (XF_TNAME(SRC_T,NPC) ptr[1], xf::Mat<SRC_T, ROWS_IMG, COLS_IMG, NPC>& _in_mat,
+		int i, hls::stream<XF_TNAME(SRC_T,NPC)>& input1, int x1, int y1, unsigned short buf_size)
 {
 #pragma HLS INLINE
+	int cols = _in_mat.cols;
 	int src_off = (cols>>XF_BITSHIFT(NPC))*(y1+i)+(x1>>XF_BITSHIFT(NPC));
 	unsigned short size = 4<<XF_BITSHIFT(NPC);
 
@@ -95,7 +96,7 @@ void xFTrackmulBlkReadIn (XF_SNAME(WORDWIDTH) ptr[1], unsigned int* in, int rows
 	{
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=20 max=IN_TC
-		ptr[0] = *(in+src_off+j);
+		ptr[0] = _in_mat.read(src_off+j);
 		input1.write(ptr[0]);
 	}
 }
@@ -113,11 +114,11 @@ void xFTrackmulBlkReadIn (XF_SNAME(WORDWIDTH) ptr[1], unsigned int* in, int rows
  * obj_wdt  --> width of the object
  * obj_num	--> object number in the video
  */
-template <int ROWS, int IN_TC, int COLS, int NPC, int WORDWIDTH>
-void xFTrackmulBlkRead(hls::stream<XF_SNAME(WORDWIDTH)>& input1, unsigned int* in, uint16_t rows,
-		uint16_t cols, uint16_t x1, uint16_t y1, uint16_t obj_hgt, uint16_t obj_wdt)
+template <int ROWS, int IN_TC, int COLS, int SRC_T, int ROWS_IMG, int COLS_IMG, int NPC>
+void xFTrackmulBlkRead(hls::stream<XF_TNAME(SRC_T,NPC)>& input1, xf::Mat<SRC_T, ROWS_IMG, COLS_IMG, NPC> &_in_mat,
+		uint16_t x1, uint16_t y1, uint16_t obj_hgt, uint16_t obj_wdt)
 {
-	XF_SNAME(WORDWIDTH) dst[1];
+	XF_TNAME(SRC_T,NPC) dst[1];
 	unsigned short h_y = obj_hgt>>1;
 	unsigned short h_x = obj_wdt>>1;
 
@@ -128,7 +129,7 @@ void xFTrackmulBlkRead(hls::stream<XF_SNAME(WORDWIDTH)>& input1, unsigned int* i
 	{
 #pragma HLS PIPELINE
 #pragma HLS LOOP_TRIPCOUNT min=20 max=ROWS avg=ROWS
-		xFTrackmulBlkReadIn<ROWS,IN_TC,COLS,NPC,WORDWIDTH> (dst,in,rows,cols,i,input1,x1,y1,buf_size);
+		xFTrackmulBlkReadIn<ROWS,IN_TC,COLS,SRC_T,ROWS_IMG,COLS_IMG,NPC> (dst,_in_mat,i,input1,x1,y1,buf_size);
 	}
 }
 
@@ -291,7 +292,7 @@ static int xFTrackmulSqrt( int temp)
  * rows     --> height of the image
  * cols     --> width of the image
  */
-template <int ROWS, int IN_TC, int COLS, int NPC, int WORDWIDTH, typename QuPuTYPE, typename BINTYPE>
+template <int ROWS, int IN_TC, int COLS, int NPC, typename QuPuTYPE, typename BINTYPE>
 void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BINS_],
 		BINTYPE BIN[ROWS*COLS], uint16_t& x1, uint16_t& y1, uint16_t obj_hgt, uint16_t obj_wdt,
 		uint16_t& C_x, uint16_t& C_y, bool& track, uint16_t rows, uint16_t cols)
@@ -418,22 +419,22 @@ void xFTrackmulWeight (QuPuTYPE Qu[_MST_TOTAL_BINS_], QuPuTYPE Pu[_MST_TOTAL_BIN
  * obj_num 	--> object number in the video
  * frameno	--> frame number in video
  */
-template <int ROWS, int IN_TC, int COLS, int NPC, int WORDWIDTH, typename QuPuTYPE, typename BINTYPE>
-void xFTrackmulFindhist (unsigned int* in, uint16_t rows, uint16_t cols, uint16_t x1, uint16_t y1,
+template <int ROWS, int IN_TC, int COLS, int SRC_T, int ROWS_IMG, int COLS_IMG, int NPC, typename QuPuTYPE, typename BINTYPE>
+void xFTrackmulFindhist (xf::Mat<SRC_T, ROWS_IMG, COLS_IMG, NPC> &_in_mat, uint16_t x1, uint16_t y1,
 		uint16_t obj_hgt, uint16_t obj_wdt, QuPuTYPE Qu[_MST_TOTAL_BINS_],
 		QuPuTYPE Pu[_MST_TOTAL_BINS_], BINTYPE BIN[ROWS*COLS], uint8_t frame_status)
 {
 #pragma HLS INLINE OFF
 
-	hls::stream <XF_SNAME(WORDWIDTH)> input2;
+	hls::stream <XF_TNAME(SRC_T,NPC)> input2;
 
 #pragma HLS DATAFLOW
 
 	// Read the block from DDR and push into stream
-	xFTrackmulBlkRead<ROWS,IN_TC,COLS,NPC,WORDWIDTH>(input2,in,rows,cols,x1,y1,obj_hgt,obj_wdt);
+	xFTrackmulBlkRead<ROWS,IN_TC,COLS,SRC_T,ROWS_IMG,COLS_IMG,NPC>(input2,_in_mat,x1,y1,obj_hgt,obj_wdt);
 
 	// Read the values from stream and find the histogram
-	xFTrackmulHist<ROWS,(IN_TC>>1),COLS,NPC,WORDWIDTH>(input2,x1,obj_hgt,y1,obj_wdt,Qu,Pu,BIN,frame_status);
+	xFTrackmulHist<ROWS,(IN_TC>>1),COLS,NPC,XF_WORDWIDTH(SRC_T,NPC)>(input2,x1,obj_hgt,y1,obj_wdt,Qu,Pu,BIN,frame_status);
 }
 
 /*
@@ -452,8 +453,8 @@ void xFTrackmulFindhist (unsigned int* in, uint16_t rows, uint16_t cols, uint16_
  * obj_num --> current object index
  * iters    --> Total number of iterations for the convergence
  */
-template <int ROWS, int IN_TC, int COLS, int MAXOBJS, int MAXITERS, int NPC, int WORDWIDTH>
-void xFTrackmulKernelFunc(unsigned int* in, uint16_t rows, uint16_t cols, uint16_t x1,
+template <int ROWS, int IN_TC, int COLS, int SRC_T, int ROWS_IMG, int COLS_IMG, int MAXOBJS, int MAXITERS, int NPC>
+void xFTrackmulKernelFunc(xf::Mat<SRC_T, ROWS_IMG, COLS_IMG, NPC> &_in_mat, uint16_t x1,
 		uint16_t y1, uint16_t obj_hgt, uint16_t obj_wdt, uint16_t & dx, uint16_t &dy,
 		bool& track, uint8_t frame_status, uint8_t obj_num, uint8_t iters)
 {
@@ -488,15 +489,15 @@ void xFTrackmulKernelFunc(unsigned int* in, uint16_t rows, uint16_t cols, uint16
 		if (flag == 0)
 		{
 			// Find histogram of the current frame and store in array Pu[512]
-			xFTrackmulFindhist<ROWS,IN_TC,COLS,NPC,WORDWIDTH> (in,rows,cols,x1,y1,obj_hgt,obj_wdt,Qu[obj_num],Pu,BIN,frame_status);
+			xFTrackmulFindhist<ROWS,IN_TC,COLS,SRC_T,ROWS_IMG,COLS_IMG,NPC> (_in_mat,x1,y1,obj_hgt,obj_wdt,Qu[obj_num],Pu,BIN,frame_status);
 			flag = 1;
 		}
 
 		else
 		{
 			// Using Pu, Qu compute weights and displacement
-			xFTrackmulWeight<ROWS,IN_TC,COLS,NPC,WORDWIDTH> (Qu[obj_num],Pu,BIN,x1,y1,obj_hgt,obj_wdt,
-					C_x,C_y,track,rows,cols);
+			xFTrackmulWeight<ROWS,IN_TC,COLS,NPC> (Qu[obj_num],Pu,BIN,x1,y1,obj_hgt,obj_wdt,
+					C_x,C_y,track,_in_mat.rows,_in_mat.cols);
 			flag = 0;
 		}
 	}
@@ -530,8 +531,8 @@ void xFTrackmulKernelFunc(unsigned int* in, uint16_t rows, uint16_t cols, uint16
  * iters    --> Total number of iterations for the centroid convergence, optimally '4'
  */
 
-template <int ROWS, int COLS, int MAXOBJ, int MAXITERS, int NPC, int WORDWIDTH>
-void xFMeanShiftKernel(unsigned int *in, uint16_t rows, uint16_t cols, uint16_t tlx[MAXOBJ],
+template <int ROWS, int COLS, int SRC_T, int ROWS_IMG, int COLS_IMG, int MAXOBJ, int MAXITERS, int NPC>
+void xFMeanShiftKernel(xf::Mat<SRC_T, ROWS_IMG, COLS_IMG, NPC> &_in_mat, uint16_t tlx[MAXOBJ],
 		uint16_t tly[MAXOBJ], uint16_t obj_hgt[MAXOBJ], uint16_t obj_wdt[MAXOBJ],
 		uint16_t dispx[MAXOBJ], uint16_t dispy[MAXOBJ], uint16_t status[MAXOBJ],
 		uint8_t frame_status, uint8_t no_objects, uint8_t iters)
@@ -545,8 +546,8 @@ void xFMeanShiftKernel(unsigned int *in, uint16_t rows, uint16_t cols, uint16_t 
 	assert((no_objects <= MAXOBJ) && "number of objects should be less than MAX_OBJECTS");
 	assert((NPC == XF_NPPC1)
 			&& "NPC must be XF_NPPC1" );
-	assert((WORDWIDTH == XF_32UW) &&
-			"WORDWIDTH must be XF_32UW");
+//	assert((WORDWIDTH == XF_32UW) &&
+//			"WORDWIDTH must be XF_32UW");
 	assert( (COLS%2 == 0) && "object width must be in multiples of two");
 
 	loop_objects:
@@ -565,13 +566,13 @@ void xFMeanShiftKernel(unsigned int *in, uint16_t rows, uint16_t cols, uint16_t 
 
 		assert((x2 < 700) && (y2 < 700) && "object width and height should be less than 700");
 		assert((x2 > 20) && (y2 > 20) && "object width and height should be greater than 20");
-		assert((x2 < COLS) && "MAX_WIDTH should be more than maximum height of the objects given ");
-		assert((y2 < ROWS) && "MAX_HEIGHT should be more than maximum width of the objects given ");
+		assert((x2 <= COLS) && "The object width must be less than the MAX_WIDTH ");
+		assert((y2 <= ROWS) && "The object height must be less than the MAX_HEIGHT ");
 
 		if(track)
 		{
-			xFTrackmulKernelFunc<ROWS,(COLS>>XF_BITSHIFT(NPC)),COLS,MAXOBJ,(MAXITERS<<1),NPC,WORDWIDTH>
-			(in,rows,cols,x1,y1,x2,y2,dx,dy,track,frame_status,a,iters);
+			xFTrackmulKernelFunc<ROWS,(COLS>>XF_BITSHIFT(NPC)),COLS,SRC_T,ROWS_IMG,COLS_IMG,MAXOBJ,(MAXITERS<<1),NPC>
+			(_in_mat,x1,y1,x2,y2,dx,dy,track,frame_status,a,iters);
 		}
 		else   // If non-trackable displacement is Zero
 		{

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -46,10 +46,15 @@ int main(int argc, char** argv)
 	char in[100], in1[100], out_hls[100], out_ocv[100], out_error[100];
 
 	cv::Mat in_img, in_img1, out_img;
-	cv::Mat in_gray, in_gray1, diff;
+	cv::Mat in_gray, in_gray1;
+#if GRAY
 	in_gray  = cv::imread(argv[1], 0);  // reading image
 	in_gray1 = cv::imread(argv[2], 0);  // reading image
+#else
+	in_gray  = cv::imread(argv[1], 1);  // reading image
+	in_gray1 = cv::imread(argv[2], 1);  // reading image
 
+#endif
 	if (in_gray.data == NULL)
 	{
 		fprintf(stderr,"Cannot open image %s\n", argv[1]);
@@ -61,56 +66,68 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-	cv::Mat inout_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
-	cv::Mat inout_gray1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
-
-	cv::Mat out_gray(in_gray.rows, in_gray.cols, CV_16U, 1);
-
-	cv::Mat ocv_ref(in_gray.rows, in_gray.cols, CV_16U, 1);
+#if GRAY
+	cv::Mat out_gray(in_gray.rows, in_gray.cols, CV_16UC1, 1);
+	cv::Mat diff(in_gray.rows, in_gray.cols, CV_16UC1, 1);
+	cv::Mat ocv_ref(in_gray.rows, in_gray.cols, CV_16UC1, 1);
 	cv::Mat ocv_ref_in1(in_gray.rows, in_gray.cols, CV_32FC1, 1);
 	cv::Mat ocv_ref_in2(in_gray.rows, in_gray.cols, CV_32FC1, 1);
-
 	in_gray.convertTo(ocv_ref_in1, CV_32FC1);
 	in_gray1.convertTo(ocv_ref_in2, CV_32FC1);
-
+#else
+	cv::Mat out_gray(in_gray.rows, in_gray.cols, CV_16UC3, 1);
+	cv::Mat diff(in_gray.rows, in_gray.cols, CV_16UC3, 1);
+	cv::Mat ocv_ref(in_gray.rows, in_gray.cols, CV_16UC3, 1);
+	cv::Mat ocv_ref_in1(in_gray.rows, in_gray.cols, CV_32FC3, 1);
+	cv::Mat ocv_ref_in2(in_gray.rows, in_gray.cols, CV_32FC3, 1);
+	in_gray.convertTo(ocv_ref_in1, CV_32FC3);
+	in_gray1.convertTo(ocv_ref_in2, CV_32FC3);
+#endif
 	// OpenCV functions
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
 	cv::accumulate(ocv_ref_in1, ocv_ref_in2, cv::noArray());
-	ocv_ref_in2.convertTo(ocv_ref, CV_16U);
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
+	
+#if GRAY
+	ocv_ref_in2.convertTo(ocv_ref, CV_16UC1);
+#else
+	ocv_ref_in2.convertTo(ocv_ref, CV_16UC3);
+#endif
 	// Write OpenCV reference image
 	cv::imwrite("out_ocv.jpg", ocv_ref);
 
-//	in_gray1.convertTo(inout_gray, CV_8U);
-
 	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput1(in_gray1.rows,in_gray1.cols);
-	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput2(inout_gray.rows,inout_gray.cols);
-	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> imgOutput(out_gray.rows,out_gray.cols);
+	static xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC1> imgInput2(in_gray.rows,in_gray.cols);
+	static xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC1> imgOutput(in_gray1.rows,in_gray1.cols);
 
 	imgInput1.copyTo(in_gray.data);
 	imgInput2.copyTo(in_gray1.data);
 
 	#if __SDSCC__
-		perf_counter hw_ctr;
-		 hw_ctr.start();
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
 	#endif
 	
 	accumulate_accel(imgInput1,imgInput2,imgOutput);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
-	
-	
-	out_gray.data = imgOutput.copyFrom();
 
 
 	// Write output image
-	imwrite("out_hls.jpg", out_gray);
-	out_gray.convertTo(inout_gray1, CV_32FC3);
+	xf::imwrite("out_hls.jpg", imgOutput);
 	
 	// Compute absolute difference image
-	absdiff(ocv_ref_in2, inout_gray1, diff); 
+	xf::absDiff(ocv_ref,imgOutput, diff);
 	// Save the difference image
 	imwrite("diff.jpg", diff); 
 
@@ -121,8 +138,8 @@ int main(int argc, char** argv)
 	{
 		for(int j = 0; j < in_gray.cols; j++)
 		{
-			float v = diff.at<float>(i,j);
-			if (v > 0.0f) cnt++;
+			unsigned short v = diff.at<unsigned short>(i,j);
+			if (v > 0) cnt++;
 			if (minval > v ) minval = v;
 			if (maxval < v)  maxval = v;
 		}

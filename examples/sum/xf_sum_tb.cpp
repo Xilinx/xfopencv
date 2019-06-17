@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -54,7 +54,19 @@ int main(int argc, char** argv)
 
 	double ocv_ref[3];
 	// OpenCV function
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
+
 	 ocv_ref[0]=cv::sum(in_gray)[0];
+
+
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
+
 //	 ocv_ref[1]=cv::sum(in_gray)[1];
 //	 ocv_ref[2]=cv::sum(in_gray)[2];
 
@@ -68,16 +80,18 @@ int main(int argc, char** argv)
 
 	imgInput1.copyTo(in_gray.data);
 
-#if __SDSCC__
-perf_counter hw_ctr;
-hw_ctr.start();
-#endif
+	#if __SDSCC__
+		perf_counter hw_ctr1;
+hw_ctr1.start();
+	#endif
+
 	sum_accel(imgInput1,scl);
 
-#if __SDSCC__
-hw_ctr.stop();
-uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-#endif
+	#if __SDSCC__
+		hw_ctr1.stop();
+uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+	#endif
+
 	for(int i=0;i< in_gray.channels();i++)
 	{
 

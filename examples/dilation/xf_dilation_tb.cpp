@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -48,6 +48,10 @@ int main(int argc, char** argv)
 #if GRAY
 	// reading in the color image
 	in_gray = cv::imread(argv[1], 0);
+#else
+	// reading in the color image
+	in_gray = cv::imread(argv[1], 1);
+
 #endif
 
 
@@ -57,18 +61,30 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
-
+// create memory for output images
 #if GRAY
-		// create memory for output images
 		ocv_ref.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		out_img.create(in_gray.rows,in_gray.cols,CV_8UC1);
 		diff.create(in_gray.rows,in_gray.cols,CV_8UC1);
+#else
+		ocv_ref.create(in_gray.rows,in_gray.cols,CV_8UC3);
+		out_img.create(in_gray.rows,in_gray.cols,CV_8UC3);
+		diff.create(in_gray.rows,in_gray.cols,CV_8UC3);
+
 #endif
 
 
 
 		cv::Mat element = cv::getStructuringElement( KERNEL_SHAPE,cv::Size(FILTER_SIZE, FILTER_SIZE), cv::Point(-1, -1));
+#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+#endif
 		cv::dilate(in_gray, ocv_ref, element, cv::Point(-1, -1), ITERATIONS, cv::BORDER_CONSTANT);
+#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+#endif
 		cv::imwrite("out_ocv.jpg", ocv_ref);
 	/////////////////////	End of OpenCV reference	 ////////////////
 
@@ -94,30 +110,22 @@ int main(int argc, char** argv)
 
 	imgInput.copyTo(in_gray.data);
 
-	#if __SDSCC__
-	perf_counter hw_ctr;
-
-
-	hw_ctr.start();
-	#endif
+#if __SDSCC__
+	perf_counter hw_ctr1;
+	hw_ctr1.start();
+#endif
 
 	dilation_accel(imgInput, imgOutput, structure_element);
 
-	#if __SDSCC__
-	hw_ctr.stop();
-
-
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
-	#endif
-
-	// Write output image
-	xf::imwrite("hls_out.jpg",imgOutput);
-
+#if __SDSCC__
+	hw_ctr1.stop();
+	uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
+#endif
 
 	//////////////////  Compute Absolute Difference ////////////////////
 
 	xf::absDiff(ocv_ref, imgOutput, diff);
-	//absdiff(ocv_ref, out_img, diff);
+
 	cv::imwrite("out_error.jpg", diff);
 
 	// Find minimum and maximum differences.

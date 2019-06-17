@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -542,7 +542,7 @@ void xFImageClipUtility(int i, int j, int k, int height, int width, int *pix)
 /* Clips the Output from the Sobel function based on the Cap value input */
 template<int ROWS, int COLS, int NPC,int DEPTH_SRC, int DEPTH_DST, int SRC_T, int DST_T,int COLS_TC>
 void xFImageClip(
-    hls::stream<XF_TNAME(SRC_T,1)>& src,
+    xf::Mat<SRC_T,ROWS,COLS,1>& src,
     hls::stream<XF_TNAME(DST_T,1)>& dst,
     int cap, short int height, short int width)
 {
@@ -557,7 +557,7 @@ void xFImageClip(
     {
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TC max=COLS_TC
-      XF_TNAME(SRC_T,1) tmp = src.read();
+      XF_TNAME(SRC_T,1) tmp = src.read(i*(width>>XF_BITSHIFT(NPC))+j);
       XF_TNAME(DST_T,1) tmp_out;
       for (int k = 0; k < (1<<XF_BITSHIFT(NPC)); k++)
       {
@@ -577,7 +577,7 @@ void xFImageClip(
 /* For reading the Gradient-Y stream, rather than letting the stream dangling */
 template<int ROWS, int COLS, int NPC, int DEPTH_SRC, int DEPTH_DST, int SRC_T, int COLS_TC>
 void xFReadOutStream(
-    hls::stream<XF_TNAME(SRC_T,1)>& src,
+    xf::Mat<SRC_T,ROWS,COLS,1>& src,
     short int height,short int width)
 {
   loop_row_clip:
@@ -590,7 +590,7 @@ void xFReadOutStream(
     {
 #pragma HLS PIPELINE II=1
 #pragma HLS LOOP_TRIPCOUNT min=COLS_TC max=COLS_TC
-      XF_TNAME(SRC_T,1) tmp = src.read();
+      XF_TNAME(SRC_T,1) tmp = src.read(i*(width>>XF_BITSHIFT(NPC))+j);
     }
   }
 }
@@ -598,14 +598,15 @@ void xFReadOutStream(
 
 /* Sobel gradient and Clipping */
 template <int ROWS, int COLS, int SRC_T, int FILTER_T, int DST_T,bool USE_URAM>
-void xFStereoPreProcess(hls::stream<XF_TNAME(SRC_T,1)> &in_strm, hls::stream<XF_TNAME(DST_T,1)>& clipped_strm, int preFilterType,int preFilterCap, short int height, short int width)
+void xFStereoPreProcess(xf::Mat<SRC_T, ROWS, COLS, 1> &in_mat, hls::stream<XF_TNAME(DST_T,1)>& clipped_strm, int preFilterType,int preFilterCap, short int height, short int width)
 {
 #pragma HLS INLINE
-    hls::stream<XF_TNAME(FILTER_T,1)> in_sobel_x("in_sobel_x");
-    hls::stream<XF_TNAME(FILTER_T,1)> in_sobel_y("in_sobel_y");
-
+    xf::Mat<FILTER_T,ROWS,COLS,1> in_sobel_x(height,width);
+#pragma HLS stream variable=in_sobel_x.data depth=2
+    xf::Mat<FILTER_T,ROWS,COLS,1> in_sobel_y(height,width);
+#pragma HLS stream variable=in_sobel_y.data depth=2
 	
-    xFSobelFilter<ROWS,COLS,XF_CHANNELS(SRC_T,1),XF_8UP,XF_16SP,XF_NPPC1,SRC_T,FILTER_T,USE_URAM>(in_strm ,in_sobel_x ,in_sobel_y ,3,XF_BORDER_CONSTANT,height,width);
+    xf::Sobel<XF_BORDER_CONSTANT, XF_FILTER_3X3,SRC_T,FILTER_T,ROWS,COLS,XF_NPPC1,USE_URAM>(in_mat,in_sobel_x ,in_sobel_y);
     xFImageClip<ROWS,COLS,XF_NPPC1,XF_16SP,XF_8UP,FILTER_T,DST_T,COLS>(in_sobel_x,clipped_strm,preFilterCap,height,width);
     xFReadOutStream<ROWS,COLS,XF_NPPC1,XF_16SP,XF_8UP,FILTER_T,COLS>(in_sobel_y,height,width);
 }
@@ -621,6 +622,11 @@ void xFFindStereoCorrespondenceLBMNO_pipeline (hls::stream<XF_TNAME(SRC_T,NPC)> 
 {
 #pragma HLS INLINE
 
+  xf::Mat<SRC_T,ROWS,COLS,NPC> _left_mat(height,width);
+#pragma HLS stream variable=_left_mat.data depth=2
+  xf::Mat<SRC_T,ROWS,COLS,NPC> _right_mat(height,width);
+#pragma HLS stream variable=_right_mat.data depth=2
+
   hls::stream< XF_TNAME(SRC_T,NPC) > left_clipped("left_clipped");
   hls::stream< XF_TNAME(SRC_T,NPC) > right_clipped("right_clipped");
 
@@ -629,10 +635,17 @@ void xFFindStereoCorrespondenceLBMNO_pipeline (hls::stream<XF_TNAME(SRC_T,NPC)> 
 #pragma HLS DATAFLOW
 
   int TC=(ROWS*COLS);
+  for (int i = 0; i < height*width; i++)
+  {
+#pragma HLS pipeline ii=1
+#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
+    _left_mat.write(i,_left_strm.read());
+    _right_mat.write(i,_right_strm.read());
+  }
 
   /* Sobel and Clipping */
-  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16UW,SRC_T>(_left_strm,left_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
-  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16UW,SRC_T>(_right_strm,right_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
+  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16SC1,SRC_T>(_left_mat,left_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
+  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16SC1,SRC_T>(_right_mat,right_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
 
   /* SAD and disparity computation */
   xFSADBlockMatching<ROWS,COLS,SRC_T,DST_T,WSIZE,NDISP,NDISP_UNIT,SWEEP_FACT,ROWS+WSIZE-1,COLS+WSIZE-1,
@@ -649,15 +662,12 @@ void xFFindStereoCorrespondenceLBMNO_pipeline (hls::stream<XF_TNAME(SRC_T,NPC)> 
 
 /* This function performs preprocessing and disparity computation for NO mode */
 template <int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDISP, int NDISP_UNIT, int SWEEP_FACT,bool USE_URAM>
-void xFFindStereoCorrespondenceLBMNO (XF_TNAME(SRC_T,NPC) *left_ptr,
-    XF_TNAME(SRC_T,NPC) *right_ptr,
-    XF_TNAME(DST_T,NPC) *disp_ptr ,
+void xFFindStereoCorrespondenceLBMNO (xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
+    xf::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
+    xf::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,
     xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
     short int height, short int width)
 {
-  hls::stream< XF_TNAME(SRC_T,NPC) > _left_strm;
-  hls::stream< XF_TNAME(SRC_T,NPC) > _right_strm;
-
   hls::stream< XF_TNAME(SRC_T,NPC) > left_clipped("left_clipped");
   hls::stream< XF_TNAME(SRC_T,NPC) > right_clipped("right_clipped");
 
@@ -665,17 +675,10 @@ void xFFindStereoCorrespondenceLBMNO (XF_TNAME(SRC_T,NPC) *left_ptr,
 #pragma HLS DATAFLOW
 
   int TC=(ROWS*COLS);
-  for (int i = 0; i < height*width; i++)
-  {
-#pragma HLS pipeline ii=1
-#pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-    _left_strm.write(*(left_ptr + i));
-    _right_strm.write(*(right_ptr + i));
-  }
 
   /* Sobel and Clipping */
-  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16UW,SRC_T,USE_URAM>(_left_strm,left_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
-  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16UW,SRC_T,USE_URAM>(_right_strm,right_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
+  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16SC1,SRC_T,USE_URAM>(_left_mat,left_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
+  xFStereoPreProcess<ROWS,COLS,SRC_T,XF_16SC1,SRC_T,USE_URAM>(_right_mat,right_clipped,sbmstate.preFilterType,sbmstate.preFilterCap,height,width);
 
   /* SAD and disparity computation */
   xFSADBlockMatching<ROWS,COLS,SRC_T,DST_T,WSIZE,NDISP,NDISP_UNIT,SWEEP_FACT,ROWS+WSIZE-1,COLS+WSIZE-1,
@@ -685,7 +688,7 @@ void xFFindStereoCorrespondenceLBMNO (XF_TNAME(SRC_T,NPC) *left_ptr,
   {
 #pragma HLS pipeline ii=1
 #pragma HLS LOOP_TRIPCOUNT min=1 max=TC
-    *(disp_ptr + i) = _disp_strm.read();
+    _disp_mat.write(i,_disp_strm.read());
   }
 }
 
@@ -700,8 +703,8 @@ void xFFindStereoCorrespondenceLBM_pipeline(hls::stream<XF_TNAME(SRC_T,NPC)> &_l
 {
 #pragma HLS INLINE
 
-  assert((SRC_T == XF_8UW) && " WORDWIDTH_SRC must be XF_8UW ");
-  assert((DST_T == XF_16UW) && " WORDWIDTH_DST must be XF_16UW ");
+  assert((SRC_T == XF_8UC1) && " SRC_T must be XF_8UC1 ");
+  assert((DST_T == XF_16UC1) && " DST_T must be XF_16UC1 ");
   assert((NPC == XF_NPPC1) && " NPC must be XF_NPPC1 ");
   assert((WSIZE%2 == 1) && (WSIZE < __XF_MIN(height,width) && (WSIZE >= 5)) && " WSIZE must be an odd number, less than minimum of height & width and greater than or equal to '5'  ");
   assert(((NDISP > 1) && (NDISP < width)) && " NDISP must be greater than '1' and less than the image width ");
@@ -716,14 +719,14 @@ void xFFindStereoCorrespondenceLBM_pipeline(hls::stream<XF_TNAME(SRC_T,NPC)> &_l
 
 /* Calls the functions based on the PIXEL PARALLELISM configuration */
 template<int ROWS, int COLS, int SRC_T, int DST_T, int NPC, int WSIZE, int NDISP, int NDISP_UNIT,bool USE_URAM>
-void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
-    XF_TNAME(SRC_T,NPC) *right_ptr,
-    XF_TNAME(DST_T,NPC) *out_ptr,
+void xFFindStereoCorrespondenceLBM(xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
+    xf::Mat<SRC_T, ROWS, COLS, NPC> &_right_mat,
+    xf::Mat<DST_T, ROWS, COLS, NPC> &_disp_mat,
     xf::xFSBMState<WSIZE,NDISP,NDISP_UNIT> &sbmstate,
     short int height,short int width)
 {
-  assert((SRC_T == XF_8UW) && " WORDWIDTH_SRC must be XF_8UW ");
-  assert((DST_T == XF_16UW) && " WORDWIDTH_DST must be XF_16UW ");
+  assert((SRC_T == XF_8UC1) && " SRC_T must be XF_8UC1 ");
+  assert((DST_T == XF_16UC1) && " DST_T must be XF_16UC1 ");
   assert((NPC == XF_NPPC1) && " NPC must be XF_NPPC1 ");
   assert((WSIZE%2 == 1) && (WSIZE < __XF_MIN(height,width) && (WSIZE >= 5)) && " WSIZE must be an odd number, less than minimum of height & width and greater than or equal to '5'  ");
   assert(((NDISP > 1) && (NDISP < width)) && " NDISP must be greater than '1' and less than the image width ");
@@ -733,7 +736,7 @@ void xFFindStereoCorrespondenceLBM(XF_TNAME(SRC_T,NPC) *left_ptr,
   assert(sbmstate.preFilterCap >=1 && sbmstate.preFilterCap <= 63 && "preFilterCap must be within 1..63");
   assert(sbmstate.preFilterType == XF_STEREO_PREFILTER_SOBEL_TYPE);
 
-  xFFindStereoCorrespondenceLBMNO<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT,(NDISP/NDISP_UNIT)+((NDISP%NDISP_UNIT)!=0),USE_URAM>(left_ptr,right_ptr,out_ptr,sbmstate,height,width);
+  xFFindStereoCorrespondenceLBMNO<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT,(NDISP/NDISP_UNIT)+((NDISP%NDISP_UNIT)!=0),USE_URAM>(_left_mat,_right_mat,_disp_mat,sbmstate,height,width);
 }
 
 
@@ -753,9 +756,9 @@ void StereoBM(xf::Mat<SRC_T, ROWS, COLS, NPC> &_left_mat,
 {
 #pragma HLS INLINE OFF
 
-  xFFindStereoCorrespondenceLBM<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT,USE_URAM>(_left_mat.data,_right_mat.data,_disp_mat.data,sbmstate,
-      _left_mat.rows,_left_mat.cols);
+  xFFindStereoCorrespondenceLBM<ROWS,COLS,SRC_T,DST_T,NPC,WSIZE,NDISP,NDISP_UNIT,USE_URAM>(_left_mat,_right_mat,_disp_mat,sbmstate,_left_mat.rows,_left_mat.cols);
 }
 }
 
 #endif  // _XF_STEREOBM_HPP_
+

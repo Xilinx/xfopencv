@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -35,7 +35,7 @@
 #include "assert.h"
 #include "common/xf_common.h"
 #include "xf_config_params.h"
-#include "imgproc/xf_pyr_dense_optical_flow_wrapper.hpp"
+#include "video/xf_pyr_dense_optical_flow_wrapper.hpp"
 #include "imgproc/xf_pyr_down.hpp"
 #include "features/xf_harris.hpp"
 #include "imgproc/xf_corner_update.hpp"

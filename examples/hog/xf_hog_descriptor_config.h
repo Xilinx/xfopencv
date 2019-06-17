@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -69,7 +69,7 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define XF_INPUT_TYPE XF_8UC1
 #define XF_INPUT_COLOR XF_GRAY
 #elif RGB_T
-#define XF_INPUT_TYPE XF_8UC4
+#define XF_INPUT_TYPE XF_8UC3
 #define XF_INPUT_COLOR XF_RGB
 #endif
 

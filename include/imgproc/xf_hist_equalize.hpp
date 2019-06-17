@@ -1,5 +1,5 @@
 /***************************************************************************
- Copyright (c) 2018, Xilinx, Inc.
+ Copyright (c) 2019, Xilinx, Inc.
  All rights reserved.
 
  Redistribution and use in source and binary forms, with or without modification,
@@ -105,7 +105,7 @@ void xFEqualize(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,uint32_t hist_stream[0][
 #pragma HLS LOOP_TRIPCOUNT min=SRC_TC max=SRC_TC
 #pragma HLS PIPELINE
 #pragma HLS LOOP_FLATTEN OFF
-			in_buf = _src1.data[row*img_width+col];
+			in_buf = _src1.read(row*img_width+col);
 			Normalise_Extract: for (ap_uint<9> i = 0, j = 0; i < (8 << XF_BITSHIFT(NPC));
 					j++, i += 8) {
 #pragma HLS DEPENDENCE variable=tmp_cum_hist array intra false
@@ -115,7 +115,7 @@ void xFEqualize(xf::Mat<SRC_T, ROWS, COLS, NPC> & _src1,uint32_t hist_stream[0][
 				val = in_buf.range(i + 7, i);
 				temp_buf(i + 7, i) = tmp_cum_hist[j][val];
 			}
-			_dst_mat.data[row*img_width+col] = temp_buf;
+			_dst_mat.write(row*img_width+col,temp_buf);
 		}
 	}
 }

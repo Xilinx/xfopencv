@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -53,7 +53,11 @@ int main(int argc, char** argv)
 	cv::Mat diff_grad_x, diff_grad_y;
 
 	// reading in the color image
+#if GRAY
 	in_img = cv::imread(argv[1], 0);
+#else
+	in_img = cv::imread(argv[1], 1);
+#endif
 
 	if(in_img.data == NULL)
 	{
@@ -72,14 +76,21 @@ int main(int argc, char** argv)
 
 	int ddepth = CV_8U;
 	typedef unsigned char TYPE; // Should be short int when ddepth is CV_16S
-	#define PTYPE CV_8U			// Should be CV_16S when ddepth is CV_16S
+#if GRAY
+	#define PTYPE CV_8UC1			// Should be CV_16S when ddepth is CV_16S
+#else
+	#define PTYPE CV_8UC3		// Should be CV_16S when ddepth is CV_16S
 #endif
-
+#endif
 #if (FILTER_WIDTH == 7)
 
 	int ddepth = -1;//CV_32F;	//Should be CV_32F if the output pixel type is XF_32UC1
 	typedef unsigned char TYPE; // Should be int when ddepth is CV_32F
-	#define PTYPE CV_8U		// Should be CV_32S when ddepth is CV_32F
+#if GRAY
+	#define PTYPE CV_8UC1			// Should be CV_16S when ddepth is CV_16S
+#else
+	#define PTYPE CV_8UC3		// Should be CV_16S when ddepth is CV_16S
+#endif
 
 #endif
 
@@ -90,8 +101,20 @@ int main(int argc, char** argv)
 	diff_grad_y.create(in_img.rows,in_img.cols,PTYPE);
 
 
+
+	#if __SDSCC__
+	perf_counter hw_ctr;
+	hw_ctr.start();
+	#endif
+
+
 	cv::Sobel( in_img, c_grad_x_1, ddepth, 1, 0, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
 	cv::Sobel( in_img, c_grad_y_1, ddepth, 0, 1, FILTER_WIDTH, scale, delta, cv::BORDER_CONSTANT );
+
+	#if __SDSCC__
+	hw_ctr.stop();
+	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+	#endif
 
 	imwrite("out_ocvx.jpg", c_grad_x_1);
 	imwrite("out_ocvy.jpg", c_grad_y_1);
@@ -101,22 +124,22 @@ int main(int argc, char** argv)
 	unsigned short width = in_img.cols;
 
 
-	xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
-	xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
+	static xf::Mat<IN_TYPE,HEIGHT,WIDTH,NPC1> imgInput(in_img.rows,in_img.cols);
+	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputx(in_img.rows,in_img.cols);
+	static xf::Mat<OUT_TYPE,HEIGHT,WIDTH,NPC1> imgOutputy(in_img.rows,in_img.cols);
 
-	//imgInput.copyTo(in_gray.data);
-	imgInput = xf::imread<XF_8UC1, HEIGHT, WIDTH, NPC1>(argv[1], 0);
+	imgInput.copyTo(in_img.data);
+
 	#if __SDSCC__
-	perf_counter hw_ctr;
-	hw_ctr.start();
+		perf_counter hw_ctr1;
+hw_ctr1.start();
 	#endif
 
 	sobel_accel(imgInput, imgOutputx,imgOutputy);
 
 	#if __SDSCC__
-	hw_ctr.stop();
-	uint64_t hw_cycles = hw_ctr.avg_cpu_cycles();
+		hw_ctr1.stop();
+uint64_t hw_cycles1 = hw_ctr1.avg_cpu_cycles();
 	#endif
 
 	// Write output image
@@ -156,57 +179,13 @@ int main(int argc, char** argv)
 	imwrite("out_errorx.jpg", diff_grad_x);
 	imwrite("out_errory.jpg", diff_grad_y);
 
-	// Find minimum and maximum differences.
-	double minval=256,maxval=0;
-	double minval1=256,maxval1=0;
-	int cnt = 0, cnt1 =0;
+	float err_per,err_per1;
+	int ret;
 
-/*	FILE *fp, *fp1;
-	fp =fopen("c_y.txt","w");
-	fp1 =fopen("hls_y.txt","w");
-
-	for(int i=0;i<in_img.rows;i++)
-	{
-		for(int j=0;j<in_img.cols;j++)
-		{
-			fprintf(fp, "%d ",c_grad_y_1.at<TYPE>(i,j));
-			fprintf(fp1, "%d ",(int)imgOutputy.data[i*in_img.cols + j]);
-		}
-		fprintf(fp, "\n");
-		fprintf(fp1, "\n");
-	}
-
-	fclose(fp);
-	fclose(fp1);
-*/
-	for(int i=0;i<in_img.rows;i++)
-	{
-		for(int j=0;j<in_img.cols;j++)
-		{
-			TYPE v = diff_grad_y.at<TYPE>(i,j);
-			TYPE v1 = diff_grad_x.at<TYPE>(i,j);
-			if (v>0)
-				cnt++;
-			if (minval > v )
-				minval = v;
-			if (maxval < v)
-				maxval = v;
-			if (v1>0)
-				cnt1++;
-			if (minval1 > v1 )
-				minval1 = v1;
-			if (maxval1 < v1)
-				maxval1 = v1;
-		}
-	}
-	float err_per = 100.0*(float)cnt/(in_img.rows*in_img.cols);
-	float err_per1 = 100.0*(float)cnt1/(in_img.rows*in_img.cols);
-
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval,maxval,err_per);
-	fprintf(stderr,"Minimum error in intensity = %f\n Maximum error in intensity = %f\n Percentage of pixels above error threshold = %f\n",minval1,maxval1,err_per1);
+	xf::analyzeDiff(diff_grad_x, 0, err_per);
+	xf::analyzeDiff(diff_grad_y, 0, err_per1);
 
 
-	int ret=0;
 	if(err_per > 0.0f)
 	{
 		printf("Test failed .... !!!\n");

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -30,7 +30,22 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "xf_channel_combine_config.h"
 
-void channel_combine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput1, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput2, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput3, xf::Mat<XF_8UC1, HEIGHT, WIDTH, XF_NPPC1> &imgInput4, xf::Mat<XF_8UC4, HEIGHT, WIDTH, XF_NPPC1> &imgOutput)
+#if TWO_INPUT
+void channel_combine_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput2, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput)
 {
-		xf::merge<XF_8UC1, XF_8UC4, HEIGHT, WIDTH, XF_NPPC1>(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
+		xf::merge<IN_TYPE, OUT_TYPE, HEIGHT, WIDTH, NPC>(imgInput1, imgInput2, imgOutput);
 }
+#endif
+#if THREE_INPUT
+void channel_combine_accel(xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput2, xf::Mat<IN_TYPE, HEIGHT, WIDTH, NPC> &imgInput3, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput)
+{
+		xf::merge<IN_TYPE, OUT_TYPE, HEIGHT, WIDTH, NPC>(imgInput1, imgInput2, imgInput3, imgOutput);
+}
+#endif
+#if FOUR_INPUT
+void channel_combine_accel(xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC> &imgInput1, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC> &imgInput2, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC> &imgInput3, xf::Mat<XF_8UC1, HEIGHT, WIDTH, NPC> &imgInput4, xf::Mat<OUT_TYPE, HEIGHT, WIDTH, NPC> &imgOutput)
+{
+		xf::merge<IN_TYPE, OUT_TYPE, HEIGHT, WIDTH, NPC>(imgInput1, imgInput2, imgInput3, imgInput4, imgOutput);
+}
+#endif
+

@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -41,31 +41,33 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "xf_cvt_color_utils.hpp"
 
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC,int TC,int TCC >
-void write_y(hls::stream< XF_SNAME(WORDWIDTH_SRC) >& src0,hls::stream< XF_SNAME(WORDWIDTH_SRC) >& dst0,uint16_t height,uint16_t width)
+template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC,int TC,int TCC >
+void write_y(xf::Mat<SRC_T, ROWS, COLS, NPC> & src_y,xf::Mat<DST_T, ROWS, COLS, NPC> & out_y,uint16_t height,uint16_t width)
 {
 XF_SNAME(WORDWIDTH_SRC) tmp;
+unsigned long long int idx=0;
 for(int i=0;i<height;i++)
 {
 #pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
 #pragma HLS LOOP_FLATTEN off
-	for(int i=0;i<width;i++)
+	for(int j=0;j<width;j++)
 	{
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-		tmp=src0.read();
-		dst0.write(tmp);
+		tmp=src_y.read(i*width+j);
+		out_y.write(idx++,tmp);
 	}
 }
 }
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_UV, int WORDWIDTH_DST, int TC>
-void KernNv122Yuv4(
-		hls::stream< XF_SNAME(WORDWIDTH_UV) >& _uv,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _u_out,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _v_out,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_UV, int WORDWIDTH_DST, int TC>
+void KernNv122Yuv4(xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,xf::Mat<SRC_T, ROWS, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v,uint16_t height,uint16_t width)
 {
 	XF_PTNAME(XF_16UP) uv;
 	XF_SNAME(WORDWIDTH_DST) u, v;
 	XF_SNAME(WORDWIDTH_UV) uvPacked;
+	XF_TNAME(SRC_T,NPC) arr_u[COLS];
+	XF_TNAME(SRC_T,NPC) arr_v[COLS];
+
+	unsigned long long int idx=0,idx1=0;
 	ap_uint<13> i,j;
 	bool evenBlock = true;
 	RowLoop:
@@ -80,28 +82,36 @@ void KernNv122Yuv4(
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
 			if(evenBlock)
 			{
-				uv = _uv.read();
+				uv = _uv.read(idx++);
 				u.range(7,0) = (uint8_t)uv.range(7,0);
 				v.range(7,0) = (uint8_t)uv.range(15,8);
 			}
-			_u_out.write(u);
-			_v_out.write(v);
+			arr_u[j]=u;arr_v[j]=v;
+
+			_u.write(((i*2)*(_u.cols>>XF_BITSHIFT(NPC)))+j, u);
+			_v.write(((i*2)*(_v.cols>>XF_BITSHIFT(NPC)))+j, v);
 			evenBlock = evenBlock ? false : true;
 		}
+		for(int k=0;k<width;k++)
+		{
+			_u.write((((i*2)+1)*(_u.cols>>XF_BITSHIFT(NPC)))+k, arr_u[k]);
+			_v.write((((i*2)+1)*(_v.cols>>XF_BITSHIFT(NPC)))+k, arr_v[k]);
+
+		}
+
+
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_Y, int WORDWIDTH_UV, int WORDWIDTH_DST>
-void KernNv122Rgba(
-		hls::stream<XF_SNAME(WORDWIDTH_Y)>& _y,
-		hls::stream< XF_SNAME(WORDWIDTH_UV) >& _uv,
-		hls::stream< XF_SNAME(WORDWIDTH_DST)>& _rgba,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int DST_T,int ROWS, int COLS, int NPC, int NPC_UV,  int WORDWIDTH_Y, int WORDWIDTH_UV, int WORDWIDTH_DST>
+void KernNv122Rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,xf::Mat<DST_T, ROWS, COLS, NPC> & _rgba,uint16_t height,uint16_t width)
 {
 	hls::stream<XF_SNAME(WORDWIDTH_UV)> uvStream;
 #pragma HLS STREAM variable=&uvStream  depth=COLS
 	XF_SNAME(WORDWIDTH_Y) yPacked;
 	XF_SNAME(WORDWIDTH_UV) uvPacked;
 	XF_SNAME(WORDWIDTH_DST) rgba;
+	unsigned long long int idx=0,idx1=0;
 	uint8_t y1, y2;
 	int32_t V2Rtemp, U2Gtemp, V2Gtemp, U2Btemp;
 	int8_t u, v;
@@ -117,12 +127,12 @@ void KernNv122Rgba(
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
 
-			yPacked = _y.read();
+			yPacked = _y.read(i*width+j);
 			if(evenRow)
 			{
 				if(evenBlock)
 				{
-					uvPacked = _uv.read();
+					uvPacked = _uv.read(idx++);
 					uvStream.write(uvPacked);
 				}
 			}
@@ -153,7 +163,7 @@ void KernNv122Rgba(
 			rgba.range(31,24) = 255;					          //A
 
 			//			PackedPixels = PackRGBAPixels<WORDWIDTH_DST>(RGB);
-			_rgba.write(rgba);
+			_rgba.write(idx1++,rgba);
 			evenBlock = evenBlock ? false : true;
 		}
 		evenRow = evenRow ? false : true;
@@ -168,14 +178,12 @@ void KernNv122Rgba(
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernNv122Iyuv(
-		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _uv,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _u,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _v,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernNv122Iyuv(xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v,uint16_t height,uint16_t width)
 {
 	XF_PTNAME(XF_8UP) u, v;
 	XF_SNAME(WORDWIDTH_SRC) uv;
+	unsigned long long int idx=0;
 ap_uint<13> i,j;
 	RowLoop:
 	for( i = 0; i < height>>1; i++)
@@ -189,22 +197,25 @@ ap_uint<13> i,j;
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 			//			u = _uv.read();
 			//			v = _uv.read();
-			uv = _uv.read();
+			uv = _uv.read(i*(width>>1)+j);
 
-			_u.write(uv.range(7,0));
-			_v.write(uv.range(15,8));
+			_u.write(idx,uv.range(7,0));
+			_v.write(idx++,uv.range(15,8));
 		}
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_VU, int WORDWIDTH_DST, int TC>
-void KernNv212Yuv4(
-		hls::stream< XF_SNAME(WORDWIDTH_VU) >& _vu,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _u_out,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _v_out,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC,int NPC_UV, int WORDWIDTH_VU, int WORDWIDTH_DST, int TC>
+void KernNv212Yuv4(xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _vu,xf::Mat<SRC_T, ROWS, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v,uint16_t height,uint16_t width)
 {
-	XF_SNAME(WORDWIDTH_VU) vu;
-ap_uint<13> i,j;
+	XF_PTNAME(XF_16UP) uv;
+	XF_SNAME(WORDWIDTH_DST) u, v;
+	XF_SNAME(WORDWIDTH_VU) uvPacked;
+	XF_TNAME(SRC_T,NPC) arr_u[COLS];
+	XF_TNAME(SRC_T,NPC) arr_v[COLS];
+
+	unsigned long long int idx=0,idx1=0;
+	ap_uint<13> i,j;
 	bool evenBlock = true;
 	RowLoop:
 	for( i = 0; i < (height>>1); i++)
@@ -218,26 +229,36 @@ ap_uint<13> i,j;
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
 			if(evenBlock)
 			{
-				vu = _vu.read();
+				uv = _vu.read(idx++);
+				v.range(7,0) = (uint8_t)uv.range(7,0);
+				u.range(7,0) = (uint8_t)uv.range(15,8);
 			}
-			_u_out.write(vu.range(15,8));
-			_v_out.write(vu.range(7,0));
+			arr_u[j]=u;arr_v[j]=v;
+
+			_u.write(((i*2)*(_u.cols>>XF_BITSHIFT(NPC)))+j, u);
+			_v.write(((i*2)*(_v.cols>>XF_BITSHIFT(NPC)))+j, v);
 			evenBlock = evenBlock ? false : true;
 		}
+		for(int k=0;k<width;k++)
+		{
+			_u.write((((i*2)+1)*(_u.cols>>XF_BITSHIFT(NPC)))+k, arr_u[k]);
+			_v.write((((i*2)+1)*(_v.cols>>XF_BITSHIFT(NPC)))+k, arr_v[k]);
+
+		}
+
+
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_Y, int WORDWIDTH_VU, int WORDWIDTH_DST>
-void KernNv212Rgba(
-		hls::stream< XF_SNAME(WORDWIDTH_Y) >& _y,
-		hls::stream< XF_SNAME(WORDWIDTH_VU) >& _vu,
-		hls::stream< XF_SNAME(WORDWIDTH_DST) >& _rgba,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int DST_T,int ROWS, int COLS, int NPC, int NPC_UV, int WORDWIDTH_Y, int WORDWIDTH_VU, int WORDWIDTH_DST>
+void KernNv212Rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _vu,xf::Mat<DST_T, ROWS, COLS, NPC> & _rgba,uint16_t height,uint16_t width)
 {
 	hls::stream<XF_SNAME(WORDWIDTH_VU)> vuStream;
 #pragma HLS STREAM variable=&vuStream  depth=COLS
 	XF_SNAME(WORDWIDTH_Y) yPacked;
 	XF_SNAME(WORDWIDTH_VU) vuPacked;
 	XF_SNAME(WORDWIDTH_DST) rgba;
+	unsigned long long int idx=0,idx1=0;
 	ap_uint<13> i,j;
 	uint8_t y1, y2;
 	int32_t V2Rtemp, U2Gtemp, V2Gtemp, U2Btemp;
@@ -254,13 +275,13 @@ void KernNv212Rgba(
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
 
-			yPacked = _y.read();
+			yPacked = _y.read(i*width+j);
 			//			auExtractPixels<NPC, WORDWIDTH_SRC, XF_8UP>(Ybuf, YPacked, 0);
 			if(evenRow)
 			{
 				if(evenBlock)
 				{
-					vuPacked = _vu.read();
+					vuPacked = _vu.read(idx++);
 					vuStream.write(vuPacked);
 				}
 			}
@@ -291,7 +312,7 @@ void KernNv212Rgba(
 			rgba.range(31,24) = 255;					          //A
 
 			//			PackedPixels = PackRGBAPixels<WORDWIDTH_DST>(RGB);
-			_rgba.write(rgba);
+			_rgba.write(idx1++,rgba);
 			evenBlock = evenBlock ? false : true;
 		}
 		evenRow = evenRow ? false : true;
@@ -306,16 +327,13 @@ void KernNv212Rgba(
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernNv212Iyuv(
-		hls::stream< XF_SNAME(WORDWIDTH_SRC) >& _vu,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _u,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _v,uint16_t height,uint16_t width)
+template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC,int NPC_UV, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernNv212Iyuv(xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _vu,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v,uint16_t height,uint16_t width)
 {
 ap_uint<13> i,j;
 	XF_PTNAME(XF_8UP) u, v;
 	XF_SNAME(WORDWIDTH_SRC) VUPacked, UVPacked0, UVPacked1;
-
+unsigned long long int idx=0,idx1=0;
 	RowLoop:
 	for( i = 0; i < (height>>1); i++)
 	{
@@ -326,22 +344,19 @@ ap_uint<13> i,j;
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-			VUPacked = _vu.read();
+			VUPacked = _vu.read(idx++);
 			u = (uint8_t)VUPacked.range(15,8);
 			v = (uint8_t)VUPacked.range(7,0);
-			_u.write(u);
-			_v.write(v);
+			_u.write(idx1,u);
+			_v.write(idx1++,v);
 		}
 	}
 }
 
-template< int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernIyuv2Rgba(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _y,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _u,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _v,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _rgba,uint16_t height,uint16_t width)
+template< int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernIyuv2Rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _y, xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v,xf::Mat<DST_T, ROWS, COLS, NPC> & _rgba,uint16_t height,uint16_t width)
 {
+	unsigned long long int idx=0,idx1=0;
 	ap_uint<13> i,j;
 	hls::stream<XF_SNAME(WORDWIDTH_SRC)> uStream, vStream;
 #pragma HLS STREAM variable=&uStream  depth=COLS
@@ -365,17 +380,15 @@ void KernIyuv2Rgba(
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
-			yPacked = _y.read();
-			//dummy1 =  dst1.read();
-			//dummy2 = dst2.read();
+			yPacked = _y.read(i*width+j);
 
 			if(evenBlock)
 			{
 				if(evenRow)
 				{
-					uPacked = _u.read();
+					uPacked = _u.read(idx);
 					uStream.write(uPacked);
-					vPacked = _v.read();
+					vPacked = _v.read(idx++);
 					vStream.write(vPacked);
 				}
 				else
@@ -404,52 +417,73 @@ void KernIyuv2Rgba(
 			rgba.range(23,16) = CalculateB(y1, U2Btemp, u);		  //B
 			rgba.range(31,24) = 255;					          //A
 
-			_rgba.write(rgba);
+			_rgba.write(idx1++,rgba);
 			evenBlock = evenBlock ? false : true;
 		}
 		evenRow = evenRow ? false: true;
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH, int rTC, int cTC>
-void KernIyuv2Yuv4(
-		hls::stream<XF_SNAME(WORDWIDTH)>& _in_u,
-		hls::stream<XF_SNAME(WORDWIDTH)>& _in_v,
-		hls::stream<XF_SNAME(WORDWIDTH)>& _out_u,
-		hls::stream<XF_SNAME(WORDWIDTH)>& _out_v,uint16_t height,uint16_t width)
+template<int SRC_T,int ROWS, int COLS, int NPC, int WORDWIDTH, int rTC, int cTC>
+void KernIyuv2Yuv4( xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _in_u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _in_v, xf::Mat<SRC_T, ROWS, COLS, NPC> & _u_image,xf::Mat<SRC_T, ROWS, COLS, NPC> & _v_image,uint16_t height,uint16_t width)
 {
+hls::stream<XF_SNAME(WORDWIDTH)> inter_u;
+		#pragma HLS stream variable=inter_u depth=COLS
+
+	hls::stream<XF_SNAME(WORDWIDTH)> inter_v;
+	#pragma HLS stream variable=inter_v depth=COLS
+
+	XF_TNAME(SRC_T,NPC) arr_U[COLS];
+	XF_TNAME(SRC_T,NPC) arr_V[COLS];
+
 	XF_SNAME(WORDWIDTH) IUPacked, IVPacked;
 	XF_PTNAME(XF_8UP) in_u, in_v;
+	unsigned long long int idx=0,idx1=0,in_idx1=0,in_idx2=0;
 	RowLoop:
 	for(int i = 0; i < ((height>>2) << 1); i++)
 	{
 #pragma HLS LOOP_FLATTEN
 #pragma HLS LOOP_TRIPCOUNT min=rTC max=rTC
 		ColLoop:
-		for(int j = 0; j < (width >> 1); j++)
+		for(int j = 0,k=0; j < (width >> 1); j++,k+=2)
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=cTC max=cTC
-			IUPacked = _in_u.read();
-			IVPacked = _in_v.read();
+			IUPacked = _in_u.read(in_idx1++);
+			IVPacked = _in_v.read(in_idx2++);
 
-			_out_u.write(IUPacked);
-			_out_v.write(IVPacked);
-			_out_u.write(IUPacked);
-			_out_v.write(IVPacked);
+
+			_u_image.write(((i*2)*(width))+k, IUPacked);
+			_u_image.write(((i*2)*(width))+k+1, IUPacked);
+			_v_image.write(((i*2)*(width))+k, IVPacked);
+			_v_image.write(((i*2)*(width))+k+1, IVPacked);
+
+			inter_u.write(IUPacked);
+			inter_v.write(IVPacked);
+			inter_u.write(IUPacked);
+			inter_v.write(IVPacked);
+
 		}
+		for(int j=0;j<width;j++)
+		{
+			#pragma HLS pipeline
+			_u_image.write((((i*2)+1)*(width)+j), inter_u.read());
+			_v_image.write((((i*2)+1)*(width)+j), inter_v.read());
+
+		}
+
+
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_UV, int rTC, int cTC>
-void KernIyuv2Nv12(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>&  _u,
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>&  _v,
-		hls::stream< XF_SNAME(WORDWIDTH_UV) >& _uv,uint16_t height,uint16_t width)
+
+template<int SRC_T,int UV_T,int ROWS, int COLS, int NPC,int NPC_UV, int WORDWIDTH_SRC, int WORDWIDTH_UV, int rTC, int cTC>
+void KernIyuv2Nv12( xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _u,xf::Mat<SRC_T, ROWS/4, COLS, NPC> & _v,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,uint16_t height,uint16_t width)
 {
 ap_uint<13> i,j;
 	XF_SNAME(WORDWIDTH_SRC) u, v;
 	XF_SNAME(WORDWIDTH_UV) uv;
+	unsigned long long int idx=0;
 	RowLoop:
 	for( i = 0; i < height>>1; i++)
 	{
@@ -462,26 +496,22 @@ ap_uint<13> i,j;
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=cTC max=cTC
-			u = _u.read();
-			v = _v.read();
+			u = _u.read(i*(width>>1)+j);
+			v = _v.read(i*(width>>1)+j);
 			uv.range(7,0) = u;
 			uv.range(15,8) = v;
-			_uv.write(uv);
+			_uv.write(idx++,uv);
 		}
 	}
 }
 
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
-void KernRgba2Yuv4(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _rgba,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _y,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _u,
-		hls::stream<XF_SNAME(WORDWIDTH_DST)>& _v,uint16_t height,uint16_t width )
+template<int SRC_T, int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST>
+void KernRgba2Yuv4(xf::Mat<SRC_T, ROWS, COLS, NPC> & _rgba, xf::Mat<DST_T, ROWS, COLS, NPC> & _y, xf::Mat<DST_T, ROWS, COLS, NPC> & _u, xf::Mat<DST_T, ROWS, COLS, NPC> & _v,uint16_t height,uint16_t width )
 {
 	XF_SNAME(XF_32UW) rgba;
 	uint8_t y, u, v;
-
+unsigned long long int idx=0;
 	RowLoop:
 	for(int i = 0; i < height; ++i)
 	{
@@ -492,30 +522,26 @@ void KernRgba2Yuv4(
 		{
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
 #pragma HLS PIPELINE
-			rgba = _rgba.read();
+			rgba = _rgba.read(i*width+j);
 
 			y = CalculateY(rgba.range(7,0),rgba.range(15,8), rgba.range(23,16));
 			u = CalculateU(rgba.range(7,0),rgba.range(15,8), rgba.range(23,16));
 			v = CalculateV(rgba.range(7,0),rgba.range(15,8), rgba.range(23,16));
 
-			_y.write(y);
-			_u.write(u);
-			_v.write(v);
+			_y.write(idx,y);
+			_u.write(idx,u);
+			_v.write(idx++,v);
 		}
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int ROWS_U,int ROWS_V>
-void KernRgba2Iyuv(
-		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _rgba,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _y,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _u,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _v,uint16_t height,uint16_t width)
+template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST,int ROWS_U,int ROWS_V>
+void KernRgba2Iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & _rgba, xf::Mat<DST_T, ROWS, COLS, NPC> & _y, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _u, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _v,uint16_t height,uint16_t width)
 {
 	XF_SNAME(XF_32UW) rgba;
 	uint8_t y, u, v;
 	bool evenRow = true, evenBlock = true;
-
+unsigned long long int idx=0,idx1=0;
 	RowLoop:
 	for(int i = 0; i < height; i++)
 	{
@@ -526,7 +552,7 @@ void KernRgba2Iyuv(
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
-			rgba = _rgba.read();
+			rgba = _rgba.read(i*width+j);
 			uint8_t r = rgba.range(7,0);
 			uint8_t g = rgba.range(15,8);
 			uint8_t b = rgba.range(23,16);
@@ -540,11 +566,11 @@ void KernRgba2Iyuv(
 					v = CalculateV(r, g, b);
 				}
 			}
-			_y.write(y);
+			_y.write(idx1++,y);
 			if(evenRow & !evenBlock)
 			{
-				_u.write(u);
-				_v.write(v);
+				_u.write(idx,u);
+				_v.write(idx++,v);
 			}
 			evenBlock = evenBlock ? false : true;
 		}
@@ -552,16 +578,14 @@ void KernRgba2Iyuv(
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV>
-void KernRgba2Nv12(
-		hls::stream < XF_SNAME(WORDWIDTH_SRC) >&  _rgba,
-		hls::stream < XF_SNAME(WORDWIDTH_Y) >&  _y,
-		hls::stream < XF_SNAME(WORDWIDTH_UV) >&  _uv,uint16_t height,uint16_t width)
+template<int SRC_T, int Y_T, int UV_T,int ROWS, int COLS, int NPC,int NPC_UV, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV>
+void KernRgba2Nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & _rgba, xf::Mat<Y_T, ROWS, COLS, NPC> & _y, xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,uint16_t height,uint16_t width)
 {
 	//	XF_SNAME(XF_32UW) rgba;
-	ap_uint<32> rgba;
+	XF_TNAME(SRC_T,NPC) rgba;
 	ap_uint<16> val1;
 	uint8_t y, u, v;
+	unsigned long long int idx=0,idx1=0;
 	bool evenRow = true, evenBlock = true;
 
 	RowLoop:
@@ -574,7 +598,7 @@ void KernRgba2Nv12(
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
-			rgba = _rgba.read();
+			rgba = _rgba.read(i*width+j);
 			uint8_t r = rgba.range(7,0);
 			uint8_t g = rgba.range(15,8);
 			uint8_t b = rgba.range(23,16);
@@ -585,12 +609,12 @@ void KernRgba2Nv12(
 				u = CalculateU(r, g, b);
 				v = CalculateV(r, g, b);
 			}
-			_y.write(y);
+			_y.write(idx++,y);
 			if(evenRow)
 			{
 				if((j & 0x01) == 0)
 				//{
-					_uv.write(u | (uint16_t)v << 8);
+					_uv.write(idx1++,u | (uint16_t)v << 8);
 					//_uv.write(v);
 				//}
 				//	_uv.write(u | (uint16_t)v << 8);
@@ -600,15 +624,13 @@ void KernRgba2Nv12(
 	}
 }
 
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_VU>
-void KernRgba2Nv21(
-		hls::stream<XF_SNAME(WORDWIDTH_SRC)>& _rgba,
-		hls::stream<XF_SNAME(WORDWIDTH_Y)>& _y,
-		hls::stream<XF_SNAME(WORDWIDTH_VU) >& _vu,uint16_t height,uint16_t width)
+template<int SRC_T, int Y_T, int UV_T, int ROWS, int COLS, int NPC, int NPC_UV, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_VU>
+void KernRgba2Nv21(xf::Mat<SRC_T, ROWS, COLS, NPC> & _rgba, xf::Mat<Y_T, ROWS, COLS, NPC> & _y, xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _vu,uint16_t height,uint16_t width)
 {
 	width=width>>XF_BITSHIFT(NPC);
-	XF_SNAME(XF_32UW) rgba;
+	XF_TNAME(SRC_T,NPC) rgba;
 	uint8_t y, u, v;
+	unsigned long long int idx=0,idx1=0;
 	bool evenRow = true, evenBlock = true;
 
 	RowLoop:
@@ -621,7 +643,7 @@ void KernRgba2Nv21(
 		{
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
-			rgba = _rgba.read();
+			rgba = _rgba.read(i*width+j);
 			uint8_t r = rgba.range(7,0);
 			uint8_t g = rgba.range(15,8);
 			uint8_t b = rgba.range(23,16);
@@ -632,11 +654,11 @@ void KernRgba2Nv21(
 				u = CalculateU(r, g, b);
 				v = CalculateV(r, g, b);
 			}
-			_y.write(y);
+			_y.write(idx++,y);
 			if(evenRow)
 			{
 				if((j & 0x01)==0)
-					_vu.write(v | ((uint16_t)u << 8));
+					_vu.write(idx1++,v | ((uint16_t)u << 8));
 			}
 		}
 		evenRow = evenRow ? false : true;
@@ -644,17 +666,15 @@ void KernRgba2Nv21(
 }
 
 //Yuyv2Rgba
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernYuyv2Rgba(
-		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _yuyv,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _rgba, uint16_t height, uint16_t width)
+template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernYuyv2Rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _yuyv,xf::Mat<DST_T, ROWS, COLS, NPC> & _rgba, uint16_t height, uint16_t width)
 {
 	XF_SNAME(WORDWIDTH_DST) rgba;
 	XF_SNAME(WORDWIDTH_SRC) yu,yv;
 	XF_PTNAME(XF_8UP)  r, g, b;
 	int8_t y1, y2, u, v;
 	int32_t V2Rtemp, U2Gtemp, V2Gtemp, U2Btemp;
-
+unsigned long long int idx=0;
 	RowLoop:
 	for(int i = 0; i < height; i++)
 	{
@@ -666,8 +686,8 @@ void KernYuyv2Rgba(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			yu = _yuyv.read();
-			yv = _yuyv.read();
+			yu = _yuyv.read(i*width+j);
+			yv = _yuyv.read(i*width+j+1);
 			u = (uint8_t)yu.range(15,8) - 128;
 			y1 = (yu.range(7,0) > 16) ? ((uint8_t)yu.range(7,0) - 16) : 0;
 
@@ -684,27 +704,26 @@ void KernYuyv2Rgba(
 			b = CalculateB(y1, U2Btemp, u);
 
 			rgba = ((ap_uint32_t)r) | ((ap_uint32_t)g << 8) | ((ap_uint32_t)b << 16) | (0xFF000000);
-			_rgba.write(rgba);
+			_rgba.write(idx++,rgba);
 
 			r = CalculateR(y2, V2Rtemp, v);
 			g = CalculateG(y2, U2Gtemp, V2Gtemp);
 			b = CalculateB(y2, U2Btemp, u);
 
 			rgba = ((ap_uint32_t)r) | ((ap_uint32_t)g << 8) | ((ap_uint32_t)b << 16) | (0xFF000000);
-			_rgba.write(rgba);
+			_rgba.write(idx++,rgba);
 		}
 	}
 }
 
 
 //Yuyv2Nv12
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
-void KernYuyv2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _yuyv,
-		hls::stream < XF_SNAME(WORDWIDTH_Y) >& _y,
-		hls::stream < XF_SNAME(WORDWIDTH_UV) >& _uv, uint16_t height, uint16_t width)
+template<int SRC_T,int Y_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
+void KernYuyv2Nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & _yuyv,xf::Mat<Y_T, ROWS, COLS, NPC> & _y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,uint16_t height, uint16_t width)
 {
 	XF_SNAME(WORDWIDTH_SRC) yu,yv;
 	XF_PTNAME(XF_8UP) y1, y2;
+	unsigned long long int idx=0,idx1=0;
 	XF_SNAME(WORDWIDTH_UV) uv;
 	bool evenRow = true;
 	RowLoop:
@@ -718,8 +737,8 @@ void KernYuyv2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _yuyv,
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 
-			yu = _yuyv.read();
-			yv = _yuyv.read();
+			yu = _yuyv.read(i*width+j);
+			yv = _yuyv.read(i*width+j+1);
 			y1 = yu.range(7,0);
 			if(evenRow)
 				uv.range(7,0) = yu.range(15,8);
@@ -728,119 +747,23 @@ void KernYuyv2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _yuyv,
 			if(evenRow)
 				uv.range(15,8) = yv.range(15,8);
 
-			_y.write(y1); _y.write(y2);
+			_y.write(idx++,y1);
+			_y.write(idx++,y2);
 			if(evenRow)
 			{
-				_uv.write(uv);
+				_uv.write(idx1++,uv);
 			}
 		}
 		evenRow = evenRow ? false : true;
 	}
 }
-
-//Yuyv2Iyuv
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernYuyv2Iyuv(	hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _yuyv,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _y,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _u,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _v, uint16_t height, uint16_t width)
+//Yuyv2Nv12
+template<int SRC_T,int Y_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
+void KernYuyv2Nv21(xf::Mat<SRC_T, ROWS, COLS, NPC> & _yuyv,xf::Mat<Y_T, ROWS, COLS, NPC> & _y,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & _uv,uint16_t height, uint16_t width)
 {
 	XF_SNAME(WORDWIDTH_SRC) yu,yv;
-	bool evenRow = true, evenBlock = true;
-	XF_PTNAME(XF_8UP) y1, y2, u, v;
-
-	RowLoop:
-	for(int i = 0; i < height; i++)
-	{
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
-		ColLoop:
-		for(int j = 0; j < width; j+=2)
-		{
-#pragma HLS pipeline
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-
-			yu = _yuyv.read();
-			yv = _yuyv.read();
-			y1 = yu.range(7,0);
-			y2 = yv.range(7,0);
-			_y.write(y1);
-			_y.write(y2);
-			if(evenRow)
-				u = yu.range(15,8);
-
-			if(evenRow)
-				v = yv.range(15,8);
-
-			if(evenRow)
-			{
-				_u.write(u);
-				_v.write(v);
-			}
-		}
-		evenRow = evenRow ? false : true;
-	}
-}
-
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernUyvy2Iyuv(	hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _uyvy,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _y,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _u,
-		hls::stream < XF_SNAME(WORDWIDTH_DST)>& _v, uint16_t height, uint16_t width)
-
-{
-
-	XF_SNAME(WORDWIDTH_SRC) uy,vy;
-	bool evenRow = true, evenBlock = true;
-	XF_PTNAME(XF_8UP) y1, y2, u, v;
-
-	RowLoop:
-	for(int i = 0; i < height; i++)
-	{
-#pragma HLS LOOP_FLATTEN off
-#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
-		ColLoop:
-		for(int j = 0; j < width; j+=2)
-		{
-#pragma HLS pipeline
-#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
-
-			uy = _uyvy.read();
-			vy = _uyvy.read();
-
-
-			y1 = uy.range(15,8);
-
-			_y.write(y1);
-			if(evenRow)
-				u = uy.range(7,0);
-
-			y2 = vy.range(15,8);
-
-			_y.write(y2);
-			if(evenRow)
-				v = vy.range(7,0);
-
-			if(evenRow)
-			{
-				_u.write(u);
-				_v.write(v);
-			}
-		}
-		evenRow = evenRow ? false : true;
-	}
-
-}
-
-//Uyvy2Nv12
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
-void KernUyvy2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _uyvy,
-		hls::stream < XF_SNAME(WORDWIDTH_Y) >& _y,
-		hls::stream < XF_SNAME(WORDWIDTH_UV) >& _uv, uint16_t height, uint16_t width)
-{
-
-	XF_SNAME(WORDWIDTH_SRC) uy,vy;
 	XF_PTNAME(XF_8UP) y1, y2;
+	unsigned long long int idx=0,idx1=0;
 	XF_SNAME(WORDWIDTH_UV) uv;
 	bool evenRow = true;
 	RowLoop:
@@ -854,8 +777,147 @@ void KernUyvy2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _uyvy,
 #pragma HLS pipeline
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 
-			uy = _uyvy.read();
-			vy = _uyvy.read();
+			yu = _yuyv.read(i*width+j);
+			yv = _yuyv.read(i*width+j+1);
+			y1 = yu.range(7,0);
+			if(evenRow)
+				uv.range(7,0) = yv.range(15,8);
+
+			y2 = yv.range(7,0);
+			if(evenRow)
+				uv.range(15,8) = yu.range(15,8);
+
+			_y.write(idx++,y1);
+			_y.write(idx++,y2);
+			if(evenRow)
+			{
+				_uv.write(idx1++,uv);
+			}
+		}
+		evenRow = evenRow ? false : true;
+	}
+}
+
+
+//Yuyv2Iyuv
+template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernYuyv2Iyuv(xf::Mat<SRC_T, ROWS, COLS, NPC> & _yuyv, xf::Mat<DST_T, ROWS, COLS, NPC> & _y, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _u, xf::Mat<DST_T, ROWS/4, COLS, NPC> & _v, uint16_t height, uint16_t width)
+{
+	XF_SNAME(WORDWIDTH_SRC) yu,yv;
+	unsigned long long int idx=0,idx1=0;
+	bool evenRow = true, evenBlock = true;
+	XF_PTNAME(XF_8UP) y1, y2, u, v;
+
+	RowLoop:
+	for(int i = 0; i < height; i++)
+	{
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
+		ColLoop:
+		for(int j = 0; j < width; j+=2)
+		{
+#pragma HLS pipeline
+#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
+
+			yu = _yuyv.read(i*width+j);
+			yv = _yuyv.read(i*width+j+1);
+			y1 = yu.range(7,0);
+			y2 = yv.range(7,0);
+			_y.write(idx,y1);
+			idx++;
+			_y.write(idx,y2);
+			idx++;
+			if(evenRow)
+				u = yu.range(15,8);
+
+			if(evenRow)
+				v = yv.range(15,8);
+
+			if(evenRow)
+			{
+				_u.write(idx1,u);
+				_v.write(idx1,v);
+				idx1++;
+			}
+		}
+		evenRow = evenRow ? false : true;
+	}
+}
+
+template<int SRC_T,int DST_T, int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernUyvy2Iyuv(	xf::Mat<SRC_T, ROWS, COLS, NPC> & _uyvy,xf::Mat<DST_T, ROWS, COLS, NPC> & y_plane,xf::Mat<DST_T, ROWS/4, COLS, NPC> & u_plane,xf::Mat<DST_T, ROWS/4, COLS, NPC> & v_plane,uint16_t height, uint16_t width)
+{
+
+	XF_SNAME(WORDWIDTH_SRC) uy,vy;
+	bool evenRow = true, evenBlock = true;
+	XF_PTNAME(XF_8UP) y1, y2, u, v;
+	unsigned long long int idx=0,idx1=0;
+
+	RowLoop:
+	for(int i = 0; i < height; i++)
+	{
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
+		ColLoop:
+		for(int j = 0; j < width; j+=2)
+		{
+#pragma HLS pipeline
+#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
+
+			uy = _uyvy.read(i*width+j);
+			vy = _uyvy.read(i*width+j+1);
+
+
+			y1 = uy.range(15,8);
+
+			y_plane.write(idx1,y1);
+			idx1++;
+			if(evenRow)
+				u = uy.range(7,0);
+
+			y2 = vy.range(15,8);
+
+			y_plane.write(idx1,y2);
+			idx1++;
+			if(evenRow)
+				v = vy.range(7,0);
+
+			if(evenRow)
+			{
+				u_plane.write(idx,u);
+				v_plane.write(idx,v);
+				idx++;
+			}
+		}
+		
+		evenRow = evenRow ? false : true;
+	}
+
+}
+
+//Uyvy2Nv12
+template<int SRC_T,int Y_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
+void KernUyvy2Nv12(xf::Mat<SRC_T, ROWS, COLS, NPC> & uyvy,xf::Mat<Y_T, ROWS, COLS, NPC> & y_plane,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & uv_plane, uint16_t height, uint16_t width)
+{
+
+	XF_SNAME(WORDWIDTH_SRC) uy,vy;
+	XF_PTNAME(XF_8UP) y1, y2;
+	XF_SNAME(WORDWIDTH_UV) uv;
+	bool evenRow = true;
+	unsigned long long int idx=0,idx1=0;
+	RowLoop:
+	for(int i = 0; i < height; i++)
+	{
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
+		ColLoop:
+		for(int j = 0; j < width; j+=2)
+		{
+#pragma HLS pipeline
+#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
+
+			uy = uyvy.read(i*width+j);
+			vy = uyvy.read(i*width+j+1);
 
 			y1 = uy.range(15,8);
 			if(evenRow)
@@ -865,22 +927,69 @@ void KernUyvy2Nv12(hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _uyvy,
 			if(evenRow)
 				uv.range(15,8) = vy.range(7,0);
 
-			_y.write(y1); _y.write(y2);
+			y_plane.write(idx1,y1); 
+			idx1++;
+			y_plane.write(idx1,y2);
+			idx1++;
 			if(evenRow)
 			{
-				_uv.write(uv);
+				uv_plane.write(idx,uv);
+				idx++;
 			}
 		}
 		evenRow = evenRow ? false : true;
 	}
 
 }
+//Uyvy2Nv12
+template<int SRC_T,int Y_T,int UV_T,int ROWS, int COLS, int NPC, int NPC_UV,int WORDWIDTH_SRC, int WORDWIDTH_Y, int WORDWIDTH_UV, int TC>
+void KernUyvy2Nv21(xf::Mat<SRC_T, ROWS, COLS, NPC> & uyvy,xf::Mat<Y_T, ROWS, COLS, NPC> & y_plane,xf::Mat<UV_T, ROWS/2, COLS/2, NPC_UV> & uv_plane, uint16_t height, uint16_t width)
+{
 
+	XF_SNAME(WORDWIDTH_SRC) uy,vy;
+	XF_PTNAME(XF_8UP) y1, y2;
+	XF_SNAME(WORDWIDTH_UV) uv;
+	bool evenRow = true;
+	unsigned long long int idx=0,idx1=0;
+	RowLoop:
+	for(int i = 0; i < height; i++)
+	{
+#pragma HLS LOOP_FLATTEN off
+#pragma HLS LOOP_TRIPCOUNT min=ROWS max=ROWS
+		ColLoop:
+		for(int j = 0; j < width; j+=2)
+		{
+#pragma HLS pipeline
+#pragma HLS LOOP_TRIPCOUNT min=TC max=TC
+
+			uy = uyvy.read(i*width+j);
+			vy = uyvy.read(i*width+j+1);
+
+			y1 = uy.range(15,8);
+			if(evenRow)
+				uv.range(7,0) = vy.range(7,0);
+
+			y2 = vy.range(15,8);
+			if(evenRow)
+				uv.range(15,8) = uy.range(7,0);
+
+			y_plane.write(idx1,y1);
+			idx1++;
+			y_plane.write(idx1,y2);
+			idx1++;
+			if(evenRow)
+			{
+				uv_plane.write(idx,uv);
+				idx++;
+			}
+		}
+		evenRow = evenRow ? false : true;
+	}
+
+}
 //Uyvy2Rgba
-template<int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
-void KernUyvy2Rgba(
-		hls::stream < XF_SNAME(WORDWIDTH_SRC) >& _uyvy,
-		hls::stream < XF_SNAME(WORDWIDTH_DST) >& _rgba, uint16_t height, uint16_t width)
+template<int SRC_T,int DST_T,int ROWS, int COLS, int NPC, int WORDWIDTH_SRC, int WORDWIDTH_DST, int TC>
+void KernUyvy2Rgba(xf::Mat<SRC_T, ROWS, COLS, NPC> & _uyvy,xf::Mat<DST_T, ROWS, COLS, NPC> & _rgba, uint16_t height, uint16_t width)
 {
 	XF_SNAME(WORDWIDTH_DST) rgba;
 
@@ -888,7 +997,7 @@ void KernUyvy2Rgba(
 
 	XF_SNAME(WORDWIDTH_SRC) uy;
 	XF_SNAME(WORDWIDTH_SRC) vy;
-
+unsigned long long int idx=0;
 	XF_PTNAME(XF_8UP)  r, g, b;
 	int8_t y1, y2, u, v;
 	int32_t V2Rtemp, U2Gtemp, V2Gtemp, U2Btemp;
@@ -904,10 +1013,8 @@ void KernUyvy2Rgba(
 #pragma HLS LOOP_TRIPCOUNT min=TC max=TC
 #pragma HLS pipeline
 
-			//uyvy = _uyvy.read();
-
-			uy = _uyvy.read();
-			vy = _uyvy.read();
+			uy = _uyvy.read(i*width+j);
+			vy = _uyvy.read(i*width+j+1);
 
 			u = (uint8_t)uy.range(7,0) - 128;
 
@@ -936,14 +1043,16 @@ void KernUyvy2Rgba(
 			b = CalculateB(y1, U2Btemp, u);
 
 			rgba = ((ap_uint32_t)r) | ((ap_uint32_t)g << 8) | ((ap_uint32_t)b << 16) | (0xFF000000);
-			_rgba.write(rgba);
+			_rgba.write(idx,rgba);
+			idx++;
 
 			r = CalculateR(y2, V2Rtemp, v);
 			g = CalculateG(y2, U2Gtemp, V2Gtemp);
 			b = CalculateB(y2, U2Btemp, u);
 
 			rgba = ((ap_uint32_t)r) | ((ap_uint32_t)g << 8) | ((ap_uint32_t)b << 16) | (0xFF000000);
-			_rgba.write(rgba);
+			_rgba.write(idx,rgba);
+			idx++;
 		}
 	}
 }

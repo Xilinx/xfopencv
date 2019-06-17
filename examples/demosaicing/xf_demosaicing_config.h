@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -39,19 +39,19 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #if T_8U
 #define SRC_T XF_8UC1
-#define DST_T XF_8UC4
+#define DST_T XF_8UC3
 #endif
 #if T_10U
 #define SRC_T XF_10UC1
-#define DST_T XF_10UC4
+#define DST_T XF_10UC3
 #endif
 #if T_12U
 #define SRC_T XF_12UC1
-#define DST_T XF_12UC4
+#define DST_T XF_12UC3
 #endif
 #if T_16U
 #define SRC_T XF_16UC1
-#define DST_T XF_16UC4
+#define DST_T XF_16UC3
 #endif
 
 #if (T_16U || T_10U || T_12U)

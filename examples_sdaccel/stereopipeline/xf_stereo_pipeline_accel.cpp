@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, 
@@ -44,17 +44,6 @@ void stereopipeline_accel(ap_uint<INPUT_PTR_WIDTH> *img_L, ap_uint<INPUT_PTR_WID
 #pragma HLS INTERFACE m_axi     port=irA_l  offset=slave bundle=gmem2
 #pragma HLS INTERFACE m_axi     port=irA_r  offset=slave bundle=gmem2
 #pragma HLS INTERFACE m_axi     port=bm_state_arr  offset=slave bundle=gmem4
-
-#pragma HLS INTERFACE s_axilite port=img_L               bundle=control
-#pragma HLS INTERFACE s_axilite port=img_R               bundle=control
-#pragma HLS INTERFACE s_axilite port=img_disp               bundle=control
-#pragma HLS INTERFACE s_axilite port=cameraMA_l               bundle=control
-#pragma HLS INTERFACE s_axilite port=cameraMA_r               bundle=control
-#pragma HLS INTERFACE s_axilite port=distC_l               bundle=control
-#pragma HLS INTERFACE s_axilite port=distC_r               bundle=control
-#pragma HLS INTERFACE s_axilite port=irA_l               bundle=control
-#pragma HLS INTERFACE s_axilite port=irA_r               bundle=control
-#pragma HLS INTERFACE s_axilite port=bm_state_arr               bundle=control
 #pragma HLS INTERFACE s_axilite port=rows               bundle=control
 #pragma HLS INTERFACE s_axilite port=cols               bundle=control
 #pragma HLS INTERFACE s_axilite port=return                bundle=control
@@ -89,44 +78,27 @@ void stereopipeline_accel(ap_uint<INPUT_PTR_WIDTH> *img_L, ap_uint<INPUT_PTR_WID
 	bm_state.sweepFactor = bm_state_arr[9];
 	bm_state.remainder = bm_state_arr[10];
 
-
-	const int pROWS = XF_HEIGHT;
-	const int pCOLS = XF_WIDTH;
-	const int pNPC1 = XF_NPPC1;
 	int _cm_size = 9, _dc_size = 5;
 
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_L;
-#pragma HLS stream variable=mat_L.data depth=pCOLS/pNPC1
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_R;
-#pragma HLS stream variable=mat_R.data depth=pCOLS/pNPC1
-	xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_disp;
-#pragma HLS stream variable=mat_disp.data depth=pCOLS/pNPC1
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_L(rows,cols);
+#pragma HLS stream variable=mat_L.data depth=2
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_R(rows,cols);
+#pragma HLS stream variable=mat_R.data depth=2
+	xf::Mat<XF_16UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mat_disp(rows,cols);
+#pragma HLS stream variable=mat_disp.data depth=2
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxLMat(rows,cols);
+#pragma HLS stream variable=mapxLMat.data depth=2
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyLMat(rows,cols);
+#pragma HLS stream variable=mapyLMat.data depth=2
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxRMat(rows,cols);
+#pragma HLS stream variable=mapxRMat.data depth=2
+	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyRMat(rows,cols); 
+#pragma HLS stream variable=mapyRMat.data depth=2
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftRemappedMat(rows,cols); 
+#pragma HLS stream variable=leftRemappedMat.data depth=2
+	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightRemappedMat(rows,cols);
+#pragma HLS stream variable=rightRemappedMat.data depth=2
 
-	mat_L.rows = rows;  mat_L.cols = cols;
-	mat_R.rows = rows;  mat_R.cols = cols;
-	mat_disp.rows = rows;  mat_disp.cols = cols;
-
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxLMat;
-#pragma HLS stream variable=mapxLMat.data depth=pCOLS/pNPC1
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyLMat;
-#pragma HLS stream variable=mapyLMat.data depth=pCOLS/pNPC1
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapxRMat;
-#pragma HLS stream variable=mapxRMat.data depth=pCOLS/pNPC1
-	xf::Mat<XF_32FC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> mapyRMat; 
-#pragma HLS stream variable=mapyRMat.data depth=pCOLS/pNPC1
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> leftRemappedMat; 
-#pragma HLS stream variable=leftRemappedMat.data depth=pCOLS/pNPC1
-	xf::Mat<XF_8UC1, XF_HEIGHT, XF_WIDTH, XF_NPPC1> rightRemappedMat;
-#pragma HLS stream variable=rightRemappedMat.data depth=pCOLS/pNPC1
-
-	mapxLMat.rows = rows;  mapxLMat.cols = cols;
-	mapyLMat.rows = rows;  mapyLMat.cols = cols;
-	mapxRMat.rows = rows;  mapxRMat.cols = cols;
-	mapyRMat.rows = rows;  mapyRMat.cols = cols;
-	leftRemappedMat.rows = rows;  leftRemappedMat.cols = cols;
-	rightRemappedMat.rows = rows;  rightRemappedMat.cols = cols;
-
-  /********************************************************/
 #pragma HLS DATAFLOW
 
 	xf::Array2xfMat<INPUT_PTR_WIDTH,XF_8UC1,XF_HEIGHT,XF_WIDTH,XF_NPPC1>(img_L,mat_L);

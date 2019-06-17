@@ -1,5 +1,5 @@
 /***************************************************************************
-Copyright (c) 2018, Xilinx, Inc.
+Copyright (c) 2019, Xilinx, Inc.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -223,7 +223,9 @@ void Core_Process(XF_DTUNAME(SRC_T,NPC) imgblock[5][buf_size], int &b, int &g, i
 				}
 }
 
-
+#pragma SDS data mem_attribute("src_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data mem_attribute("dst_mat.data":NON_CACHEABLE|PHYSICAL_CONTIGUOUS)
+#pragma SDS data data_mover ("src_mat.data":FASTDMA, "dst_mat.data":FASTDMA)
 #pragma SDS data copy("src_mat.data"[0:"src_mat.size"], "dst_mat.data"[0:"dst_mat.size"])
 #pragma SDS data access_pattern("src_mat.data":SEQUENTIAL, "dst_mat.data":SEQUENTIAL)
 
@@ -233,9 +235,8 @@ void demosaicing(xf::Mat<SRC_T, ROWS, COLS, NPC> &src_mat, xf::Mat<DST_T, ROWS, 
 	assert(((BFORMAT == XF_BAYER_BG) || (BFORMAT == XF_BAYER_GB)|| (BFORMAT == XF_BAYER_GR) || (BFORMAT == XF_BAYER_RG)) && ("Unsupported Bayer pattern. Use anyone among: XF_BAYER_BG;XF_BAYER_GB;XF_BAYER_GR;XF_BAYER_RG"));
 	assert(((src_mat.rows <= ROWS ) && (src_mat.cols <= COLS)) && "ROWS and COLS should be greater than input image");
 	assert(((NPC==1)||(NPC==2)||(NPC==4)) && "Only 1, 2 and 4 pixel-parallelism are supported");
-	assert(((SRC_T == XF_8UC1) ||(SRC_T == XF_16UC1)) && "Only 8 and 16 bit, single channel images are supported");
-	assert(((DST_T == XF_8UC4) ||(DST_T == XF_16UC4)) && "Only 8 and 16 bit, 4 channel images are supported");
-	assert(( ((XF_DTPIXELDEPTH(SRC_T,NPC)) <= XF_DTPIXELDEPTH(DST_T,NPC)) ) && "Source image bitdepth should be less than or equal to destination image");
+	assert(((SRC_T == XF_8UC1)||(SRC_T == XF_10UC1)||(SRC_T == XF_12UC1)||(SRC_T == XF_16UC1)) && "Only 8, 10, 12 and 16 bit, single channel images are supported");
+	assert(((DST_T == XF_8UC3)||(DST_T == XF_10UC3)||(DST_T == XF_12UC3)||(DST_T == XF_16UC3)|| (DST_T == XF_8UC4)||(DST_T == XF_10UC4)||(DST_T == XF_12UC4)||(DST_T == XF_16UC4)) && "Only 8, 10, 12 and 16 bit, 3 and 4 channel images are supported");
 
 	const int __BHEIGHT=5;
 	const int __BHEIGHTMINUSONE =__BHEIGHT-1;
@@ -252,24 +253,25 @@ else{
 #pragma HLS array_partition variable=linebuffer complete dim=1
 }
 	XF_CTUNAME(SRC_T,NPC) imgblock[__BHEIGHT][__BWIDTH];
-	int pre_read_count = (2/NPC)+((NPC*NPC)>>2); // 2-2-4
-	int post_read_count = pre_read_count+2;		//4-4-6
-	int end_read_count = ((NPC<<1)>>(NPC*NPC))+1; //2-1-1
+	const int pre_read_count = (2/NPC)+((NPC*NPC)>>2); // 2-2-4
+	const int post_read_count = pre_read_count+2;		//4-4-6
+	const int end_read_count = ((NPC<<1)>>(NPC*NPC))+1; //2-1-1
 
 #pragma HLS array_partition variable=imgblock complete dim=0
 
 	int lineStore = 3, read_index=0, write_index = 0;
 	LineBuffer:for (int i=0; i<2; i++) {
+#pragma HLS LOOP_TRIPCOUNT min=2 max=2
 		for (int j=0; j<src_mat.cols>>XF_BITSHIFT(NPC); j++) {
-#pragma HLS LOOP_TRIPCOUNT min=COLS max=COLS
+#pragma HLS LOOP_TRIPCOUNT min=COLS/NPC max=COLS/NPC
 #pragma HLS pipeline ii=1
-			XF_TNAME(SRC_T,NPC) tmp = src_mat.data[read_index++];
+			XF_TNAME(SRC_T,NPC) tmp = src_mat.read(read_index++);
 			linebuffer[i][j] = 0;
 			linebuffer[i+2][j] = tmp;
 		}
 	}
 	ap_uint<3> line0 = 3, line1 = 0, line2 = 1, line3 = 2;
-	int step = XF_PIXELDEPTH(XF_DEPTH(SRC_T,NPC));
+	int step = XF_DTPIXELDEPTH(SRC_T,NPC);
 	int out_step = XF_DTPIXELDEPTH(DST_T,NPC);
 	XF_TNAME(SRC_T,NPC) tmp;
 
@@ -332,7 +334,7 @@ else{
 #pragma HLS LOOP_FLATTEN OFF
 
 			if (i< src_mat.rows - 2) {
-				tmp = src_mat.data[read_index++];//Reading 5th row element
+				tmp = src_mat.read(read_index++);//Reading 5th row element
 			}
 			else {
 				tmp = 0;
@@ -389,7 +391,7 @@ else{
 
 			// Calculate the resultant intensities at each pixel
 			int r, g, b;
-			XF_DTUNAME(DST_T,NPC) res_pixel[NPC];
+			XF_TNAME(DST_T,NPC) res_pixel[NPC];
 
 			for(int loop=0; loop<NPC;loop++){
 				Core_Process<BFORMAT,SRC_T,NPC,XF_DEPTH(SRC_T,NPC),__BWIDTH>(imgblock,b,g,r,i,j*NPC+loop,loop);
@@ -398,18 +400,20 @@ else{
 				g = xf_satcast<XF_CTUNAME(SRC_T,NPC)>(g);
 				r = xf_satcast<XF_CTUNAME(SRC_T,NPC)>(r);
 
-				res_pixel[loop].range(4*out_step-1,3*out_step) = MAXVAL(out_step);
+				if(XF_CHANNELS(DST_T,NPC) == 4){
+					res_pixel[loop].range(4*out_step-1,3*out_step) = MAXVAL(out_step);
+				}
 				res_pixel[loop].range(3*out_step-1,2*out_step) = r;
 				res_pixel[loop].range(2*out_step-1,out_step)  = g;
 				res_pixel[loop].range(out_step-1,0)   = b;
 			}
 			XF_TNAME(DST_T,NPC) packed_res_pixel;
-			int pstep = XF_CHANNELS(DST_T,NPC)*XF_DTPIXELDEPTH(DST_T,NPC);
+			int pstep = XF_PIXELWIDTH(DST_T,NPC);
 			for(int ploop=0; ploop<NPC;ploop++){
 				packed_res_pixel.range(pstep+pstep*ploop-1,pstep*ploop) = res_pixel[ploop];
 			}
 
-			dst_mat.data[write_index++] = packed_res_pixel;
+			dst_mat.write(write_index++, packed_res_pixel);
 
 		} // end COL loop
 	} // end ROW loop
