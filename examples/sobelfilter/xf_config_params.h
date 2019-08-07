@@ -42,4 +42,4 @@ EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define GRAY 1
 #define RGBA 0
-//#define XF_USE_URAM false
+#define XF_USE_URAM false
