@@ -1,3 +1,21 @@
+# 
+# 
+# 
+# 
+# 
+# 
+# xfOpenCV has been superseded by the Vitis tool suite compatible [Vitis Vision Library](https://github.com/Xilinx/Vitis_Libraries/tree/master/vision)
+
+# Please switch to that project as this repository will not be updated going forward.
+
+#
+#
+#
+#
+#
+#
+#
+#
 # Xilinx xfOpenCV Library
 The xfOpenCV library is a set of 60+ kernels, optimized for Xilinx FPGAs and SoCs, based on the OpenCV computer vision library. The kernels in the xfOpenCV library are optimized and supported in the Xilinx SDx Tool Suite.
 
