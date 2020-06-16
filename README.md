@@ -1,9 +1,4 @@
 # 
-# 
-# 
-# 
-# 
-# 
 # xfOpenCV has been superseded by the Vitis tool suite compatible [Vitis Vision Library](https://github.com/Xilinx/Vitis_Libraries/tree/master/vision)
 
 # Please switch to that project as this repository will not be updated going forward.
